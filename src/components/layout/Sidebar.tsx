@@ -224,17 +224,6 @@ function CombatZoneSection({
         })}
       </div>
 
-      <style>{`
-        @keyframes combat-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.2); }
-        }
-        .combat-swords-icon {
-          animation: combat-pulse 1.5s ease-in-out infinite;
-          display: inline-block;
-          color: var(--color-danger);
-        }
-      `}</style>
     </div>
   );
 }

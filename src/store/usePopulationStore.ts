@@ -5,6 +5,7 @@ import type { WorkerAssignment, PopulationState, RespawningWorker } from '../typ
 import { WORKER_RESPAWN_MS, POPULATION_CAP } from '../types/population';
 import { useGameStore } from './useGameStore';
 import { useHeroStore } from './useHeroStore';
+import { useLootTrackerStore } from './useLootTrackerStore';
 import { useStoryStore } from './useStoryStore';
 
 interface PopulationActions {
@@ -168,9 +169,11 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
         // Add resources to game store
         const resources = { ...gameStore.resources };
         const resNames: string[] = [];
+        const skillDef = SKILLS[assignment.skillId];
         for (const r of result.resourcesGained) {
           resources[r.resourceId] = (resources[r.resourceId] || 0) + r.quantity;
           resNames.push(`${r.quantity}x ${r.resourceId.replace(/_/g, ' ')}`);
+          useLootTrackerStore.getState().trackLoot(r.resourceId, r.quantity, 'worker', skillDef?.name || assignment.skillId);
         }
         useGameStore.setState({ resources });
 

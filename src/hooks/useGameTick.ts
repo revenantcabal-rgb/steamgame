@@ -11,6 +11,7 @@ import { useAnticheatStore } from '../store/useAnticheatStore';
 import { useAchievementStore } from '../store/useAchievementStore';
 import { useStoryStore } from '../store/useStoryStore';
 import { useStarlightStore } from '../store/useStarlightStore';
+import { useLootTrackerStore } from '../store/useLootTrackerStore';
 import { syncSave, flushPendingWrites } from '../lib/saveService';
 
 const TICK_INTERVAL_MS = 1000;
@@ -60,6 +61,7 @@ export function useGameTick() {
           if (parsed.achievements) useAchievementStore.getState().loadState(parsed.achievements);
           if (parsed.story) useStoryStore.getState().loadState(parsed.story);
           if (parsed.starlight) useStarlightStore.getState().loadState(parsed.starlight);
+          if (parsed.lootTracker) useLootTrackerStore.getState().loadState(parsed.lootTracker);
           gameStore.addLog('Save data loaded.', 'system');
           setTimeout(() => useGameStore.getState().processOfflineProgress(), 100);
         } else if (parsed.version === 12) {
@@ -236,6 +238,7 @@ export function useGameTick() {
           achievements: useAchievementStore.getState().getSerializableState(),
           story: useStoryStore.getState().getSerializableState(),
           starlight: useStarlightStore.getState().getSerializableState(),
+          lootTracker: useLootTrackerStore.getState().getSerializableState(),
           version: FULL_SAVE_VERSION,
         };
         const serialized = JSON.stringify(fullSave);

@@ -10,6 +10,7 @@ import { useAchievementStore } from './useAchievementStore';
 import { useStoryStore } from './useStoryStore';
 import { useAuthStore } from './useAuthStore';
 import { usePopulationStore } from './usePopulationStore';
+import { useLootTrackerStore } from './useLootTrackerStore';
 
 const BOSS_EVERY_N_FIGHTS = 50;
 const ENEMY_SCALE_EVERY_N = 10;
@@ -209,6 +210,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               const resources = { ...gameStore.resources };
               for (const r of result.resourceDrops) {
                 resources[r.resourceId] = (resources[r.resourceId] || 0) + r.quantity;
+                useLootTrackerStore.getState().trackLoot(r.resourceId, r.quantity, 'boss', zone.name);
               }
               useGameStore.setState({ resources });
 
@@ -289,6 +291,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               const resources = { ...gameStore.resources };
               for (const r of result.resourceDrops) {
                 resources[r.resourceId] = (resources[r.resourceId] || 0) + r.quantity;
+                useLootTrackerStore.getState().trackLoot(r.resourceId, r.quantity, 'combat', zone.name);
               }
               useGameStore.setState({ resources });
 
@@ -306,6 +309,16 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           // Track combat kills for population growth
           if (anyWon) {
             usePopulationStore.getState().addCombatKill(dep.zoneTier);
+
+            // Rare Icqor Chess Piece drop from regular combat kills
+            const combatIcqorChance = dep.zoneTier >= 3 ? 0.003 : dep.zoneTier >= 2 ? 0.0015 : 0.0005;
+            if (Math.random() < combatIcqorChance) {
+              const resources = { ...gameStore.resources };
+              resources['icqor_chess_piece'] = (resources['icqor_chess_piece'] || 0) + 1;
+              useGameStore.setState({ resources });
+              gameStore.addLog('✦ Rare drop: Icqor Chess Piece!', 'levelup');
+              useStoryStore.getState().checkObjective('gather', 'icqor_chess_piece', 1);
+            }
           }
 
           const newFightCount = target?.isSweep ? dep.fightCount + 1 : dep.fightCount;

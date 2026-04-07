@@ -108,17 +108,6 @@ export function SkillListItem({ skillId, onSelect }: SkillListItemProps) {
         </div>
       )}
 
-      <style>{`
-        @keyframes worker-pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.15); }
-        }
-        .worker-active-icon {
-          animation: worker-pulse 2s ease-in-out infinite;
-          display: inline-block;
-          color: #27ae60;
-        }
-      `}</style>
     </button>
   );
 }

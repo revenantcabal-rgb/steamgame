@@ -5,6 +5,8 @@ import { GEAR_TEMPLATES } from '../config/gear';
 import { SKILLS } from '../config/skills';
 import { CLASSES } from '../config/classes';
 import { useGameStore } from './useGameStore';
+import { useHeroStore } from './useHeroStore';
+import { useEquipmentStore } from './useEquipmentStore';
 import { useChatStore } from './useChatStore';
 import { useAuthStore } from './useAuthStore';
 
@@ -62,6 +64,7 @@ interface StoryState {
 
   checkObjective: (type: ObjectiveType, target: string, incrementBy?: number) => void;
   completePart: () => void;
+  recheckCurrentObjective: () => void;
   isFeatureUnlocked: (feature: string) => boolean;
   getCurrentObjective: () => { chapter: StoryChapter; part: StoryPart; progress: number } | null;
   getSerializableState: () => SerializedStoryState;
@@ -256,6 +259,54 @@ export const useStoryStore = create<StoryState>((set, get) => ({
     } else {
       // Advance to next part
       set(s => ({ currentPartIndex: s.currentPartIndex + 1 }));
+      // Re-check in case the new objective is already met
+      setTimeout(() => get().recheckCurrentObjective(), 100);
+    }
+  },
+
+  recheckCurrentObjective: () => {
+    const state = get();
+    if (state.currentStoryNumber > STORY_CHAPTERS.length) return;
+    const chapter = STORY_CHAPTERS[state.currentStoryNumber - 1];
+    if (!chapter) return;
+    const part = chapter.parts[state.currentPartIndex];
+    if (!part) return;
+    const obj = part.objective;
+    const gameStore = useGameStore.getState();
+
+    // Re-evaluate objectives that depend on current state (not incremental events)
+    if (obj.type === 'reach_skill_level') {
+      const skills = gameStore.skills;
+      if (obj.target === 'any_gathering') {
+        const gatheringIds = ['scavenging', 'foraging', 'salvage_hunting', 'water_reclamation', 'prospecting'];
+        const maxLvl = Math.max(0, ...gatheringIds.map(id => skills[id]?.level || 0));
+        if (maxLvl > 0) get().checkObjective('reach_skill_level', gatheringIds.find(id => (skills[id]?.level || 0) === maxLvl) || 'scavenging', maxLvl);
+      } else if (obj.target === 'any_production') {
+        const prodIds = ['cooking', 'tinkering', 'weaponsmithing', 'armorcrafting', 'biochemistry'];
+        const maxLvl = Math.max(0, ...prodIds.map(id => skills[id]?.level || 0));
+        if (maxLvl > 0) get().checkObjective('reach_skill_level', prodIds.find(id => (skills[id]?.level || 0) === maxLvl) || 'cooking', maxLvl);
+      } else {
+        const lvl = skills[obj.target]?.level || 0;
+        if (lvl > 0) get().checkObjective('reach_skill_level', obj.target, lvl);
+      }
+    } else if (obj.type === 'reach_hero_level') {
+      const heroes = useHeroStore.getState().heroes;
+      const maxLvl = Math.max(0, ...heroes.map(h => h.level));
+      if (maxLvl > 0) get().checkObjective('reach_hero_level', 'any', maxLvl);
+    } else if (obj.type === 'recruit_hero') {
+      const heroCount = useHeroStore.getState().heroes.length;
+      if (heroCount > 0) get().checkObjective('recruit_hero', 'any', heroCount);
+    } else if (obj.type === 'deploy_heroes') {
+      // Can't easily re-check this without combat store, skip
+    } else if (obj.type === 'equip' && obj.target === 'slots') {
+      // Re-check equipped slot count for all heroes
+      const heroEq = useEquipmentStore.getState().heroEquipment;
+      let maxSlots = 0;
+      for (const eq of Object.values(heroEq)) {
+        const filled = Object.values(eq).filter(v => v != null).length;
+        if (filled > maxSlots) maxSlots = filled;
+      }
+      if (maxSlots > 0) get().checkObjective('equip', 'slots', maxSlots);
     }
   },
 
@@ -340,6 +391,9 @@ export const useStoryStore = create<StoryState>((set, get) => ({
       slotsEquipped: saved.slotsEquipped ?? 0,
       starterCombatStyle,
     });
+
+    // Re-check current objective in case it's already met from existing progress
+    setTimeout(() => get().recheckCurrentObjective(), 200);
   },
 }));
 

@@ -55,6 +55,13 @@ export function processTrip(assignment: WorkerAssignment, workerSkillXp: Record<
     resourcesGained.push({ resourceId: drop.resourceId, quantity: scaledQty });
   }
 
+  // Rare Icqor Chess Piece drop — scales with activity tier
+  const activityTier = (subActivity.levelReq || 0) >= 30 ? 3 : (subActivity.levelReq || 0) >= 15 ? 2 : 1;
+  const icqorChance = activityTier === 3 ? 0.005 : activityTier === 2 ? 0.003 : 0.001; // 0.5%, 0.3%, 0.1%
+  if (Math.random() < icqorChance) {
+    resourcesGained.push({ resourceId: 'icqor_chess_piece', quantity: 1 });
+  }
+
   // Calculate worker XP gain
   const xpGained = Math.floor(subActivity.xpPerAction * 0.5); // Workers gain XP slower than player
 

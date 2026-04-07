@@ -8,6 +8,7 @@ import { getActionTime } from '../../engine/SkillEngine';
 import { getWorkerScaling } from '../../types/population';
 import { getTripDuration } from '../../engine/PopulationEngine';
 import { ProgressBar } from '../common/ProgressBar';
+import { ItemIcon } from '../../utils/itemIcons';
 import type { GatheringGoal } from '../../store/useGameStore';
 import type { WorkerAssignment } from '../../types/population';
 import type { SubActivity } from '../../types/skills';
@@ -268,94 +269,152 @@ export function SkillDetail() {
       {/* Gathering Goal (gathering only) */}
       {isGathering && activeSkillId && <GoalSetter skillId={activeSkillId} />}
 
-      {/* Sub-Activity / Recipe Selector */}
-      {hasSubActivities && (
-        <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-          <h3 className="font-bold text-sm mb-3">
-            {isProduction ? 'Choose Recipe' : 'Choose Activity'}
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {skillDef.subActivities!.map(activity => {
-              const isSelected = activity.id === activeSubActivityId;
-              const isLocked = (activity.levelReq || 0) > playerSkill.level;
-              const canAfford = isProduction ? checkCanAfford(activity, resources) : true;
+      {/* Sub-Activity / Recipe Selector — Horizontal Card Layout */}
+      {hasSubActivities && (() => {
+        const activities = skillDef.subActivities!;
+        const regular = activities.filter(a => !a.isMixed);
+        const sweeps = activities.filter(a => a.isMixed);
 
-              return (
-                <button
-                  key={activity.id}
-                  onClick={() => !isLocked && setSubActivity(activity.id)}
-                  className="p-3 rounded border text-left transition-all"
-                  style={{
-                    backgroundColor: isLocked ? 'var(--color-bg-primary)' : isSelected ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
-                    borderColor: isSelected ? 'var(--color-accent)' : 'var(--color-border)',
-                    borderWidth: isSelected ? '2px' : '1px',
-                    opacity: isLocked ? 0.4 : 1,
-                    cursor: isLocked ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  <div className="flex justify-between items-center mb-1">
-                    <div className="font-bold text-xs" style={{ color: isSelected ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>
-                      {activity.isMixed ? '>> ' : ''}{activity.name}
-                    </div>
-                    {isLocked && (
-                      <span className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>
-                        Lv.{activity.levelReq}
-                      </span>
-                    )}
-                    {activity.gearTemplateId && (
-                      <span className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--color-info)', color: '#fff' }}>
-                        GEAR
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
-                    {activity.description}
-                  </div>
+        // Group regular activities by tier
+        const tierGroups: Record<string, typeof regular> = {};
+        for (const a of regular) {
+          const tier = (a.levelReq || 0) >= 30 ? 'Tier 3' : (a.levelReq || 0) >= 15 ? 'Tier 2' : 'Tier 1';
+          if (!tierGroups[tier]) tierGroups[tier] = [];
+          tierGroups[tier].push(a);
+        }
 
-                  {/* Production: show resource costs */}
-                  {isProduction && activity.resourceInputs && (
-                    <div className="text-xs mt-1 space-y-0.5">
-                      {activity.resourceInputs.map(input => {
-                        const have = resources[input.resourceId] || 0;
-                        const enough = have >= input.quantity;
-                        const resName = RESOURCES[input.resourceId]?.name || input.resourceId.replace(/_/g, ' ');
-                        return (
-                          <div key={input.resourceId} style={{ color: enough ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                            {input.quantity}x {resName} <span style={{ color: 'var(--color-text-muted)' }}>({have})</span>
+        // Same for sweeps
+        const sweepGroups: Record<string, typeof sweeps> = {};
+        for (const a of sweeps) {
+          const tier = (a.levelReq || 0) >= 30 ? 'Tier 3' : (a.levelReq || 0) >= 15 ? 'Tier 2' : 'Tier 1';
+          if (!sweepGroups[tier]) sweepGroups[tier] = [];
+          sweepGroups[tier].push(a);
+        }
+
+        const allTiers = [...new Set([...Object.keys(tierGroups), ...Object.keys(sweepGroups)])].sort();
+
+        return (
+          <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+            <h3 className="font-bold text-sm mb-3">
+              {isProduction ? 'Choose Recipe' : 'Choose Activity'}
+            </h3>
+
+            {allTiers.map(tier => (
+              <div key={tier} className="mb-4">
+                {allTiers.length > 1 && (
+                  <div className="text-[10px] font-bold uppercase mb-2 px-1" style={{ color: 'var(--color-text-muted)' }}>{tier}</div>
+                )}
+
+                {/* Regular activities — horizontal scrollable row */}
+                {tierGroups[tier] && tierGroups[tier].length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2 mb-2" style={{ scrollbarWidth: 'thin' }}>
+                    {tierGroups[tier].map(activity => {
+                      const isSelected = activity.id === activeSubActivityId;
+                      const isLocked = (activity.levelReq || 0) > playerSkill.level;
+                      const canAfford = isProduction ? checkCanAfford(activity, resources) : true;
+                      const primaryDrop = activity.resourceDrops[0];
+                      const primaryRes = primaryDrop ? RESOURCES[primaryDrop.resourceId] : null;
+
+                      return (
+                        <button
+                          key={activity.id}
+                          onClick={() => !isLocked && setSubActivity(activity.id)}
+                          className="shrink-0 rounded text-center transition-all p-3"
+                          style={{
+                            width: '150px',
+                            minHeight: '140px',
+                            backgroundColor: isLocked ? 'var(--color-bg-primary)' : isSelected ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
+                            border: isSelected ? '2px solid var(--color-accent)' : isLocked ? '1px solid var(--color-border)' : !canAfford && isProduction ? '1px solid #ef444444' : '1px solid var(--color-border)',
+                            opacity: isLocked ? 0.4 : 1,
+                            cursor: isLocked ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {/* Icon */}
+                          <div className="flex justify-center mb-2">
+                            {primaryDrop ? (
+                              <ItemIcon itemId={primaryDrop.resourceId} itemType={isProduction ? 'consumable' : 'resource'} size={32} fallbackLabel={activity.name.charAt(0)} />
+                            ) : (
+                              <div className="w-8 h-8 rounded flex items-center justify-center text-sm" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>{activity.name.charAt(0)}</div>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  )}
 
-                  {/* Gathering: show resource drops */}
-                  {!isProduction && (
-                    <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                      {activity.resourceDrops.map(d => {
-                        const res = RESOURCES[d.resourceId];
-                        return res ? `${res.name}: ${d.minQty}-${d.maxQty}` : d.resourceId;
-                      }).join(' | ')}
-                    </div>
-                  )}
+                          {/* Name */}
+                          <div className="font-bold text-xs mb-1" style={{ color: isSelected ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>
+                            {activity.name}
+                          </div>
 
-                  {/* Production: show output */}
-                  {isProduction && !activity.gearTemplateId && activity.resourceDrops.length > 0 && (
-                    <div className="text-xs mt-1" style={{ color: 'var(--color-accent)' }}>
-                      Produces: {activity.resourceDrops.map(d => {
-                        return `${d.minQty}x ${d.resourceId.replace(/_/g, ' ')}`;
-                      }).join(', ')}
-                    </div>
-                  )}
+                          {/* Lock badge */}
+                          {isLocked && (
+                            <div className="text-[10px] px-1.5 py-0.5 rounded inline-block mb-1" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>Lv.{activity.levelReq}</div>
+                          )}
 
-                  <div className="text-xs mt-1" style={{ color: 'var(--color-xp)' }}>
-                    {activity.xpPerAction} XP/action
+                          {/* Resource info */}
+                          {!isLocked && !isProduction && primaryDrop && (
+                            <div className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+                              {primaryRes?.name || primaryDrop.resourceId}: {primaryDrop.minQty}-{primaryDrop.maxQty}
+                            </div>
+                          )}
+                          {!isLocked && isProduction && activity.resourceInputs && (
+                            <div className="text-[10px]" style={{ color: canAfford ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                              {canAfford ? 'Ready' : 'Need mats'}
+                            </div>
+                          )}
+
+                          {/* XP badge */}
+                          {!isLocked && (
+                            <div className="text-[10px] mt-1" style={{ color: 'var(--color-xp)' }}>{activity.xpPerAction} XP</div>
+                          )}
+
+                          {/* Gear badge */}
+                          {activity.gearTemplateId && (
+                            <div className="text-[10px] px-1 py-0 rounded inline-block mt-1" style={{ backgroundColor: 'var(--color-info)', color: '#fff' }}>GEAR</div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                </button>
-              );
-            })}
+                )}
+
+                {/* Sweep activities — full width */}
+                {sweepGroups[tier] && sweepGroups[tier].map(activity => {
+                  const isSelected = activity.id === activeSubActivityId;
+                  const isLocked = (activity.levelReq || 0) > playerSkill.level;
+
+                  return (
+                    <button
+                      key={activity.id}
+                      onClick={() => !isLocked && setSubActivity(activity.id)}
+                      className="w-full text-left p-3 rounded mb-2 transition-all"
+                      style={{
+                        backgroundColor: isLocked ? 'var(--color-bg-primary)' : isSelected ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
+                        border: isSelected ? '2px solid var(--color-accent)' : '1px solid var(--color-accent)44',
+                        borderLeft: isSelected ? '4px solid var(--color-accent)' : '4px solid var(--color-accent)',
+                        opacity: isLocked ? 0.4 : 1,
+                        cursor: isLocked ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: 'var(--color-accent)22', color: 'var(--color-accent)' }}>SWEEP ALL</span>
+                        <span className="font-bold text-xs" style={{ color: isSelected ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>{activity.name}</span>
+                        {isLocked && <span className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>Lv.{activity.levelReq}</span>}
+                        <span className="text-[10px] ml-auto" style={{ color: 'var(--color-xp)' }}>{activity.xpPerAction} XP</span>
+                      </div>
+                      {!isLocked && (
+                        <div className="flex gap-3 text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+                          {activity.resourceDrops.map(d => {
+                            const res = RESOURCES[d.resourceId];
+                            return <span key={d.resourceId}>{res?.name || d.resourceId}: {d.minQty}-{d.maxQty}</span>;
+                          })}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Level & XP */}
       <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>

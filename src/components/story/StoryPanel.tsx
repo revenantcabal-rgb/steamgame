@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStoryStore } from '../../store/useStoryStore';
 import { STORY_CHAPTERS } from '../../config/story';
 import { ProgressBar } from '../common/ProgressBar';
@@ -8,6 +9,20 @@ export function StoryPanel() {
   const completedStories = useStoryStore(s => s.completedStories);
   const partProgress = useStoryStore(s => s.partProgress);
   const unlockedFeatures = useStoryStore(s => s.unlockedFeatures);
+
+  const [collapsedChapters, setCollapsedChapters] = useState<Set<number>>(() => {
+    // Completed chapters start collapsed
+    return new Set(completedStories);
+  });
+
+  const toggleChapter = (num: number) => {
+    setCollapsedChapters(prev => {
+      const next = new Set(prev);
+      if (next.has(num)) next.delete(num);
+      else next.add(num);
+      return next;
+    });
+  };
 
   const allComplete = currentStoryNumber > STORY_CHAPTERS.length;
 
@@ -80,9 +95,10 @@ export function StoryPanel() {
                 opacity: isFuture ? 0.5 : 1,
               }}
             >
-              {/* Chapter header */}
+              {/* Chapter header — clickable to collapse/expand */}
               <div
-                className="px-5 py-4"
+                className="px-5 py-4 cursor-pointer"
+                onClick={() => toggleChapter(chapter.number)}
                 style={{
                   borderBottom: '1px solid var(--color-border)',
                   backgroundColor: isCurrent ? 'var(--color-bg-tertiary)' : 'transparent',
@@ -128,12 +144,15 @@ export function StoryPanel() {
                         Feature Unlocked!
                       </div>
                     )}
+                    <div className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                      {collapsedChapters.has(chapter.number) ? '▶ Click to expand' : '▼ Click to collapse'}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Parts list (only show for current & completed chapters) */}
-              {!isFuture && (
+              {/* Parts list (only show when not collapsed, for current & completed chapters) */}
+              {!isFuture && !collapsedChapters.has(chapter.number) && (
                 <div className="px-5 py-3 space-y-2">
                   {chapter.parts.map((part, partIdx) => {
                     const isPartComplete = isCompleted || (isCurrent && partIdx < currentPartIndex);

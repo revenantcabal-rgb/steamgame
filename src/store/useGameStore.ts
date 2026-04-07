@@ -8,6 +8,7 @@ import { levelFromXp } from '../types/skills';
 import type { IdleState, OfflineResult } from '../engine/IdleEngine';
 import { useEquipmentStore } from './useEquipmentStore';
 import { useAchievementStore } from './useAchievementStore';
+import { useLootTrackerStore } from './useLootTrackerStore';
 import { useStoryStore } from './useStoryStore';
 
 export interface GameLog {
@@ -410,6 +411,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         for (const drop of activity.resourceDrops) {
           const qty = Math.floor(Math.random() * (drop.maxQty - drop.minQty + 1)) + drop.minQty;
           newResources[drop.resourceId] = (newResources[drop.resourceId] || 0) + qty;
+          useLootTrackerStore.getState().trackLoot(drop.resourceId, qty, 'production', skillDef.name);
         }
 
         const xpGained = activity.xpPerAction;
@@ -433,6 +435,14 @@ export const useGameStore = create<GameState>((set, get) => ({
           if (skillDef.id === 'cooking') {
             useStoryStore.getState().checkObjective('cook', drop.resourceId, 1);
           }
+        }
+
+        // Rare Icqor Chess Piece drop from production
+        const prodIcqorChance = newLevel >= 45 ? 0.006 : newLevel >= 30 ? 0.004 : newLevel >= 15 ? 0.002 : 0.001;
+        if (Math.random() < prodIcqorChance) {
+          newResources['icqor_chess_piece'] = (newResources['icqor_chess_piece'] || 0) + 1;
+          get().addLog('✦ Rare drop: Icqor Chess Piece!', 'levelup');
+          useStoryStore.getState().checkObjective('gather', 'icqor_chess_piece', 1);
         }
 
         if (leveledUp) {
@@ -471,6 +481,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         const newResources = { ...state.resources };
         for (const drop of result.resourcesGained) {
           newResources[drop.resourceId] = (newResources[drop.resourceId] || 0) + drop.quantity;
+          useLootTrackerStore.getState().trackLoot(drop.resourceId, drop.quantity, 'gathering', skillDef.name);
         }
 
         if (result.resourcesGained.length > 0) {
@@ -485,6 +496,15 @@ export const useGameStore = create<GameState>((set, get) => ({
           }
         } else {
           get().addLog(`+${result.xpGained} XP`, 'drop');
+        }
+
+        // Rare Icqor Chess Piece drop from gathering
+        const gatherLevel = skillState.level;
+        const gatherIcqorChance = gatherLevel >= 45 ? 0.006 : gatherLevel >= 30 ? 0.004 : gatherLevel >= 15 ? 0.002 : 0.001;
+        if (Math.random() < gatherIcqorChance) {
+          newResources['icqor_chess_piece'] = (newResources['icqor_chess_piece'] || 0) + 1;
+          get().addLog('✦ Rare drop: Icqor Chess Piece!', 'levelup');
+          useStoryStore.getState().checkObjective('gather', 'icqor_chess_piece', 1);
         }
 
         if (result.leveledUp) {

@@ -34,6 +34,70 @@ body {
 #root {
   min-height: 100vh;
   display: flex;
+  position: relative;
+}
+
+/* Post-apocalyptic atmospheric background */
+#root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    /* Subtle radial glow at top-left — like a distant fire/explosion */
+    radial-gradient(ellipse at 10% 10%, rgba(231, 76, 60, 0.04) 0%, transparent 50%),
+    /* Faint warm glow at bottom-right — like embers on the horizon */
+    radial-gradient(ellipse at 90% 90%, rgba(243, 156, 18, 0.03) 0%, transparent 50%),
+    /* Faint cool glow center — industrial haze */
+    radial-gradient(ellipse at 50% 50%, rgba(52, 152, 219, 0.02) 0%, transparent 60%),
+    /* Dark vignette edges */
+    radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.3) 100%),
+    /* Base dark gradient */
+    linear-gradient(180deg, #0a0a0a 0%, #0f0f0f 30%, #121210 60%, #0d0d0b 100%);
+}
+
+/* Subtle scan-line texture overlay for CRT/wasteland feel */
+#root::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  mix-blend-mode: multiply;
+}
+
+/* Animated indicators */
+@keyframes combat-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+.combat-swords-icon {
+  animation: combat-pulse 1.5s ease-in-out infinite;
+  display: inline-block;
+  color: var(--color-danger);
+}
+@keyframes worker-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.15); }
+}
+.worker-active-icon {
+  animation: worker-pulse 2s ease-in-out infinite;
+  display: inline-block;
+  color: #27ae60;
 }
 
 /* Scrollbar styling */
