@@ -1049,14 +1049,32 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
 }
 
 function DerivedRow({ label, value, suffix, highlight, tooltip }: { label: string; value: string; suffix?: string; highlight?: boolean; tooltip?: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   return (
-    <div className="group relative flex justify-between" style={{ cursor: tooltip ? 'default' : undefined }}>
+    <div className="flex justify-between"
+      style={{ cursor: tooltip ? 'default' : undefined }}
+      onMouseEnter={e => {
+        if (!tooltip) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        setPos({ x: rect.left, y: rect.top });
+      }}
+      onMouseLeave={() => setPos(null)}
+    >
       <span style={{ color: highlight ? 'var(--color-text-primary)' : 'var(--color-text-muted)', fontWeight: highlight ? 'bold' : 'normal' }}>{label}</span>
       <span style={{ color: highlight ? 'var(--color-accent)' : 'var(--color-text-primary)', fontWeight: highlight ? 'bold' : 'normal' }}>
         {value} {suffix && <span style={{ color: 'var(--color-text-muted)' }}>{suffix}</span>}
       </span>
-      {tooltip && (
-        <div className="absolute left-0 bottom-full mb-1 px-2 py-1 rounded text-[9px] whitespace-pre opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-100" style={{ backgroundColor: '#111', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', maxWidth: '280px' }}>
+      {pos && tooltip && (
+        <div className="fixed px-2 py-1.5 rounded text-[9px] whitespace-pre pointer-events-none" style={{
+          backgroundColor: '#111',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text-secondary)',
+          zIndex: 9998,
+          left: pos.x,
+          top: pos.y,
+          transform: 'translateY(-100%) translateY(-4px)',
+          maxWidth: '300px',
+        }}>
           {tooltip}
         </div>
       )}
