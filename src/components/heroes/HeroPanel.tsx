@@ -181,12 +181,38 @@ function HeroDetail({ hero }: { hero: Hero }) {
 
   // Compute base stats (no gear) vs total to build per-stat tooltips
   const baseOnly = calculateDerivedStats(hero, []);
-  const gearContribs: Record<string, { name: string; stat: string; value: number; pct: boolean }[]> = {};
+
+  const SLOT_COLORS: Record<string, string> = {
+    weapon: '#e74c3c',
+    shield: '#3498db',
+    armor: '#27ae60',
+    legs: '#27ae60',
+    gloves: '#27ae60',
+    boots: '#27ae60',
+    ring: '#f39c12',
+    earring: '#f39c12',
+    necklace: '#f39c12',
+  };
+  const SLOT_TAGS: Record<string, string> = {
+    weapon: 'WPN',
+    shield: 'SHD',
+    armor: 'ARM',
+    legs: 'ARM',
+    gloves: 'ARM',
+    boots: 'ARM',
+    ring: 'ACC',
+    earring: 'ACC',
+    necklace: 'ACC',
+  };
+
+  interface GearContrib { name: string; value: number; pct: boolean; slot: string }
+  const gearContribs: Record<string, GearContrib[]> = {};
   if (equippedGear) {
     for (const gear of equippedGear) {
       const tmpl = GEAR_TEMPLATES[gear.templateId];
       if (!tmpl) continue;
       const gearName = (gear.facet ? `${gear.facet.name} ` : '') + tmpl.name;
+      const slot = tmpl.slot;
       const allBonuses = [
         ...tmpl.baseStats.map(b => ({ ...b })),
         ...(tmpl.inherentDownside ? [{ stat: tmpl.inherentDownside.stat, value: tmpl.inherentDownside.value, isPercentage: tmpl.inherentDownside.isPercentage }] : []),
@@ -198,21 +224,13 @@ function HeroDetail({ hero }: { hero: Hero }) {
       for (const b of allBonuses) {
         if (!b || b.stat === 'none') continue;
         if (!gearContribs[b.stat]) gearContribs[b.stat] = [];
-        gearContribs[b.stat].push({ name: gearName, stat: b.stat, value: b.value, pct: b.isPercentage });
+        gearContribs[b.stat].push({ name: gearName, value: b.value, pct: b.isPercentage, slot });
       }
     }
   }
 
-  function statTip(statKey: string, baseVal: number, unit: string = ''): string {
-    const contribs = gearContribs[statKey] || [];
-    let tip = `Base: ${baseVal.toFixed(unit === '%' ? 1 : 0)}${unit}`;
-    if (contribs.length > 0) {
-      for (const c of contribs) {
-        const sign = c.value >= 0 ? '+' : '';
-        tip += `\n${c.name}: ${sign}${c.value}${c.pct ? '%' : ''}`;
-      }
-    }
-    return tip;
+  function statTipData(statKey: string, baseVal: number, unit: string = '') {
+    return { baseVal, unit, contribs: gearContribs[statKey] || [] };
   }
 
   return (
@@ -406,37 +424,37 @@ function HeroDetail({ hero }: { hero: Hero }) {
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e74c3c' }}>Offense</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="Melee" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} tooltip={statTip('meleeAttack', baseOnly.meleeAttack)} />
-                  <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} tooltip={statTip('rangedAttack', baseOnly.rangedAttack)} />
-                  <DerivedRow label="Blast" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} tooltip={statTip('blastAttack', baseOnly.blastAttack)} />
-                  <DerivedRow label="Crit" value={derived.critChance.toFixed(1) + '%'} tooltip={statTip('critChance', baseOnly.critChance, '%')} />
-                  <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} tooltip={statTip('critDamage', baseOnly.critDamage, '%')} />
-                  <DerivedRow label="Ability Pwr" value={'+' + derived.abilityPower + '%'} tooltip={statTip('abilityPower', baseOnly.abilityPower, '%')} />
+                  <DerivedRow label="Melee" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} tooltip={statTipData('meleeAttack', baseOnly.meleeAttack)} />
+                  <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} tooltip={statTipData('rangedAttack', baseOnly.rangedAttack)} />
+                  <DerivedRow label="Blast" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} tooltip={statTipData('blastAttack', baseOnly.blastAttack)} />
+                  <DerivedRow label="Crit" value={derived.critChance.toFixed(1) + '%'} tooltip={statTipData('critChance', baseOnly.critChance, '%')} />
+                  <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} tooltip={statTipData('critDamage', baseOnly.critDamage, '%')} />
+                  <DerivedRow label="Ability Pwr" value={'+' + derived.abilityPower + '%'} tooltip={statTipData('abilityPower', baseOnly.abilityPower, '%')} />
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#27ae60' }}>Defense</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="HP" value={derived.maxHp.toFixed(0)} highlight tooltip={statTip('maxHp', baseOnly.maxHp)} />
-                  <DerivedRow label="Defense" value={derived.defense.toFixed(0)} tooltip={statTip('defense', baseOnly.defense)} />
-                  <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} tooltip={statTip('evasion', baseOnly.evasion, '%')} />
-                  <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1)} tooltip={statTip('hpRegen', baseOnly.hpRegen)} />
-                  <DerivedRow label="Status Res" value={derived.statusResist.toFixed(1) + '%'} tooltip={statTip('statusResist', baseOnly.statusResist, '%')} />
+                  <DerivedRow label="HP" value={derived.maxHp.toFixed(0)} highlight tooltip={statTipData('maxHp', baseOnly.maxHp)} />
+                  <DerivedRow label="Defense" value={derived.defense.toFixed(0)} tooltip={statTipData('defense', baseOnly.defense)} />
+                  <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} tooltip={statTipData('evasion', baseOnly.evasion, '%')} />
+                  <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1)} tooltip={statTipData('hpRegen', baseOnly.hpRegen)} />
+                  <DerivedRow label="Status Res" value={derived.statusResist.toFixed(1) + '%'} tooltip={statTipData('statusResist', baseOnly.statusResist, '%')} />
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#3498db' }}>Speed</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} tooltip={statTip('turnSpeed', baseOnly.turnSpeed)} />
-                  <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} tooltip={statTip('accuracy', baseOnly.accuracy, '%')} />
+                  <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} tooltip={statTipData('turnSpeed', baseOnly.turnSpeed)} />
+                  <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} tooltip={statTipData('accuracy', baseOnly.accuracy, '%')} />
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e879f9' }}>Spirit</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} tooltip={statTip('maxSp', baseOnly.maxSp)} />
-                  <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1)} tooltip={statTip('spRegen', baseOnly.spRegen)} />
-                  <DerivedRow label="SP Cost" value={'-' + derived.spCostReduction.toFixed(0) + '%'} tooltip={statTip('spCostReduction', baseOnly.spCostReduction, '%')} />
+                  <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} tooltip={statTipData('maxSp', baseOnly.maxSp)} />
+                  <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1)} tooltip={statTipData('spRegen', baseOnly.spRegen)} />
+                  <DerivedRow label="SP Cost" value={'-' + derived.spCostReduction.toFixed(0) + '%'} tooltip={statTipData('spCostReduction', baseOnly.spCostReduction, '%')} />
                 </div>
               </div>
             </div>
@@ -1048,7 +1066,20 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
   );
 }
 
-function DerivedRow({ label, value, suffix, highlight, tooltip }: { label: string; value: string; suffix?: string; highlight?: boolean; tooltip?: string }) {
+interface TipData { baseVal: number; unit: string; contribs: { name: string; value: number; pct: boolean; slot: string }[] }
+
+const TIP_SLOT_COLORS: Record<string, string> = {
+  weapon: '#e74c3c', shield: '#3498db',
+  armor: '#27ae60', legs: '#27ae60', gloves: '#27ae60', boots: '#27ae60',
+  ring: '#f39c12', earring: '#f39c12', necklace: '#f39c12',
+};
+const TIP_SLOT_TAGS: Record<string, string> = {
+  weapon: 'WPN', shield: 'SHD',
+  armor: 'ARM', legs: 'ARM', gloves: 'ARM', boots: 'ARM',
+  ring: 'ACC', earring: 'ACC', necklace: 'ACC',
+};
+
+function DerivedRow({ label, value, suffix, highlight, tooltip }: { label: string; value: string; suffix?: string; highlight?: boolean; tooltip?: TipData }) {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   return (
     <div className="flex justify-between"
@@ -1065,17 +1096,26 @@ function DerivedRow({ label, value, suffix, highlight, tooltip }: { label: strin
         {value} {suffix && <span style={{ color: 'var(--color-text-muted)' }}>{suffix}</span>}
       </span>
       {pos && tooltip && (
-        <div className="fixed px-2 py-1.5 rounded text-[9px] whitespace-pre pointer-events-none" style={{
+        <div className="fixed px-2 py-1.5 rounded text-[9px] pointer-events-none" style={{
           backgroundColor: '#111',
           border: '1px solid var(--color-border)',
-          color: 'var(--color-text-secondary)',
           zIndex: 9998,
           left: pos.x,
           top: pos.y,
           transform: 'translateY(-100%) translateY(-4px)',
           maxWidth: '300px',
         }}>
-          {tooltip}
+          <div style={{ color: 'var(--color-text-muted)' }}>Base: {tooltip.baseVal.toFixed(tooltip.unit === '%' ? 1 : 0)}{tooltip.unit}</div>
+          {tooltip.contribs.map((c, i) => {
+            const sign = c.value >= 0 ? '+' : '';
+            const color = c.value >= 0 ? (TIP_SLOT_COLORS[c.slot] || '#888') : 'var(--color-danger)';
+            const tag = TIP_SLOT_TAGS[c.slot] || 'GER';
+            return (
+              <div key={i} style={{ color }}>
+                <span style={{ opacity: 0.6 }}>[{tag}]</span> {c.name}: {sign}{c.value}{c.pct ? '%' : ''}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
