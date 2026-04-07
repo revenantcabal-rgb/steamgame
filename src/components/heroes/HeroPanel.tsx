@@ -326,9 +326,10 @@ function HeroDetail({ hero }: { hero: Hero }) {
               {(Object.keys(STAT_LABELS) as (keyof PrimaryStats)[]).map(stat => {
                 const isPrimary = stat === primaryStatKey;
                 return (
-                  <div key={stat} className="flex items-center justify-between px-2 py-1 rounded" style={{
+                  <div key={stat} className="flex items-center justify-between px-2 py-1 rounded" title={`${STAT_FULL_NAMES[stat]}: ${STAT_DESCRIPTIONS[stat]}`} style={{
                     backgroundColor: 'var(--color-bg-tertiary)',
                     border: isPrimary ? `1px solid ${STAT_COLORS[stat]}` : '1px solid transparent',
+                    cursor: 'help',
                   }}>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-bold w-6" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
