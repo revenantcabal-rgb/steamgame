@@ -5,6 +5,7 @@ import { COMBAT_ZONE_LIST, COMBAT_ZONES, ZONE_TIER_MULTIPLIERS } from '../../con
 import { CLASSES } from '../../config/classes';
 import { getFightDuration, canEnterZone } from '../../engine/IdleCombatEngine';
 import { ProgressBar } from '../common/ProgressBar';
+import { ItemIcon } from '../../utils/itemIcons';
 
 interface CombatZonePanelProps {
   /** Pre-select a zone when navigating from the sidebar */
@@ -237,25 +238,53 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                   })}
                 </div>
 
-                {/* Fight Progress */}
+                {/* Combat Visualization */}
                 {allRecovering ? (
-                  <div>
-                    <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--color-danger)' }}>
-                      <span>All heroes recovering...</span>
-                    </div>
+                  <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+                    <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-danger)' }}>All heroes recovering...</div>
                     <ProgressBar value={1} max={1} color="var(--color-danger)" height="6px" />
                   </div>
                 ) : (
-                  <div>
-                    <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
-                      <span>
-                        Fighting {target?.enemy.name || '...'}
-                        {target?.isSweep && ` (${dep.fightCount}/50 to boss)`}
-                        {dep.waveMultiplier > 1 && <span style={{ color: 'var(--color-energy)' }}> [Wave +{Math.round((dep.waveMultiplier - 1) * 100)}%]</span>}
-                      </span>
-                      <span>{dep.fightProgress}s / {fastestDuration}s</span>
+                  <div className="p-3 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+                    {/* Visual Battle Scene */}
+                    <div className="flex items-center justify-between mb-2">
+                      {/* Hero Side */}
+                      <div className="flex gap-1 items-end">
+                        {partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0)).slice(0, 3).map(hero => (
+                          <div key={hero.id} className="text-center" style={{
+                            animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 0 ? 'combat-pulse 0.5s ease' : 'none',
+                          }}>
+                            <ItemIcon itemId={hero.classId} itemType="hero" size={32} fallbackLabel={hero.name.charAt(0)} />
+                            <div className="text-[8px] truncate" style={{ color: 'var(--color-text-muted)', maxWidth: 40 }}>{hero.name.split(' ')[0]}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Battle Indicator */}
+                      <div className="flex flex-col items-center px-3">
+                        <div className="text-lg font-bold combat-swords-icon">&#9876;</div>
+                        <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>{dep.fightProgress}s / {fastestDuration}s</div>
+                      </div>
+
+                      {/* Enemy Side */}
+                      <div className="text-center" style={{
+                        animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 1 ? 'combat-pulse 0.5s ease' : 'none',
+                      }}>
+                        <ItemIcon itemId={target?.enemy.id || 'unknown'} itemType="resource" size={40} fallbackLabel="?" fallbackColor="#e74c3c" />
+                        <div className="text-[9px] font-bold" style={{ color: 'var(--color-danger)' }}>{target?.enemy.name || '...'}</div>
+                        {dep.waveMultiplier > 1 && (
+                          <div className="text-[8px]" style={{ color: 'var(--color-energy)' }}>+{Math.round((dep.waveMultiplier - 1) * 100)}%</div>
+                        )}
+                      </div>
                     </div>
-                    <ProgressBar value={dep.fightProgress} max={fastestDuration} color="var(--color-energy)" height="6px" />
+
+                    {/* Fight Progress Bar */}
+                    <ProgressBar value={dep.fightProgress} max={fastestDuration} color="var(--color-energy)" height="5px" />
+                    {target?.isSweep && (
+                      <div className="text-[9px] text-center mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                        Fight {dep.fightCount}/50 to boss
+                      </div>
+                    )}
                   </div>
                 )}
 

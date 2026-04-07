@@ -12,6 +12,7 @@ import { SettingsPanel } from './components/settings/SettingsPanel';
 import { StoryPanel } from './components/story/StoryPanel';
 import { StarlightPanel } from './components/starlight/StarlightPanel';
 import { LootTracker } from './components/loot/LootTracker';
+import { ShopPanel } from './components/shop/ShopPanel';
 import { useGameTick } from './hooks/useGameTick';
 import { NavigationContext } from './utils/NavigationContext';
 import { useGameStore } from './store/useGameStore';
@@ -20,7 +21,7 @@ import { useStoryStore } from './store/useStoryStore';
 // ──────────────────────────────────────────────
 // Top-level menu tabs (non-sidebar panels)
 // ──────────────────────────────────────────────
-type TopTab = 'story' | 'heroes' | 'marketplace' | 'expedition' | 'starlight' | 'loot' | 'pvp' | 'guild' | 'settings';
+type TopTab = 'story' | 'heroes' | 'marketplace' | 'expedition' | 'starlight' | 'loot' | 'shop' | 'pvp' | 'guild' | 'settings';
 
 /** The center panel can show sidebar-driven views OR a top tab */
 type ActiveView = 'skill' | 'combat' | TopTab;
@@ -33,6 +34,7 @@ const ALL_TOP_TABS: { id: TopTab; label: string; featureKey: string | null }[] =
   { id: 'expedition', label: 'Expedition', featureKey: 'expedition' },
   { id: 'starlight', label: 'Starlight', featureKey: 'starlight' },
   { id: 'loot', label: 'Loot Tracker', featureKey: null },
+  { id: 'shop', label: 'Shop', featureKey: null },
   { id: 'pvp', label: 'PVP Zone', featureKey: 'pvp' },
   { id: 'guild', label: 'Guild', featureKey: 'guild' },
   { id: 'settings', label: 'Settings', featureKey: null },
@@ -90,7 +92,7 @@ function App() {
 
   // Is a top tab currently active? (for highlighting)
   const activeTopTab: TopTab | null =
-    (['story', 'heroes', 'marketplace', 'expedition', 'starlight', 'loot', 'pvp', 'guild', 'settings'] as TopTab[]).includes(activeView as TopTab)
+    (['story', 'heroes', 'marketplace', 'expedition', 'starlight', 'loot', 'shop', 'pvp', 'guild', 'settings'] as TopTab[]).includes(activeView as TopTab)
       ? (activeView as TopTab)
       : null;
 
@@ -106,7 +108,7 @@ function App() {
       />
 
       {/* Center: Main content area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         {/* Top Tab Bar */}
         <div
           className="flex shrink-0"
@@ -134,28 +136,31 @@ function App() {
           ))}
         </div>
 
-        {/* View Content */}
-        {activeView === 'story' && <StoryPanel />}
-        {activeView === 'skill' && <SkillOrCraftRouter />}
-        {activeView === 'combat' && <CombatZonePanel initialZoneId={activeCombatZoneId} />}
-        {activeView === 'heroes' && <HeroPanel />}
-        {activeView === 'marketplace' && <MarketplacePanel />}
-        {activeView === 'expedition' && <ExpeditionPanel />}
-        {activeView === 'starlight' && <StarlightPanel />}
-        {activeView === 'loot' && <LootTracker />}
-        {activeView === 'pvp' && (
-          <PlaceholderPanel
-            title="PVP Zone"
-            description="Arena battles, ranked ladders, and hero-vs-hero combat. Coming soon."
-          />
-        )}
-        {activeView === 'guild' && (
-          <PlaceholderPanel
-            title="Guild"
-            description="Guild management, clan wars, territory control, and shared resources. Coming soon."
-          />
-        )}
-        {activeView === 'settings' && <SettingsPanel />}
+        {/* View Content — bounded so child panels can scroll */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          {activeView === 'story' && <StoryPanel />}
+          {activeView === 'skill' && <SkillOrCraftRouter />}
+          {activeView === 'combat' && <CombatZonePanel initialZoneId={activeCombatZoneId} />}
+          {activeView === 'heroes' && <HeroPanel />}
+          {activeView === 'marketplace' && <MarketplacePanel />}
+          {activeView === 'expedition' && <ExpeditionPanel />}
+          {activeView === 'starlight' && <StarlightPanel />}
+          {activeView === 'loot' && <LootTracker />}
+          {activeView === 'shop' && <ShopPanel />}
+          {activeView === 'pvp' && (
+            <PlaceholderPanel
+              title="PVP Zone"
+              description="Arena battles, ranked ladders, and hero-vs-hero combat. Coming soon."
+            />
+          )}
+          {activeView === 'guild' && (
+            <PlaceholderPanel
+              title="Guild"
+              description="Guild management, clan wars, territory control, and shared resources. Coming soon."
+            />
+          )}
+          {activeView === 'settings' && <SettingsPanel />}
+        </div>
 
         <BottomPanel />
       </div>

@@ -11,6 +11,7 @@ import { useStoryStore } from './useStoryStore';
 import { useAuthStore } from './useAuthStore';
 import { usePopulationStore } from './usePopulationStore';
 import { useLootTrackerStore } from './useLootTrackerStore';
+import { getPremiumBonuses } from '../engine/PremiumBonuses';
 
 const BOSS_EVERY_N_FIGHTS = 50;
 const ENEMY_SCALE_EVERY_N = 10;
@@ -198,7 +199,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           let bossWon = false;
           for (const hero of activeHeroes) {
             const result = simulateBossFight(hero, dep.zoneId, dep.zoneTier, dep.waveMultiplier, difficultyMult);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult));
+            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier));
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {
@@ -279,7 +280,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           for (const hero of activeHeroes) {
             const enemy = target?.enemy || zone.targets[0].enemy;
             const result = simulateFight(hero, enemy, dep.zoneTier, zone.minLevel, dep.waveMultiplier, difficultyMult);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult));
+            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier));
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {
@@ -326,7 +327,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           // Recalculate wave multiplier every 10 fights
           let newWaveMult = dep.waveMultiplier;
           if (target?.isSweep && newFightCount > 0 && newFightCount % ENEMY_SCALE_EVERY_N === 0) {
-            newWaveMult = 1.0 + Math.floor(newFightCount / ENEMY_SCALE_EVERY_N) * WAVE_SCALE_FACTOR;
+            newWaveMult = 1.0 + Math.floor(newFightCount / ENEMY_SCALE_EVERY_N) * WAVE_SCALE_FACTOR * getPremiumBonuses().waveScaleMultiplier;
             gameStore.addLog(`Wave ${Math.floor(newFightCount / ENEMY_SCALE_EVERY_N) + 1}: enemies in ${zone.name} grow stronger! (+${Math.round((newWaveMult - 1) * 100)}%)`, 'system');
           }
 

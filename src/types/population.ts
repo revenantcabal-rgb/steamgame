@@ -21,6 +21,10 @@ export interface RespawningWorker {
   diedAt: number;
   /** Timestamp when the worker will be available again */
   respawnAt: number;
+  /** Last assigned skill (for Golden Cap auto-reassign) */
+  lastSkillId?: string;
+  /** Last assigned sub-activity (for Golden Cap auto-reassign) */
+  lastSubActivityId?: string;
 }
 
 /** Worker respawn time in milliseconds (3 minutes) */

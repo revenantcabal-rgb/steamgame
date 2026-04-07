@@ -7,6 +7,7 @@ import { useGameStore } from './useGameStore';
 import { useHeroStore } from './useHeroStore';
 import { useLootTrackerStore } from './useLootTrackerStore';
 import { useStoryStore } from './useStoryStore';
+import { getPremiumBonuses } from '../engine/PremiumBonuses';
 
 interface PopulationActions {
   /** Create a new worker assignment */
@@ -132,9 +133,13 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
     const now = Date.now();
     const stillRespawning: RespawningWorker[] = [];
     let respawnedCount = 0;
+    const autoAssignQueue: RespawningWorker[] = [];
     for (const rw of state.respawningWorkers) {
       if (now >= rw.respawnAt) {
         respawnedCount++;
+        if (rw.lastSkillId && rw.lastSubActivityId) {
+          autoAssignQueue.push(rw);
+        }
       } else {
         stillRespawning.push(rw);
       }
@@ -147,6 +152,24 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
         totalWorkers: s.totalWorkers + respawnedCount,
         availableWorkers: s.availableWorkers + respawnedCount,
       }));
+
+      // Golden Cap: auto-reassign workers to their previous tasks
+      if (getPremiumBonuses().autoAssignWorkers && autoAssignQueue.length > 0) {
+        for (const rw of autoAssignQueue) {
+          const skillDef = SKILLS[rw.lastSkillId!];
+          if (!skillDef || skillDef.category !== 'gathering') continue;
+          const sub = skillDef.subActivities?.find(a => a.id === rw.lastSubActivityId);
+          if (!sub) continue;
+          // Check level requirement
+          const gameSkills = useGameStore.getState().skills;
+          if (sub.levelReq && (gameSkills[rw.lastSkillId!]?.level || 1) < sub.levelReq) continue;
+
+          const ok = get().createAssignment(rw.lastSkillId!, rw.lastSubActivityId!, 1);
+          if (ok) {
+            gameStore.addLog(`Worker auto-assigned to ${skillDef.name}: ${sub.name} (Golden Cap).`, 'info');
+          }
+        }
+      }
     }
 
     if (state.assignments.length === 0) return;
@@ -190,7 +213,8 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
           // Worker died — enters respawn queue (3 min recovery)
           workersLostThisTick++;
           const deathNow = Date.now();
-          newRespawning.push({ diedAt: deathNow, respawnAt: deathNow + WORKER_RESPAWN_MS });
+          const respawnMs = Math.floor(WORKER_RESPAWN_MS * getPremiumBonuses().workerRespawnMultiplier);
+          newRespawning.push({ diedAt: deathNow, respawnAt: deathNow + respawnMs, lastSkillId: assignment.skillId, lastSubActivityId: assignment.subActivityId });
           const skillDef = SKILLS[assignment.skillId];
           gameStore.addLog(
             `A worker was injured during ${skillDef?.name || assignment.skillId} and needs 3 min to recover. (${assignment.workerCount - 1} remain on duty)`,

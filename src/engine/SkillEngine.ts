@@ -1,6 +1,7 @@
 import { SKILLS } from '../config/skills';
 import { levelFromXp, getGatheringSpeedMultiplier } from '../types/skills';
 import type { SubActivity } from '../types/skills';
+import { getPremiumBonuses } from './PremiumBonuses';
 
 export interface SkillTickResult {
   skillId: string;
@@ -39,7 +40,8 @@ export function processSkillTick(
     }
   }
 
-  const xpGained = Math.floor(baseXp * scaling.xpMultiplier * xpMultiplier * (1 + (heroBonuses?.xpBonus || 0) / 100));
+  const premiumXpMult = getPremiumBonuses().xpMultiplier;
+  const xpGained = Math.floor(baseXp * scaling.xpMultiplier * xpMultiplier * (1 + (heroBonuses?.xpBonus || 0) / 100) * premiumXpMult);
   const newTotalXp = currentXp + xpGained;
   const newLevel = Math.min(100, levelFromXp(newTotalXp));
   const leveledUp = newLevel > currentLevel;

@@ -25,6 +25,13 @@ const SLOT_LABELS: Record<string, string> = {
   gloves: 'Gloves', boots: 'Boots', ring: 'Ring', earring: 'Earring', necklace: 'Necklace',
 };
 
+const CRAFT_REPEAT_OPTIONS = [
+  { label: '1', value: 1 },
+  { label: '10', value: 10 },
+  { label: '50', value: 50 },
+  { label: '\u221E', value: 0 },
+];
+
 export function CraftingPanel() {
   const skills = useGameStore(s => s.skills);
   const resources = useGameStore(s => s.resources);
@@ -33,6 +40,9 @@ export function CraftingPanel() {
   const cancelCraft = useEquipmentStore(s => s.cancelCraft);
   const activeCraft = useEquipmentStore(s => s.activeCraft);
   const discardItem = useEquipmentStore(s => s.discardItem);
+  const craftRepeatTarget = useEquipmentStore(s => s.craftRepeatTarget);
+  const craftRepeatCount = useEquipmentStore(s => s.craftRepeatCount);
+  const setCraftRepeatTarget = useEquipmentStore(s => s.setCraftRepeatTarget);
   const navigation = useNavigation();
 
   const [filterSlot, setFilterSlot] = useState<string>('all');
@@ -97,6 +107,34 @@ export function CraftingPanel() {
           <div className="flex justify-between items-center mb-2">
             <h3 className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>Forge Equipment</h3>
             <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{craftable.length} recipes</span>
+          </div>
+
+          {/* Batch Repeat Selector */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Quantity:</span>
+            <div className="flex gap-1">
+              {CRAFT_REPEAT_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setCraftRepeatTarget(opt.value)}
+                  className="px-2.5 py-1 rounded text-xs font-bold cursor-pointer"
+                  style={{
+                    backgroundColor: craftRepeatTarget === opt.value ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+                    color: craftRepeatTarget === opt.value ? '#000' : 'var(--color-text-muted)',
+                    border: craftRepeatTarget === opt.value ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {activeCraft && (
+              <span className="text-[10px] ml-1" style={{ color: 'var(--color-text-muted)' }}>
+                {craftRepeatTarget === 0
+                  ? `Crafted ${craftRepeatCount} (\u221E)`
+                  : `${craftRepeatCount + 1} of ${craftRepeatTarget}`}
+              </span>
+            )}
           </div>
 
           {/* Active Craft Progress */}

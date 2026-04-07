@@ -8,6 +8,7 @@ import type { Hero, PrimaryStats } from '../types/hero';
 import { CLASSES } from '../config/classes';
 import { ABILITIES } from '../config/abilities';
 import { CONSUMABLES } from '../config/consumables';
+import { getPremiumBonuses } from '../engine/PremiumBonuses';
 
 interface HeroState {
   heroes: Hero[];
@@ -42,7 +43,7 @@ export interface SerializedHeroState {
 export const useHeroStore = create<HeroState>((set, get) => ({
   heroes: [],
   selectedHeroId: null,
-  ownedAbilities: ['o_thick_skin', 'r_crushing_blow', 'g_quick_shot'],
+  ownedAbilities: ['o_thick_skin', 'r_crushing_blow', 'g_quick_shot', 'w_first_aid'],
 
   recruit: (classId, isFree) => {
     const gameStore = useGameStore.getState();
@@ -57,7 +58,7 @@ export const useHeroStore = create<HeroState>((set, get) => ({
       }
 
       // Deduct WC cost
-      const cost = Math.floor(500 * (1 + state.heroes.length * 0.5));
+      const cost = Math.max(100, Math.floor(500 * (1 + state.heroes.length * 0.5) * getPremiumBonuses().heroRecruitCostMultiplier));
       const currentWC = gameStore.resources['wasteland_credits'] || 0;
       if (currentWC < cost) {
         gameStore.addLog(`Not enough WC to recruit. Need ${cost} WC.`, 'error');

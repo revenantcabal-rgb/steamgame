@@ -81,7 +81,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         flavor: 'Bare hands won\'t cut it against mutants. Fashion something deadly from the scrap.',
         objective: { type: 'craft', target: 'starter_weapon', count: 1, description: 'Craft a weapon for your hero' },
         rewards: [{ type: 'wc', quantity: 100 }],
-        hint: 'Open the Weaponsmithing production skill and craft a weapon matching your hero\'s combat style.',
+        hint: 'Open a Weaponsmithing or Armorcrafting skill and craft any starter weapon or armor piece.',
       },
       {
         id: 's1_p3',
@@ -167,7 +167,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         flavor: 'The earth still hides treasures. You just need to know where to dig.',
         objective: { type: 'reach_skill_level', target: 'prospecting', count: 3, description: 'Reach Prospecting level 3' },
         rewards: [{ type: 'wc', quantity: 100 }, { type: 'resource', itemId: 'iron_ore', quantity: 10 }],
-        hint: 'Train the Prospecting gathering skill.',
+        hint: 'Select Prospecting in the sidebar, pick a mining activity, and click Start. Worker XP does not count — you must train it manually.',
       },
       {
         id: 's2_p4',

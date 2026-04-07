@@ -12,12 +12,13 @@ import { useAchievementStore } from '../store/useAchievementStore';
 import { useStoryStore } from '../store/useStoryStore';
 import { useStarlightStore } from '../store/useStarlightStore';
 import { useLootTrackerStore } from '../store/useLootTrackerStore';
+import { useGoldenCapStore } from '../store/useGoldenCapStore';
 import { syncSave, flushPendingWrites } from '../lib/saveService';
 
 const TICK_INTERVAL_MS = 1000;
 const SAVE_INTERVAL_MS = 30_000;
 
-const FULL_SAVE_VERSION = 13;
+const FULL_SAVE_VERSION = 14;
 
 export function useGameTick() {
   const gameTick = useGameStore(s => s.tick);
@@ -62,7 +63,25 @@ export function useGameTick() {
           if (parsed.story) useStoryStore.getState().loadState(parsed.story);
           if (parsed.starlight) useStarlightStore.getState().loadState(parsed.starlight);
           if (parsed.lootTracker) useLootTrackerStore.getState().loadState(parsed.lootTracker);
+          if (parsed.goldenCap) useGoldenCapStore.getState().loadState(parsed.goldenCap);
           gameStore.addLog('Save data loaded.', 'system');
+          setTimeout(() => useGameStore.getState().processOfflineProgress(), 100);
+        } else if (parsed.version === 13) {
+          // Migrate v13 → v14: add Golden Cap premium system
+          gameStore.loadState(parsed.game);
+          usePopulationStore.getState().loadState(parsed.population);
+          if (parsed.heroes) useHeroStore.getState().loadState(parsed.heroes);
+          if (parsed.equipment) useEquipmentStore.getState().loadState(parsed.equipment);
+          if (parsed.combat) useCombatZoneStore.getState().loadState(parsed.combat);
+          if (parsed.expedition) useExpeditionStore.getState().loadState(parsed.expedition);
+          if (parsed.market) useMarketStore.getState().loadState(parsed.market);
+          if (parsed.anticheat) useAnticheatStore.getState().loadState(parsed.anticheat);
+          if (parsed.achievements) useAchievementStore.getState().loadState(parsed.achievements);
+          if (parsed.story) useStoryStore.getState().loadState(parsed.story);
+          if (parsed.starlight) useStarlightStore.getState().loadState(parsed.starlight);
+          if (parsed.lootTracker) useLootTrackerStore.getState().loadState(parsed.lootTracker);
+          // Golden Cap store starts fresh (no data to migrate)
+          gameStore.addLog('Save data migrated from v13 to v14 (Golden Cap system added).', 'system');
           setTimeout(() => useGameStore.getState().processOfflineProgress(), 100);
         } else if (parsed.version === 12) {
           // Migrate v12 → v13: add story system
@@ -207,6 +226,7 @@ export function useGameTick() {
       combatTick();
       expeditionTick();
       craftTick();
+      useGoldenCapStore.getState().checkExpiry();
     }, TICK_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [gameTick, populationTick, combatTick, expeditionTick, craftTick]);
@@ -239,6 +259,7 @@ export function useGameTick() {
           story: useStoryStore.getState().getSerializableState(),
           starlight: useStarlightStore.getState().getSerializableState(),
           lootTracker: useLootTrackerStore.getState().getSerializableState(),
+          goldenCap: useGoldenCapStore.getState().getSerializableState(),
           version: FULL_SAVE_VERSION,
         };
         const serialized = JSON.stringify(fullSave);

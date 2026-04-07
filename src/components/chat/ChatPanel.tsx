@@ -5,6 +5,7 @@ import {
   CHANNEL_COLORS,
   type ChatChannel,
 } from '../../store/useChatStore';
+import { GoldenCapBadge } from '../common/GoldenCapBadge';
 
 const ALL_CHANNELS: ChatChannel[] = ['general', 'trade', 'recruitment', 'beginner', 'guild', 'party', 'whisper'];
 
@@ -157,7 +158,8 @@ export function ChatPanel() {
                     </span>
                   ) : msg.channel === 'whisper' ? (
                     <>
-                      <span style={{ color: CHANNEL_COLORS.whisper, fontWeight: 'bold' }}>
+                      {msg.isPremium && <GoldenCapBadge size="sm" />}
+                      <span style={{ color: msg.isPremium ? '#FFD700' : CHANNEL_COLORS.whisper, fontWeight: 'bold' }}>
                         {msg.senderName}
                       </span>
                       <span style={{ color: CHANNEL_COLORS.whisper }}>
@@ -167,7 +169,8 @@ export function ChatPanel() {
                     </>
                   ) : (
                     <>
-                      <span style={{ color: CHANNEL_COLORS[activeChannel], fontWeight: 'bold' }}>
+                      {msg.isPremium && <GoldenCapBadge size="sm" />}
+                      <span style={{ color: msg.isPremium ? '#FFD700' : CHANNEL_COLORS[activeChannel], fontWeight: 'bold' }}>
                         {msg.senderName}:
                       </span>{' '}
                       <span style={{ color: 'var(--color-text-secondary)' }}>{msg.text}</span>

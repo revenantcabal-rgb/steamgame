@@ -8,6 +8,7 @@ import { calculateDerivedStats, getEquippedGear } from './HeroEngine';
 import type { Hero } from '../types/hero';
 import type { DerivedStats } from '../types/hero';
 import type { GearInstance } from '../types/equipment';
+import { getPremiumBonuses } from './PremiumBonuses';
 import { useEquipmentStore } from '../store/useEquipmentStore';
 import type { Enemy } from '../config/combatZones';
 
@@ -253,7 +254,7 @@ export function simulateFight(
   const resourceDrops: { resourceId: string; quantity: number }[] = [];
   if (won) {
     for (const drop of enemy.resourceDrops) {
-      const adjustedChance = Math.min(1, drop.chance * (1 + derived.dropChance / 100));
+      const adjustedChance = Math.min(1, drop.chance * (1 + (derived.dropChance + getPremiumBonuses().dropChanceBonus) / 100));
       if (Math.random() < adjustedChance) {
         const qty = Math.floor(Math.random() * (drop.maxQty - drop.minQty + 1)) + drop.minQty;
         resourceDrops.push({ resourceId: drop.resourceId, quantity: qty });

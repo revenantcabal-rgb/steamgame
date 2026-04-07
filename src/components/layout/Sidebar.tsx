@@ -4,7 +4,9 @@ import { SkillListItem } from '../skills/SkillListItem';
 import { useGameStore } from '../../store/useGameStore';
 import { useStoryStore } from '../../store/useStoryStore';
 import { useCombatZoneStore } from '../../store/useCombatZoneStore';
+import { useGoldenCapStore } from '../../store/useGoldenCapStore';
 import { ProgressBar } from '../common/ProgressBar';
+import { GoldenCapBadge } from '../common/GoldenCapBadge';
 
 interface SidebarProps {
   /** Callback when any skill is clicked in sidebar (to switch center panel view) */
@@ -21,6 +23,9 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
   const idle = useGameStore(s => s.idle);
   const activeSkillId = useGameStore(s => s.activeSkillId);
   const currentObjective = useStoryStore(s => s.getCurrentObjective);
+
+  const goldenCapActive = useGoldenCapStore(s => s.isActive)();
+  const goldenCapRemaining = useGoldenCapStore(s => s.getRemainingLabel)();
 
   const idleHoursUsed = Math.floor(idle.idleSecondsUsedToday / 3600);
   const idleMinutesUsed = Math.floor((idle.idleSecondsUsedToday % 3600) / 60);
@@ -42,6 +47,17 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
         <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
           Post-Apocalyptic Idle RPG
         </div>
+        {goldenCapActive && (
+          <div className="flex items-center justify-center gap-1 mt-1.5 text-xs" style={{ color: '#FFD700' }}>
+            <GoldenCapBadge size="sm" />
+            <span className="font-bold">Golden Cap</span>
+            {goldenCapRemaining && (
+              <span style={{ color: 'var(--color-text-muted)', fontWeight: 'normal' }}>
+                {goldenCapRemaining}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Idle Cap */}

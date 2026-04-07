@@ -8,6 +8,7 @@ import { useHeroStore } from '../../store/useHeroStore';
 import { useEquipmentStore } from '../../store/useEquipmentStore';
 import { useCombatZoneStore } from '../../store/useCombatZoneStore';
 import { useExpeditionStore } from '../../store/useExpeditionStore';
+import { useStoryStore } from '../../store/useStoryStore';
 import { useMarketStore } from '../../store/useMarketStore';
 import { useAnticheatStore } from '../../store/useAnticheatStore';
 import { ACHIEVEMENTS } from '../../config/achievements';
@@ -203,6 +204,25 @@ export function SettingsPanel() {
 
       {/* 5. Data Management */}
       <DataManagementSection />
+
+      {/* Story Repair */}
+      <SettingsSection title="Story Progress">
+        <div className="space-y-2">
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            If your Story progress appears stuck, click below to recheck your current objective against your actual game state.
+          </p>
+          <button
+            onClick={() => {
+              useStoryStore.getState().recheckCurrentObjective();
+              useGameStore.getState().addLog('Story progress rechecked.', 'system');
+            }}
+            className="w-full py-2 rounded text-xs font-bold cursor-pointer"
+            style={{ backgroundColor: 'var(--color-info)', color: '#fff', border: 'none' }}
+          >
+            Recheck Story Progress
+          </button>
+        </div>
+      </SettingsSection>
 
       {/* 6. Actions */}
       <SettingsSection title="Actions">

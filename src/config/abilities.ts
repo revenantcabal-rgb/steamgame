@@ -1,10 +1,11 @@
 /**
  * Ability Tome System
  *
- * 65 total abilities across 5 color-coded categories:
+ * 78 total abilities across 6 color-coded categories:
  * - Red (13): Melee combat abilities, RES required
  * - Green (13): Ranged combat abilities, RES required
  * - Blue (13): Demolitions/tech abilities, RES required
+ * - White (13): Support/healing abilities, RES + CON required
  * - Orange (13): Passive abilities, RES required
  * - Purple (13): Special/Warband Decree abilities, RES + secondary stat required
  *
@@ -12,7 +13,7 @@
  * Purple abilities go into the Decree slot (RES 50+, 1 per party).
  */
 
-export type AbilityColor = 'red' | 'green' | 'blue' | 'orange' | 'purple';
+export type AbilityColor = 'red' | 'green' | 'blue' | 'white' | 'orange' | 'purple';
 
 export interface MechanicalEffect {
   type: 'damage' | 'buff' | 'debuff' | 'heal' | 'dot' | 'shield' | 'passive_stat';
@@ -53,6 +54,7 @@ export const ABILITY_COLOR_LABELS: Record<AbilityColor, string> = {
   red: 'Crimson Tome',
   green: 'Verdant Tome',
   blue: 'Cobalt Tome',
+  white: 'Silver Tome',
   orange: 'Amber Tome',
   purple: 'Violet Decree',
 };
@@ -61,6 +63,7 @@ export const ABILITY_COLOR_HEX: Record<AbilityColor, string> = {
   red: '#ef4444',
   green: '#22c55e',
   blue: '#3b82f6',
+  white: '#c0c0c0',
   orange: '#f97316',
   purple: '#a855f7',
 };
@@ -347,6 +350,100 @@ export const ABILITIES: Record<string, AbilityTome> = {
     scaling: '+8% per RES', source: 'Zone 7 final boss',
     requirements: [{ stat: 'res', value: 80 }],
     spCost: 30, duration: 0, mechanicalEffect: { type: 'damage', value: 100, isPercentage: true, scaling: 2.5 } },
+
+  // =====================================================================
+  // WHITE / SILVER TOMES (13) - Support/Healing - RES + CON required
+  // =====================================================================
+  w_first_aid: { id: 'w_first_aid', name: 'First Aid', color: 'white', cooldown: 2, isPassive: false, isDecree: false,
+    description: 'Apply emergency first aid to stabilize wounds.',
+    effect: 'Restore 15% of Max HP instantly.',
+    scaling: '+0.5% heal per RES', source: 'Zone 1+ drops, Vendor',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 6, duration: 0, mechanicalEffect: { type: 'heal', value: 15, isPercentage: true, scaling: 0.5 } },
+
+  w_mending_salve: { id: 'w_mending_salve', name: 'Mending Salve', color: 'white', cooldown: 3, isPassive: false, isDecree: false,
+    description: 'Apply a slow-acting healing compound that restores health over time.',
+    effect: 'Heal 4% Max HP per turn for 4 turns.',
+    scaling: '+0.3% per RES', source: 'Zone 1+ drops',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 8, duration: 4, mechanicalEffect: { type: 'heal', value: 4, isPercentage: true, scaling: 0.3 } },
+
+  w_rally_cry: { id: 'w_rally_cry', name: 'Rally Cry', color: 'white', cooldown: 5, isPassive: false, isDecree: false,
+    description: 'Shout encouragement to bolster ally morale and fighting spirit.',
+    effect: 'All allies: +15% damage for 3 turns.',
+    scaling: '+0.5% per RES', source: 'Zone 2+ drops',
+    requirements: [{ stat: 'res', value: 10 }, { stat: 'con', value: 12 }],
+    spCost: 12, duration: 3, mechanicalEffect: { type: 'buff', stat: 'meleeAttack', value: 15, isPercentage: true, scaling: 0.8 } },
+
+  w_suppressive_smoke: { id: 'w_suppressive_smoke', name: 'Suppressive Smoke', color: 'white', cooldown: 4, isPassive: false, isDecree: false,
+    description: 'Deploy a smoke screen that obscures enemy targeting.',
+    effect: 'Enemy accuracy -15% for 3 turns.',
+    scaling: '-0.3% enemy accuracy per RES', source: 'Zone 2+ drops',
+    requirements: [{ stat: 'res', value: 15 }],
+    spCost: 10, duration: 3, mechanicalEffect: { type: 'debuff', stat: 'accuracy', value: 15, isPercentage: true, scaling: 0.5 } },
+
+  w_fortify: { id: 'w_fortify', name: 'Fortify', color: 'white', cooldown: 5, isPassive: false, isDecree: false,
+    description: 'Brace and harden defenses against incoming attacks.',
+    effect: 'Self: +20% defense for 4 turns.',
+    scaling: '+0.5% per RES', source: 'Zone 2+ boss',
+    requirements: [{ stat: 'res', value: 15 }, { stat: 'con', value: 15 }],
+    spCost: 12, duration: 4, mechanicalEffect: { type: 'buff', stat: 'defense', value: 20, isPercentage: true, scaling: 0.8 } },
+
+  w_adrenaline_shot: { id: 'w_adrenaline_shot', name: 'Adrenaline Shot', color: 'white', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Inject a stimulant that temporarily boosts combat reflexes.',
+    effect: 'Self or ally: +20% turn speed, +10% crit for 3 turns.',
+    scaling: '+0.3% per RES', source: 'Zone 3+ drops',
+    requirements: [{ stat: 'res', value: 20 }, { stat: 'con', value: 15 }],
+    spCost: 14, duration: 3, mechanicalEffect: { type: 'buff', stat: 'turnSpeed', value: 20, isPercentage: true, scaling: 0.6 } },
+
+  w_triage: { id: 'w_triage', name: 'Triage', color: 'white', cooldown: 4, isPassive: false, isDecree: false,
+    description: 'Emergency field surgery that restores a large amount of health.',
+    effect: 'Restore 30% Max HP. Self-stun 1 turn.',
+    scaling: '+1% heal per RES', source: 'Zone 3+ boss',
+    requirements: [{ stat: 'res', value: 25 }, { stat: 'con', value: 18 }],
+    spCost: 18, duration: 0, mechanicalEffect: { type: 'heal', value: 30, isPercentage: true, scaling: 1.0 } },
+
+  w_iron_guard: { id: 'w_iron_guard', name: 'Iron Guard', color: 'white', cooldown: 5, isPassive: false, isDecree: false,
+    description: 'Adopt a defensive stance that absorbs incoming damage.',
+    effect: '+25% damage reduction for 3 turns. -15% attack.',
+    scaling: '+0.5% DR per RES', source: 'Zone 3+ drops',
+    requirements: [{ stat: 'res', value: 25 }, { stat: 'con', value: 20 }],
+    spCost: 15, duration: 3, mechanicalEffect: { type: 'buff', stat: 'damageReduction', value: 25, isPercentage: true, scaling: 0.8 } },
+
+  w_purifying_light: { id: 'w_purifying_light', name: 'Purifying Light', color: 'white', cooldown: 5, isPassive: false, isDecree: false,
+    description: 'Cleanse toxins and debilitating effects with concentrated UV treatment.',
+    effect: '+20% status resistance for 4 turns.',
+    scaling: '+0.5% per RES', source: 'Zone 4+ drops',
+    requirements: [{ stat: 'res', value: 30 }, { stat: 'con', value: 20 }],
+    spCost: 14, duration: 4, mechanicalEffect: { type: 'buff', stat: 'statusResist', value: 20, isPercentage: true, scaling: 0.6 } },
+
+  w_battlefield_command: { id: 'w_battlefield_command', name: 'Battlefield Command', color: 'white', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Issue tactical orders that coordinate ally attacks.',
+    effect: 'All allies: +10% accuracy, +10% crit damage for 3 turns.',
+    scaling: '+0.3% per RES', source: 'Zone 4+ boss',
+    requirements: [{ stat: 'res', value: 35 }, { stat: 'con', value: 22 }],
+    spCost: 18, duration: 3, mechanicalEffect: { type: 'buff', stat: 'accuracy', value: 10, isPercentage: true, scaling: 0.6 } },
+
+  w_shield_wall: { id: 'w_shield_wall', name: 'Shield Wall', color: 'white', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Raise a barrier that absorbs incoming damage for the team.',
+    effect: 'All allies: +15% defense, +10% damage reduction for 3 turns.',
+    scaling: '+0.5% per RES', source: 'Zone 5+ drops',
+    requirements: [{ stat: 'res', value: 45 }, { stat: 'con', value: 25 }],
+    spCost: 22, duration: 3, mechanicalEffect: { type: 'buff', stat: 'defense', value: 15, isPercentage: true, scaling: 1.0 } },
+
+  w_lifeblood_surge: { id: 'w_lifeblood_surge', name: 'Lifeblood Surge', color: 'white', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Channel vital energy into a massive wave of healing.',
+    effect: 'Restore 50% Max HP. +5 HP Regen for 5 turns.',
+    scaling: '+1.5% heal per RES', source: 'Zone 6+ boss',
+    requirements: [{ stat: 'res', value: 55 }, { stat: 'con', value: 30 }],
+    spCost: 25, duration: 0, mechanicalEffect: { type: 'heal', value: 50, isPercentage: true, scaling: 1.5 } },
+
+  w_undying_covenant: { id: 'w_undying_covenant', name: 'Undying Covenant', color: 'white', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'A pact with the wasteland itself. Your will to protect sustains the team.',
+    effect: 'Passive: +3 HP Regen, +50 Max HP, +5% Status Resist.',
+    scaling: 'Static', source: 'Zone 7 final boss',
+    requirements: [{ stat: 'res', value: 70 }, { stat: 'con', value: 35 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'hpRegen', value: 3, isPercentage: false, scaling: 0 } },
 
   // =====================================================================
   // ORANGE TOMES (13) - Passive Abilities - RES required only

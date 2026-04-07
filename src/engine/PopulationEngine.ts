@@ -2,6 +2,7 @@ import { SKILLS } from '../config/skills';
 import { getGatheringSpeedMultiplier } from '../types/skills';
 import { getWorkerScaling, workerSkillLevel, workerSkillBonus } from '../types/population';
 import type { WorkerAssignment } from '../types/population';
+import { getPremiumBonuses } from './PremiumBonuses';
 
 export interface TripResult {
   assignmentId: string;
@@ -63,7 +64,7 @@ export function processTrip(assignment: WorkerAssignment, workerSkillXp: Record<
   }
 
   // Calculate worker XP gain
-  const xpGained = Math.floor(subActivity.xpPerAction * 0.5); // Workers gain XP slower than player
+  const xpGained = Math.floor(subActivity.xpPerAction * 0.5 * getPremiumBonuses().xpMultiplier); // Workers gain XP slower than player
 
   // Roll for worker death
   const workerDied = Math.random() < scaling.deathRiskPerTrip;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLootTrackerStore } from '../../store/useLootTrackerStore';
 import { RESOURCES } from '../../config/resources';
 import { CONSUMABLES } from '../../config/consumables';
@@ -23,16 +23,32 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export function LootTracker() {
-  const { byResource, bySource, entries } = useLootTrackerStore(s => s.getTrackedLoot());
+  // Subscribe to stable primitives/arrays — NOT to getTrackedLoot() which returns new objects every call
+  const entries = useLootTrackerStore(s => s.entries);
   const trackingSince = useLootTrackerStore(s => s.trackingSince);
   const isPremium = useLootTrackerStore(s => s.isPremium);
   const clearTracker = useLootTrackerStore(s => s.clearTracker);
   const [view, setView] = useState<ViewMode>('summary');
 
   const maxHours = isPremium ? 24 : 12;
+  const maxAge = isPremium ? 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000;
   const elapsedMs = Date.now() - trackingSince;
   const elapsedHrs = Math.min(maxHours, elapsedMs / 3600000);
   const elapsedStr = elapsedHrs < 1 ? `${Math.floor(elapsedHrs * 60)}m` : `${elapsedHrs.toFixed(1)}h`;
+
+  // Derive aggregated data with useMemo (stable references, no infinite re-render)
+  const { byResource, bySourceEntries, validEntries } = useMemo(() => {
+    const now = Date.now();
+    const valid = entries.filter(e => now - e.timestamp < maxAge);
+    const byRes: Record<string, number> = {};
+    const bySrc: Record<string, Record<string, number>> = {};
+    for (const e of valid) {
+      byRes[e.resourceId] = (byRes[e.resourceId] || 0) + e.quantity;
+      if (!bySrc[e.source]) bySrc[e.source] = {};
+      bySrc[e.source][e.resourceId] = (bySrc[e.source][e.resourceId] || 0) + e.quantity;
+    }
+    return { byResource: byRes, bySourceEntries: bySrc, validEntries: valid };
+  }, [entries, maxAge]);
 
   const totalItems = Object.values(byResource).reduce((sum, qty) => sum + qty, 0);
   const uniqueItems = Object.keys(byResource).length;
@@ -50,15 +66,8 @@ export function LootTracker() {
       };
     });
 
-  // Group entries by source
-  const bySourceEntries: Record<string, Record<string, number>> = {};
-  for (const e of entries) {
-    if (!bySourceEntries[e.source]) bySourceEntries[e.source] = {};
-    bySourceEntries[e.source][e.resourceId] = (bySourceEntries[e.source][e.resourceId] || 0) + e.quantity;
-  }
-
   // Recent entries for timeline (last 50)
-  const recentEntries = [...entries].sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
+  const recentEntries = [...validEntries].sort((a, b) => b.timestamp - a.timestamp).slice(0, 50);
 
   return (
     <div className="flex-1 overflow-y-auto p-6" style={{ backgroundColor: 'var(--color-bg-primary)' }}>

@@ -26,6 +26,20 @@ const STARTER_CLASSES = [
     accentColor: '#3498db',
     primaryStat: 'INT',
   },
+  {
+    classId: 'guardian',
+    combatStyle: 'Tank',
+    icon: '\uD83D\uDEE1\uFE0F', // shield
+    accentColor: '#f39c12',
+    primaryStat: 'CON',
+  },
+  {
+    classId: 'field_medic',
+    combatStyle: 'Support',
+    icon: '\u2695\uFE0F', // medical
+    accentColor: '#9b59b6',
+    primaryStat: 'CON',
+  },
 ];
 
 export function StarterHeroSelect() {
@@ -72,7 +86,7 @@ export function StarterHeroSelect() {
           className="text-sm mb-8"
           style={{ color: 'var(--color-text-muted)' }}
         >
-          Every survivor starts with one fighter. Choose your combat style.
+          Every survivor starts with one hero. Choose your path.
         </p>
 
         <div className="flex gap-6 justify-center flex-wrap">

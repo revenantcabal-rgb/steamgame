@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
+import { useGoldenCapStore } from './useGoldenCapStore';
 
 // ──────────────────────────────────────────────
 // Types
@@ -15,6 +16,7 @@ export interface ChatMessage {
   text: string;
   timestamp: number;
   isSystem?: boolean;
+  isPremium?: boolean;
   whisperTargetId?: string;
   whisperTargetName?: string;
 }
@@ -127,6 +129,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       senderName,
       text: trimmed,
       timestamp: Date.now(),
+      isPremium: useGoldenCapStore.getState().isActive(),
     };
 
     set(s => ({

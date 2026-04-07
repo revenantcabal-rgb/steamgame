@@ -163,7 +163,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
   const dismissHero = useHeroStore(s => s.dismissHero);
   const deployments = useCombatZoneStore(s => s.deployments);
   const recallHero = useCombatZoneStore(s => s.recallHero);
-  const [dismissStep, setDismissStep] = useState(0); // 0=none, 1=first warning, 2=final confirm
+  const [dismissStep, setDismissStep] = useState(0);
   const classDef = CLASSES[hero.classId];
   const category = CATEGORIES[classDef?.categoryId || ''];
   const heroEquipment = useEquipmentStore(s => s.heroEquipment);
@@ -177,89 +177,70 @@ function HeroDetail({ hero }: { hero: Hero }) {
   const nextLevelXp = xpForLevel(hero.level + 1);
   const xpIntoLevel = hero.xp - currentLevelXp;
   const xpNeeded = nextLevelXp - currentLevelXp;
+  const primaryStatKey = classDef?.primaryStats?.[0] as keyof PrimaryStats | undefined;
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex gap-3 items-start">
-          <ItemIcon itemId={hero.classId} itemType="hero" size={48} fallbackLabel={hero.name.charAt(0)} fallbackColor={catColor} />
-          <div>
-          <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{hero.name}</h2>
-          <div className="flex gap-2 items-center mt-1">
-            <span className="text-sm font-bold" style={{ color: catColor }}>{classDef?.name}</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: catColor + '22', color: catColor }}>
-              {category?.name}
-            </span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{
-              backgroundColor: classDef?.heroType === 'specialist' ? '#f39c1222' : '#e74c3c22',
-              color: classDef?.heroType === 'specialist' ? '#f39c12' : '#e74c3c',
-            }}>
-              {classDef?.heroType === 'specialist' ? 'Specialist' : 'Combat'}
-            </span>
-            {classDef?.primaryStats?.[0] && (
-              <span className="text-xs px-2 py-0.5 rounded font-bold" style={{
-                backgroundColor: STAT_COLORS[classDef.primaryStats[0] as keyof typeof STAT_COLORS] + '22',
-                color: STAT_COLORS[classDef.primaryStats[0] as keyof typeof STAT_COLORS],
-              }}>
-                Primary: {STAT_LABELS[classDef.primaryStats[0] as keyof PrimaryStats]}
+      {/* ─── Compact Header ─── */}
+      <div className="p-3 rounded mb-3" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+        <div className="flex items-center gap-3">
+          <ItemIcon itemId={hero.classId} itemType="hero" size={52} fallbackLabel={hero.name.charAt(0)} fallbackColor={catColor} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h2 className="text-lg font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{hero.name}</h2>
+              <span className="text-xs font-bold px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--color-xp)' + '33', color: 'var(--color-xp)' }}>
+                Lv.{hero.level}
               </span>
+            </div>
+            <div className="flex gap-1.5 items-center flex-wrap">
+              <span className="text-xs font-bold" style={{ color: catColor }}>{classDef?.name}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: catColor + '22', color: catColor }}>{category?.name}</span>
+              {primaryStatKey && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{
+                  backgroundColor: STAT_COLORS[primaryStatKey] + '22',
+                  color: STAT_COLORS[primaryStatKey],
+                }}>{STAT_LABELS[primaryStatKey]}</span>
+              )}
+              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{
+                backgroundColor: classDef?.heroType === 'specialist' ? '#f39c1222' : '#e74c3c22',
+                color: classDef?.heroType === 'specialist' ? '#f39c12' : '#e74c3c',
+              }}>{classDef?.heroType === 'specialist' ? 'Specialist' : 'Combat'}</span>
+            </div>
+            {/* XP bar inline */}
+            {hero.level < 100 && (
+              <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex-1"><ProgressBar value={xpIntoLevel} max={xpNeeded} color="var(--color-xp)" height="5px" /></div>
+                <span className="text-[10px] shrink-0" style={{ color: 'var(--color-text-muted)' }}>{xpIntoLevel.toLocaleString()}/{xpNeeded.toLocaleString()} XP</span>
+              </div>
             )}
           </div>
-          <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{classDef?.description}</p>
-          </div>
+          {dismissStep === 0 && (
+            <button onClick={() => setDismissStep(1)} className="px-2 py-1 rounded text-[10px] cursor-pointer shrink-0"
+              style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}>
+              Dismiss
+            </button>
+          )}
         </div>
-        {dismissStep === 0 && (
-          <button
-            onClick={() => setDismissStep(1)}
-            className="px-3 py-1 rounded text-xs cursor-pointer"
-            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}
-          >
-            Dismiss
-          </button>
-        )}
       </div>
 
-      {/* Two-step dismiss confirmation */}
-      {dismissStep === 1 && (
-        <div className="p-3 rounded mb-4" style={{ backgroundColor: '#e74c3c15', border: '1px solid var(--color-danger)' }}>
-          <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-danger)' }}>
-            Warning: Dismissing {hero.name} will permanently remove this hero from your roster.
+      {/* Dismiss confirmation */}
+      {dismissStep >= 1 && (
+        <div className="p-3 rounded mb-3" style={{ backgroundColor: dismissStep === 2 ? '#e74c3c22' : '#e74c3c15', border: `${dismissStep === 2 ? 2 : 1}px solid var(--color-danger)` }}>
+          <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-danger)' }}>
+            {dismissStep === 1 ? `Warning: Dismissing ${hero.name} will permanently remove this hero.` : 'FINAL CONFIRMATION'}
           </div>
-          <div className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
-            All equipment will be unequipped and returned to inventory. This action cannot be undone.
-          </div>
+          {dismissStep === 2 && (
+            <div className="text-xs mb-2" style={{ color: 'var(--color-text-primary)' }}>
+              Permanently dismiss <b>{hero.name}</b> (Lv.{hero.level} {classDef?.name})? All progress will be lost.
+            </div>
+          )}
           <div className="flex gap-2">
-            <button onClick={() => setDismissStep(2)}
+            <button onClick={() => dismissStep === 1 ? setDismissStep(2) : (() => { dismissHero(hero.id); setDismissStep(0); })()}
               className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
               style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
-              I understand, continue
+              {dismissStep === 1 ? 'I understand, continue' : 'Yes, dismiss permanently'}
             </button>
-            <button onClick={() => setDismissStep(0)}
-              className="px-3 py-1 rounded text-xs cursor-pointer"
-              style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-      {dismissStep === 2 && (
-        <div className="p-3 rounded mb-4" style={{ backgroundColor: '#e74c3c22', border: '2px solid var(--color-danger)' }}>
-          <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-danger)' }}>
-            FINAL CONFIRMATION
-          </div>
-          <div className="text-xs mb-3" style={{ color: 'var(--color-text-primary)' }}>
-            Are you absolutely sure you want to permanently dismiss <b>{hero.name}</b> (Lv.{hero.level} {classDef?.name})?
-            This hero and all progress will be lost forever.
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => { dismissHero(hero.id); setDismissStep(0); }}
-              className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
-              style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
-              Yes, dismiss permanently
-            </button>
-            <button onClick={() => setDismissStep(0)}
-              className="px-3 py-1 rounded text-xs cursor-pointer"
+            <button onClick={() => setDismissStep(0)} className="px-3 py-1 rounded text-xs cursor-pointer"
               style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
               Cancel
             </button>
@@ -267,12 +248,12 @@ function HeroDetail({ hero }: { hero: Hero }) {
         </div>
       )}
 
-      {/* Combat Deployment Status & Recall */}
+      {/* Combat Deployment Status */}
       {(() => {
         const heroDeployments = deployments.filter(d => d.heroIds.includes(hero.id));
         if (heroDeployments.length === 0) return null;
         return (
-          <div className="p-3 rounded mb-4" style={{ backgroundColor: '#e74c3c11', border: '1px solid var(--color-danger)' }}>
+          <div className="p-3 rounded mb-3" style={{ backgroundColor: '#e74c3c11', border: '1px solid var(--color-danger)' }}>
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold text-sm" style={{ color: 'var(--color-danger)' }}>
                 <span className="combat-swords-icon" style={{ fontSize: '12px' }}>&#9876;</span> In Combat
@@ -305,168 +286,153 @@ function HeroDetail({ hero }: { hero: Hero }) {
         );
       })()}
 
-      {/* Level & XP */}
-      <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-        <div className="flex justify-between items-center mb-1">
-          <span className="font-bold text-sm">Level {hero.level}</span>
-          {hero.level < 100 && (
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {xpIntoLevel.toLocaleString()} / {xpNeeded.toLocaleString()} XP
-            </span>
-          )}
+      {/* ─── Quick Combat Summary ─── */}
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <div className="text-xs font-bold" style={{ color: '#e74c3c' }}>
+            {classDef?.primaryCombatStyle === 'melee' ? derived.meleeAttack.toFixed(0) : classDef?.primaryCombatStyle === 'ranged' ? derived.rangedAttack.toFixed(0) : derived.blastAttack.toFixed(0)}
+          </div>
+          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Attack</div>
         </div>
-        <ProgressBar value={xpIntoLevel} max={xpNeeded} color="var(--color-xp)" height="8px" />
+        <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <div className="text-xs font-bold" style={{ color: '#27ae60' }}>{derived.maxHp.toFixed(0)}</div>
+          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>HP</div>
+        </div>
+        <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <div className="text-xs font-bold" style={{ color: '#27ae60' }}>{derived.defense.toFixed(0)}</div>
+          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Defense</div>
+        </div>
+        <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <div className="text-xs font-bold" style={{ color: '#9b59b6' }}>{derived.critChance.toFixed(1)}%</div>
+          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Crit</div>
+        </div>
       </div>
 
-      {/* Primary Stats + Allocation */}
-      <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="font-bold text-sm">Primary Attributes</h3>
-          {hero.unspentPoints > 0 && (
-            <span className="text-xs font-bold" style={{ color: 'var(--color-accent)' }}>
-              {hero.unspentPoints} points to spend
-            </span>
-          )}
-        </div>
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-2">
-          {(Object.keys(STAT_LABELS) as (keyof PrimaryStats)[]).map(stat => {
-            const isPrimary = stat === classDef?.primaryStats?.[0];
-            return (
-            <div key={stat} className="p-2 rounded" style={{
-              backgroundColor: 'var(--color-bg-tertiary)',
-              border: isPrimary ? `2px solid ${STAT_COLORS[stat]}` : '2px solid transparent',
-              boxShadow: isPrimary ? `0 0 8px ${STAT_COLORS[stat]}44` : 'none',
-            }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
-                  <span className="text-sm font-bold ml-2" style={{ color: 'var(--color-text-primary)' }}>{totalStats[stat]}</span>
-                  <span className="text-xs ml-1" style={{ color: 'var(--color-text-muted)' }}>
-                    ({hero.baseStats[stat]}+{hero.allocatedStats[stat]})
-                  </span>
-                </div>
-                {hero.unspentPoints > 0 && (
-                  <div className="flex gap-0.5">
-                    <button onClick={() => allocateStat(hero.id, stat)}
-                      className="w-6 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
-                      style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+</button>
-                    {hero.unspentPoints >= 5 && (
-                      <button onClick={() => allocateMultiple(hero.id, stat, 5)}
-                        className="w-7 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
-                        style={{ backgroundColor: STAT_COLORS[stat] + 'bb', color: '#000', border: 'none' }}>+5</button>
-                    )}
-                    {hero.unspentPoints >= 10 && (
-                      <button onClick={() => allocateMultiple(hero.id, stat, 10)}
-                        className="w-8 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
-                        style={{ backgroundColor: STAT_COLORS[stat] + '99', color: '#000', border: 'none' }}>+10</button>
-                    )}
-                    {hero.unspentPoints > 1 && (
-                      <button onClick={() => allocateMultiple(hero.id, stat, hero.unspentPoints)}
-                        className="px-1.5 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
-                        style={{ backgroundColor: STAT_COLORS[stat] + '66', color: '#000', border: 'none' }}>Max</button>
+      {/* ─── Two-Column Layout: Stats | Equipment ─── */}
+      <div className="flex gap-3 mb-3" style={{ minHeight: 0 }}>
+        {/* Left Column: Attributes + Combat Stats */}
+        <div className="flex-1 min-w-0 space-y-3">
+          {/* Primary Attributes */}
+          <div className="p-2.5 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+            <div className="flex justify-between items-center mb-1.5">
+              <h3 className="font-bold text-xs">Attributes</h3>
+              {hero.unspentPoints > 0 && (
+                <span className="text-[10px] font-bold" style={{ color: 'var(--color-accent)' }}>
+                  {hero.unspentPoints} pts
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(STAT_LABELS) as (keyof PrimaryStats)[]).map(stat => {
+                const isPrimary = stat === primaryStatKey;
+                return (
+                  <div key={stat} className="flex items-center justify-between px-2 py-1 rounded" style={{
+                    backgroundColor: 'var(--color-bg-tertiary)',
+                    border: isPrimary ? `1px solid ${STAT_COLORS[stat]}` : '1px solid transparent',
+                  }}>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold w-6" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
+                      <span className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>{totalStats[stat]}</span>
+                      <span className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>({hero.baseStats[stat]}+{hero.allocatedStats[stat]})</span>
+                    </div>
+                    {hero.unspentPoints > 0 && (
+                      <div className="flex gap-0.5">
+                        <button onClick={() => allocateStat(hero.id, stat)}
+                          className="w-5 h-5 rounded text-[10px] font-bold cursor-pointer flex items-center justify-center"
+                          style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+</button>
+                        {hero.unspentPoints >= 5 && (
+                          <button onClick={() => allocateMultiple(hero.id, stat, 5)}
+                            className="w-6 h-5 rounded text-[10px] font-bold cursor-pointer flex items-center justify-center"
+                            style={{ backgroundColor: STAT_COLORS[stat] + 'bb', color: '#000', border: 'none' }}>+5</button>
+                        )}
+                        {hero.unspentPoints > 1 && (
+                          <button onClick={() => allocateMultiple(hero.id, stat, hero.unspentPoints)}
+                            className="px-1 h-5 rounded text-[9px] font-bold cursor-pointer flex items-center justify-center"
+                            style={{ backgroundColor: STAT_COLORS[stat] + '66', color: '#000', border: 'none' }}>Max</button>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Combat Stats */}
+          <div className="p-2.5 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+            <h3 className="font-bold text-xs mb-1.5">Combat Stats</h3>
+            <div className="space-y-2">
+              <div>
+                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e74c3c' }}>Offense</div>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
+                  <DerivedRow label="Melee" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} />
+                  <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} />
+                  <DerivedRow label="Blast" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} />
+                  <DerivedRow label="Crit" value={derived.critChance.toFixed(1) + '%'} />
+                  <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} />
+                  <DerivedRow label="Ability Pwr" value={'+' + derived.abilityPower + '%'} />
+                </div>
               </div>
-              <div style={{ fontSize: '9px', color: STAT_COLORS[stat] + 'aa', marginTop: '2px', lineHeight: '1.2' }}>
-                {STAT_FULL_NAMES[stat]}: {STAT_DESCRIPTIONS[stat]}
+              <div>
+                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#27ae60' }}>Defense</div>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
+                  <DerivedRow label="HP" value={derived.maxHp.toFixed(0)} highlight />
+                  <DerivedRow label="Defense" value={derived.defense.toFixed(0)} />
+                  <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} />
+                  <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1)} />
+                  <DerivedRow label="Status Res" value={derived.statusResist.toFixed(1) + '%'} />
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#3498db' }}>Speed</div>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
+                  <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} />
+                  <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} />
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e879f9' }}>Spirit</div>
+                <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
+                  <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} />
+                  <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1)} />
+                  <DerivedRow label="SP Cost" value={'-' + derived.spCostReduction.toFixed(0) + '%'} />
+                </div>
               </div>
             </div>
-            );
-          })}
-        </div>
-        <div className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
-          Base stat total: {getBaseStatTotal(hero)} | Combat style: {classDef?.primaryCombatStyle}
-        </div>
-
-        {/* Stat allocation is direct-click — no confirmation needed */}
-      </div>
-
-      {/* Combat Stats — grouped with visual hierarchy */}
-      <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-        <h3 className="font-bold text-sm mb-3">Combat Stats</h3>
-
-        {/* Offense */}
-        <div className="mb-3">
-          <div className="text-xs font-bold mb-1" style={{ color: '#e74c3c' }}>Offense</div>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            <DerivedRow label="Melee Atk" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} />
-            <DerivedRow label="Ranged Atk" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} />
-            <DerivedRow label="Blast Atk" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} />
-            <DerivedRow label="Crit Chance" value={derived.critChance.toFixed(1) + '%'} />
-            <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} />
-            <DerivedRow label="Ability Power" value={'+' + derived.abilityPower + '%'} />
           </div>
         </div>
 
-        {/* Defense & Survivability */}
-        <div className="mb-3">
-          <div className="text-xs font-bold mb-1" style={{ color: '#27ae60' }}>Defense & Survivability</div>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            <DerivedRow label="Max HP" value={derived.maxHp.toFixed(0)} highlight />
-            <DerivedRow label="Defense" value={derived.defense.toFixed(0)} suffix="(gear)" />
-            <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} />
-            <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1) + '/turn'} />
-            <DerivedRow label="Status Resist" value={derived.statusResist.toFixed(1) + '%'} />
-          </div>
-        </div>
-
-        {/* Speed & Accuracy */}
-        <div className="mb-3">
-          <div className="text-xs font-bold mb-1" style={{ color: '#3498db' }}>Speed & Accuracy</div>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} />
-            <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} />
-          </div>
-        </div>
-
-        {/* Resources (SP) */}
-        <div className="mb-3">
-          <div className="text-xs font-bold mb-1" style={{ color: '#e879f9' }}>Spirit Points</div>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} />
-            <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1) + '/turn'} />
-            <DerivedRow label="SP Cost Reduction" value={derived.spCostReduction.toFixed(0) + '%'} />
-          </div>
-        </div>
-
-        {/* Slots */}
-        <div>
-          <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Slots</div>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            <DerivedRow label="Ability Slots" value={derived.abilitySlots + '/4'} />
-            <DerivedRow label="Decree Slot" value={derived.canEquipAura ? 'Unlocked' : 'Need RES 50'} />
-            <DerivedRow label="Consumable Slots" value={derived.consumableSlots + '/6'} />
-          </div>
+        {/* Right Column: Equipment */}
+        <div className="flex-1 min-w-0">
+          <HeroEquipmentSection heroId={hero.id} />
         </div>
       </div>
 
-      {/* Advanced Stats (collapsible — Extended Combat + Utility) */}
+      {/* ─── Advanced Stats (collapsible) ─── */}
       {(() => {
         const hasExtended = derived.lifesteal > 0 || derived.burnDot > 0 || derived.poisonDot > 0 || derived.frostSlow > 0 ||
           derived.thornsDamage > 0 || derived.blockChance > 0 || derived.armorPen > 0 || derived.damageReduction > 0;
         const hasUtility = derived.dropChance > 0 || derived.gatheringSpeed > 0 || derived.gatheringYield > 0 || derived.productionSpeed > 0 ||
           derived.xpBonus > 0 || derived.rareResourceChance > 0 || derived.rarityUpgrade > 0 || derived.doubleOutput > 0;
         if (!hasExtended && !hasUtility) return null;
-        return (
-          <AdvancedStatsSection derived={derived} hasExtended={hasExtended} hasUtility={hasUtility} />
-        );
+        return <AdvancedStatsSection derived={derived} hasExtended={hasExtended} hasUtility={hasUtility} />;
       })()}
 
-      {/* Equipment */}
-      <HeroEquipmentSection heroId={hero.id} />
+      {/* ─── Abilities & Consumables side by side ─── */}
+      <div className="flex gap-3 mb-3">
+        <div className="flex-1 min-w-0">
+          <HeroAbilitySection hero={hero} derived={derived} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <HeroConsumableSection hero={hero} derived={derived} />
+        </div>
+      </div>
 
-      {/* Ability Slots */}
-      <HeroAbilitySection hero={hero} derived={derived} />
-
-      {/* Consumable Bag */}
-      <HeroConsumableSection hero={hero} derived={derived} />
-
-      {/* Category Aura */}
-      <div className="p-3 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-        <h3 className="font-bold text-sm mb-1" style={{ color: catColor }}>{category?.name} Bonus</h3>
-        <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{category?.decreeDescription}</div>
-        <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>Skirmish: {category?.skirmishDescription}</div>
+      {/* Category Bonus */}
+      <div className="p-2.5 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+        <h3 className="font-bold text-xs mb-1" style={{ color: catColor }}>{category?.name} Bonus</h3>
+        <div className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>{category?.decreeDescription}</div>
+        <div className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Skirmish: {category?.skirmishDescription}</div>
       </div>
     </div>
   );

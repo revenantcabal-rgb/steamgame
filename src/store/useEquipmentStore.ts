@@ -26,11 +26,16 @@ interface EquipmentState {
   heroEquipment: Record<string, HeroEquipment>;
   /** Currently in-progress craft (null if idle) */
   activeCraft: ActiveCraft | null;
+  /** Batch crafting: 0 = infinite, 1+ = specific count */
+  craftRepeatTarget: number;
+  /** How many crafts completed in current batch */
+  craftRepeatCount: number;
 
   craftItem: (templateId: string, craftSkillLevel: number) => GearInstance | null;
   startCraft: (templateId: string, craftSkillLevel: number) => boolean;
   cancelCraft: () => void;
   tickCraft: () => void;
+  setCraftRepeatTarget: (target: number) => void;
   equipItem: (heroId: string, slot: EquipmentSlot, instanceId: string) => boolean;
   unequipItem: (heroId: string, slot: EquipmentSlot) => void;
   discardItem: (instanceId: string) => void;
@@ -49,6 +54,12 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   inventory: [],
   heroEquipment: {},
   activeCraft: null,
+  craftRepeatTarget: 1,
+  craftRepeatCount: 0,
+
+  setCraftRepeatTarget: (target) => {
+    set({ craftRepeatTarget: target });
+  },
 
   // startCraft: validates, consumes resources, starts the timer
   startCraft: (templateId, craftSkillLevel) => {
@@ -109,6 +120,7 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     set({
       inventory: newInventory,
       activeCraft: { templateId, craftSkillLevel, progress: 0, duration },
+      craftRepeatCount: 0,
     });
     return true;
   },
@@ -118,7 +130,7 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     if (!state.activeCraft) return;
     const template = GEAR_TEMPLATES[state.activeCraft.templateId];
     useGameStore.getState().addLog(`Cancelled crafting ${template?.name || 'item'}. Resources were already consumed.`, 'info');
-    set({ activeCraft: null });
+    set({ activeCraft: null, craftRepeatCount: 0 });
   },
 
   tickCraft: () => {
@@ -128,9 +140,11 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     const newProgress = state.activeCraft.progress + 1;
     if (newProgress >= state.activeCraft.duration) {
       // Craft complete — produce the item
-      const gear = craftGear(state.activeCraft.templateId, state.activeCraft.craftSkillLevel);
+      const templateId = state.activeCraft.templateId;
+      const craftSkillLevel = state.activeCraft.craftSkillLevel;
+      const gear = craftGear(templateId, craftSkillLevel);
       if (gear) {
-        const template = GEAR_TEMPLATES[state.activeCraft.templateId];
+        const template = GEAR_TEMPLATES[templateId];
         const rarityLabel = gear.rarity.charAt(0).toUpperCase() + gear.rarity.slice(1);
         const facetPrefix = gear.facet ? `${gear.facet.name} ` : '';
         useGameStore.getState().addLog(
@@ -140,13 +154,84 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
 
         // Anti-cheat + achievements
         const actorId = useAuthStore.getState().user?.id || 'system';
-        useAnticheatStore.getState().logItemEvent(gear.gameId, 'craft', actorId, undefined, 1, { templateId: state.activeCraft.templateId, rarity: gear.rarity });
+        useAnticheatStore.getState().logItemEvent(gear.gameId, 'craft', actorId, undefined, 1, { templateId, rarity: gear.rarity });
         useAchievementStore.getState().incrementStat('gearCrafted');
 
+        const newCount = state.craftRepeatCount + 1;
         set(s => ({
           inventory: [...s.inventory, gear],
           activeCraft: null,
+          craftRepeatCount: newCount,
         }));
+
+        // Story: gear craft (fixes Chapter 2.2 + all gear crafting objectives)
+        useStoryStore.getState().checkObjective('craft', templateId, 1);
+
+        // Batch repeat: auto-start next craft if target not reached
+        const target = state.craftRepeatTarget;
+        if (target === 0 || newCount < target) {
+          // Try to start next craft — will fail silently if materials are insufficient
+          const nextState = get();
+          const nextTemplate = GEAR_TEMPLATES[templateId];
+          if (nextTemplate) {
+            const gameStore = useGameStore.getState();
+            const resources = gameStore.resources;
+
+            // Check materials
+            const hasAll = nextTemplate.craftingInputs.every(
+              input => (resources[input.resourceId] || 0) >= input.quantity,
+            );
+
+            // Check previous tier gear if needed
+            let hasPrevTier = true;
+            if (nextTemplate.requiresPreviousTier) {
+              hasPrevTier = nextState.inventory.some(g => {
+                if (g.templateId !== nextTemplate.requiresPreviousTier) return false;
+                for (const eq of Object.values(nextState.heroEquipment)) {
+                  for (const slotVal of Object.values(eq)) {
+                    if (slotVal === g.instanceId) return false;
+                  }
+                }
+                return true;
+              });
+            }
+
+            if (hasAll && hasPrevTier) {
+              // Consume resources
+              const newResources = { ...resources };
+              for (const input of nextTemplate.craftingInputs) {
+                newResources[input.resourceId] -= input.quantity;
+              }
+              useGameStore.setState({ resources: newResources });
+
+              // Consume previous tier gear
+              let inv = [...get().inventory];
+              if (nextTemplate.requiresPreviousTier) {
+                const idx = inv.findIndex(g => {
+                  if (g.templateId !== nextTemplate.requiresPreviousTier) return false;
+                  for (const eq of Object.values(get().heroEquipment)) {
+                    for (const slotVal of Object.values(eq)) {
+                      if (slotVal === g.instanceId) return false;
+                    }
+                  }
+                  return true;
+                });
+                if (idx >= 0) inv.splice(idx, 1);
+              }
+
+              const duration = getCraftTime(nextTemplate);
+              set({
+                inventory: inv,
+                activeCraft: { templateId, craftSkillLevel, progress: 0, duration },
+              });
+            } else {
+              // Can't continue — stop batch
+              if (target === 0) {
+                gameStore.addLog(`Batch crafting stopped: insufficient materials.`, 'info');
+              }
+            }
+          }
+        }
       } else {
         set({ activeCraft: null });
       }
