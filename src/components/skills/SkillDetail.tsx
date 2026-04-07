@@ -1,0 +1,616 @@
+import { useState } from 'react';
+import { useGameStore } from '../../store/useGameStore';
+import { usePopulationStore } from '../../store/usePopulationStore';
+import { SKILLS } from '../../config/skills';
+import { RESOURCES } from '../../config/resources';
+import { xpForLevel, xpForSingleLevel, getGatheringSpeedMultiplier } from '../../types/skills';
+import { getActionTime } from '../../engine/SkillEngine';
+import { getWorkerScaling } from '../../types/population';
+import { getTripDuration } from '../../engine/PopulationEngine';
+import { ProgressBar } from '../common/ProgressBar';
+import type { GatheringGoal } from '../../store/useGameStore';
+import type { WorkerAssignment } from '../../types/population';
+import type { SubActivity } from '../../types/skills';
+
+export function SkillDetail() {
+  const activeSkillId = useGameStore(s => s.activeSkillId);
+  const activeSubActivityId = useGameStore(s => s.activeSubActivityId);
+  const skills = useGameStore(s => s.skills);
+  const actionProgress = useGameStore(s => s.actionProgress);
+  const setSubActivity = useGameStore(s => s.setSubActivity);
+  const resources = useGameStore(s => s.resources);
+
+  if (!activeSkillId) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8" style={{ color: 'var(--color-text-muted)' }}>
+        <div className="text-center">
+          <div className="text-4xl mb-4">&#9760;</div>
+          <div className="text-lg mb-2">Select a Skill</div>
+          <div className="text-sm">Choose a skill from the sidebar to begin training.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const skillDef = SKILLS[activeSkillId];
+  const playerSkill = skills[activeSkillId];
+  if (!skillDef || !playerSkill) return null;
+
+  const currentLevelXp = xpForLevel(playerSkill.level);
+  const nextLevelXp = xpForLevel(playerSkill.level + 1);
+  const xpIntoLevel = playerSkill.xp - currentLevelXp;
+  const xpNeeded = nextLevelXp - currentLevelXp;
+  const actionTime = getActionTime(activeSkillId, playerSkill.level);
+  const hasSubActivities = skillDef.subActivities && skillDef.subActivities.length > 0;
+  const activeActivity = hasSubActivities
+    ? skillDef.subActivities!.find(a => a.id === activeSubActivityId)
+    : null;
+  const isGathering = skillDef.category === 'gathering';
+  const isProduction = skillDef.category === 'production';
+  const scaling = isGathering ? getGatheringSpeedMultiplier(playerSkill.level) : null;
+
+  return (
+    <div className="flex-1 p-6 overflow-y-auto">
+      {/* Header */}
+      <div className="mb-4">
+        <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+          {skillDef.name}
+        </h2>
+        <p className="text-sm mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          {skillDef.description}
+        </p>
+        {isGathering && scaling && (
+          <div className="flex gap-4 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            <span>Speed: <b>{scaling.actionTime}s</b>/action</span>
+            <span>Yield: <b>x{scaling.qtyMultiplier}</b></span>
+            <span>XP: <b>x{scaling.xpMultiplier}</b></span>
+          </div>
+        )}
+      </div>
+
+      {/* Sub-Activity / Recipe Selector */}
+      {hasSubActivities && (
+        <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <h3 className="font-bold text-sm mb-3">
+            {isProduction ? 'Choose Recipe' : 'Choose Activity'}
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {skillDef.subActivities!.map(activity => {
+              const isSelected = activity.id === activeSubActivityId;
+              const isLocked = (activity.levelReq || 0) > playerSkill.level;
+              const canAfford = isProduction ? checkCanAfford(activity, resources) : true;
+
+              return (
+                <button
+                  key={activity.id}
+                  onClick={() => !isLocked && setSubActivity(activity.id)}
+                  className="p-3 rounded border text-left transition-all"
+                  style={{
+                    backgroundColor: isLocked ? 'var(--color-bg-primary)' : isSelected ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
+                    borderColor: isSelected ? 'var(--color-accent)' : 'var(--color-border)',
+                    borderWidth: isSelected ? '2px' : '1px',
+                    opacity: isLocked ? 0.4 : 1,
+                    cursor: isLocked ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <div className="font-bold text-xs" style={{ color: isSelected ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>
+                      {activity.isMixed ? '>> ' : ''}{activity.name}
+                    </div>
+                    {isLocked && (
+                      <span className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>
+                        Lv.{activity.levelReq}
+                      </span>
+                    )}
+                    {activity.gearTemplateId && (
+                      <span className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--color-info)', color: '#fff' }}>
+                        GEAR
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
+                    {activity.description}
+                  </div>
+
+                  {/* Production: show resource costs */}
+                  {isProduction && activity.resourceInputs && (
+                    <div className="text-xs mt-1 space-y-0.5">
+                      {activity.resourceInputs.map(input => {
+                        const have = resources[input.resourceId] || 0;
+                        const enough = have >= input.quantity;
+                        const resName = RESOURCES[input.resourceId]?.name || input.resourceId.replace(/_/g, ' ');
+                        return (
+                          <div key={input.resourceId} style={{ color: enough ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                            {input.quantity}x {resName} <span style={{ color: 'var(--color-text-muted)' }}>({have})</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Gathering: show resource drops */}
+                  {!isProduction && (
+                    <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                      {activity.resourceDrops.map(d => {
+                        const res = RESOURCES[d.resourceId];
+                        return res ? `${res.name}: ${d.minQty}-${d.maxQty}` : d.resourceId;
+                      }).join(' | ')}
+                    </div>
+                  )}
+
+                  {/* Production: show output */}
+                  {isProduction && !activity.gearTemplateId && activity.resourceDrops.length > 0 && (
+                    <div className="text-xs mt-1" style={{ color: 'var(--color-accent)' }}>
+                      Produces: {activity.resourceDrops.map(d => {
+                        return `${d.minQty}x ${d.resourceId.replace(/_/g, ' ')}`;
+                      }).join(', ')}
+                    </div>
+                  )}
+
+                  <div className="text-xs mt-1" style={{ color: 'var(--color-xp)' }}>
+                    {activity.xpPerAction} XP/action
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Level & XP */}
+      <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-lg font-bold">Level {playerSkill.level}</span>
+          {playerSkill.level < 100 && (
+            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              {xpIntoLevel.toLocaleString()} / {xpNeeded.toLocaleString()} XP
+            </span>
+          )}
+        </div>
+        {playerSkill.level < 100 ? (
+          <ProgressBar value={xpIntoLevel} max={xpNeeded} color="var(--color-xp)" height="12px" showText label="Experience" />
+        ) : (
+          <div className="text-center py-2" style={{ color: 'var(--color-accent)' }}>
+            &#9733; MAXIMUM LEVEL REACHED &#9733;
+          </div>
+        )}
+        <div className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
+          Total XP: {playerSkill.xp.toLocaleString()}
+          {playerSkill.level < 100 && ` | Next level needs ${xpForSingleLevel(playerSkill.level + 1).toLocaleString()} XP`}
+        </div>
+      </div>
+
+      {/* Action Progress */}
+      {activeSubActivityId && (
+        <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-bold text-sm">
+              {activeActivity ? (isProduction ? `Crafting: ${activeActivity.name}` : activeActivity.name) : 'Action Progress'}
+            </span>
+            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              {actionProgress.toFixed(0)}s / {actionTime.toFixed(1)}s
+            </span>
+          </div>
+          <ProgressBar value={actionProgress} max={actionTime} color={isProduction ? 'var(--color-accent)' : 'var(--color-energy)'} height="10px" />
+
+          {/* Show current recipe costs while crafting */}
+          {isProduction && activeActivity?.resourceInputs && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {activeActivity.resourceInputs.map(input => {
+                const have = resources[input.resourceId] || 0;
+                const enough = have >= input.quantity;
+                return (
+                  <span key={input.resourceId} className="text-xs px-2 py-0.5 rounded" style={{
+                    backgroundColor: 'var(--color-bg-tertiary)',
+                    color: enough ? 'var(--color-success)' : 'var(--color-danger)',
+                  }}>
+                    {input.resourceId.replace(/_/g, ' ')}: {have}/{input.quantity}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Current Drops (gathering only) */}
+      {isGathering && activeActivity && scaling && (
+        <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <h3 className="font-bold text-sm mb-3">Resources Per Action</h3>
+          <div className="space-y-2">
+            {activeActivity.resourceDrops.map((drop) => {
+              const resource = RESOURCES[drop.resourceId];
+              if (!resource) return null;
+              const scaledMin = Math.max(1, Math.floor(drop.minQty * scaling.qtyMultiplier));
+              const scaledMax = Math.max(1, Math.floor(drop.maxQty * scaling.qtyMultiplier));
+              return (
+                <div key={drop.resourceId} className="flex justify-between text-sm">
+                  <span style={{ color: 'var(--color-text-primary)' }}>
+                    {resource.name}
+                  </span>
+                  <span style={{ color: 'var(--color-success)' }}>
+                    {scaledMin}-{scaledMax}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Gathering Goal (gathering only) */}
+      {isGathering && activeSkillId && <GoalSetter skillId={activeSkillId} />}
+
+      {/* ============================================================ */}
+      {/* WORKERS SECTION (Gathering skills only) */}
+      {/* ============================================================ */}
+      {isGathering && (
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+            <span className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>Workers</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>
+              Settlement Population
+            </span>
+          </div>
+
+          <WorkerSummaryBar />
+          <WorkerDeployForm skillId={activeSkillId} />
+          <WorkerAssignments skillId={activeSkillId} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Check if player can afford a recipe */
+function checkCanAfford(activity: SubActivity, resources: Record<string, number>): boolean {
+  if (!activity.resourceInputs) return true;
+  return activity.resourceInputs.every(input => (resources[input.resourceId] || 0) >= input.quantity);
+}
+
+/* ─── Worker Summary Bar ────────────────────────────────────── */
+function WorkerSummaryBar() {
+  const totalWorkers = usePopulationStore(s => s.totalWorkers);
+  const availableWorkers = usePopulationStore(s => s.availableWorkers);
+  const getAssignedWorkerCount = usePopulationStore(s => s.getAssignedWorkerCount);
+  const totalWorkersLost = usePopulationStore(s => s.totalWorkersLost);
+
+  const assigned = getAssignedWorkerCount();
+
+  return (
+    <div className="grid grid-cols-4 gap-2 mb-4">
+      <MiniStat label="Total" value={totalWorkers} color="var(--color-accent)" />
+      <MiniStat label="Available" value={availableWorkers} color="var(--color-success)" />
+      <MiniStat label="Assigned" value={assigned} color="var(--color-info)" />
+      <MiniStat label="Lost" value={totalWorkersLost} color="var(--color-danger)" />
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+      <div className="text-xl font-bold" style={{ color }}>{value}</div>
+      <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
+    </div>
+  );
+}
+
+/* ─── Worker Deploy Form (skill pre-selected) ──────────────── */
+function WorkerDeployForm({ skillId }: { skillId: string }) {
+  const availableWorkers = usePopulationStore(s => s.availableWorkers);
+  const createAssignment = usePopulationStore(s => s.createAssignment);
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [workerCount, setWorkerCount] = useState(1);
+
+  const skillDef = SKILLS[skillId];
+  const activities = skillDef?.subActivities || [];
+  const scaling = getWorkerScaling(workerCount);
+
+  const handleCreate = () => {
+    if (!selectedActivity || workerCount <= 0) return;
+    const success = createAssignment(skillId, selectedActivity, workerCount);
+    if (success) {
+      setSelectedActivity('');
+      setWorkerCount(1);
+    }
+  };
+
+  return (
+    <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+      <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>
+        Deploy Workers &mdash; {skillDef?.name}
+      </h3>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Activity</label>
+          <select
+            value={selectedActivity}
+            onChange={e => setSelectedActivity(e.target.value)}
+            className="w-full p-2 rounded text-sm"
+            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
+          >
+            <option value="">-- Select Activity --</option>
+            {activities.map(a => (
+              <option key={a.id} value={a.id}>{a.isMixed ? '>> ' : ''}{a.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Workers ({availableWorkers} free)</label>
+          <input
+            type="number"
+            min={1}
+            max={availableWorkers}
+            value={workerCount}
+            onChange={e => setWorkerCount(Math.max(1, Math.min(availableWorkers, parseInt(e.target.value) || 1)))}
+            className="w-full p-2 rounded text-sm"
+            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
+          />
+        </div>
+      </div>
+
+      {selectedActivity && (
+        <div className="flex gap-4 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
+          <span>Speed: <b style={{ color: 'var(--color-text-primary)' }}>x{scaling.speedMultiplier}</b></span>
+          <span>Yield: <b style={{ color: 'var(--color-text-primary)' }}>x{scaling.yieldMultiplier}</b></span>
+          <span>Death Risk: <b style={{ color: scaling.deathRiskPerTrip > 0.05 ? 'var(--color-danger)' : scaling.deathRiskPerTrip > 0 ? 'var(--color-energy)' : 'var(--color-success)' }}>
+            {scaling.deathRiskPerTrip === 0 ? 'None' : `${(scaling.deathRiskPerTrip * 100).toFixed(1)}%`}
+          </b></span>
+        </div>
+      )}
+
+      <button
+        onClick={handleCreate}
+        disabled={!selectedActivity || availableWorkers <= 0}
+        className="w-full p-2 rounded text-sm font-bold cursor-pointer transition-all"
+        style={{
+          backgroundColor: selectedActivity ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+          color: selectedActivity ? '#000' : 'var(--color-text-muted)',
+          border: 'none',
+        }}
+      >
+        Deploy {workerCount} Worker{workerCount > 1 ? 's' : ''}
+      </button>
+    </div>
+  );
+}
+
+/* ─── Active Worker Assignments for this skill ──────────────── */
+function WorkerAssignments({ skillId }: { skillId: string }) {
+  const assignments = usePopulationStore(s => s.assignments);
+  const skillAssignments = assignments.filter(a => a.skillId === skillId);
+  const otherAssignments = assignments.filter(a => a.skillId !== skillId);
+  const otherWorkerCount = otherAssignments.reduce((sum, a) => sum + a.workerCount, 0);
+
+  return (
+    <div>
+      <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--color-text-primary)' }}>
+        Active on {SKILLS[skillId]?.name} ({skillAssignments.length})
+      </h3>
+      {skillAssignments.length === 0 ? (
+        <div className="p-4 rounded text-center text-sm mb-3" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-muted)' }}>
+          No workers deployed to this skill yet.
+        </div>
+      ) : (
+        <div className="space-y-3 mb-3">
+          {skillAssignments.map(assignment => (
+            <AssignmentCard key={assignment.id} assignment={assignment} />
+          ))}
+        </div>
+      )}
+
+      {otherAssignments.length > 0 && (
+        <OtherAssignments assignments={otherAssignments} totalWorkers={otherWorkerCount} />
+      )}
+    </div>
+  );
+}
+
+/* ─── Assignment Card ────────────────────────────────────────── */
+function AssignmentCard({ assignment }: { assignment: WorkerAssignment }) {
+  const removeAssignment = usePopulationStore(s => s.removeAssignment);
+  const adjustWorkers = usePopulationStore(s => s.adjustWorkers);
+  const availableWorkers = usePopulationStore(s => s.availableWorkers);
+  const workerSkillXp = usePopulationStore(s => s.workerSkillXp);
+
+  const skillDef = SKILLS[assignment.skillId];
+  const activity = skillDef?.subActivities?.find(a => a.id === assignment.subActivityId);
+  const scaling = getWorkerScaling(assignment.workerCount);
+  const tripDuration = getTripDuration(assignment, workerSkillXp);
+
+  const totalGathered = Object.entries(assignment.totalResourcesGathered)
+    .map(([id, qty]) => ({ name: RESOURCES[id]?.name || id, qty }))
+    .filter(r => r.qty > 0);
+
+  return (
+    <div className="p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <div className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>
+            {activity?.name || assignment.subActivityId}
+          </div>
+          <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            {assignment.workerCount} worker{assignment.workerCount > 1 ? 's' : ''} |
+            Trips: {assignment.tripsCompleted} |
+            Lost: {assignment.workersLost}
+            {scaling.deathRiskPerTrip > 0 && (
+              <span style={{ color: 'var(--color-danger)' }}> | Risk: {(scaling.deathRiskPerTrip * 100).toFixed(1)}%</span>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => adjustWorkers(assignment.id, assignment.workerCount + 1)}
+            disabled={availableWorkers <= 0}
+            className="px-2 py-1 rounded text-xs cursor-pointer"
+            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
+            title="Add worker"
+          >+</button>
+          <button
+            onClick={() => {
+              if (assignment.workerCount > 1) adjustWorkers(assignment.id, assignment.workerCount - 1);
+              else removeAssignment(assignment.id);
+            }}
+            className="px-2 py-1 rounded text-xs cursor-pointer"
+            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
+            title="Remove worker"
+          >-</button>
+          <button
+            onClick={() => removeAssignment(assignment.id)}
+            className="px-2 py-1 rounded text-xs cursor-pointer"
+            style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}
+            title="Recall all"
+          >Recall</button>
+        </div>
+      </div>
+
+      <div className="mb-2">
+        <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
+          <span>Trip Progress</span>
+          <span>{assignment.tripProgress}s / {tripDuration}s</span>
+        </div>
+        <ProgressBar value={assignment.tripProgress} max={tripDuration} color="var(--color-energy)" height="6px" />
+      </div>
+
+      {totalGathered.length > 0 && (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {totalGathered.map(r => (
+            <span key={r.name} className="px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-success)' }}>
+              {r.name}: {r.qty.toLocaleString()}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Collapsed summary of workers on other skills ──────────── */
+function OtherAssignments({ assignments, totalWorkers }: { assignments: WorkerAssignment[]; totalWorkers: number }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const grouped = assignments.reduce<Record<string, { skillName: string; workers: number; trips: number }>>((acc, a) => {
+    const key = a.skillId;
+    if (!acc[key]) acc[key] = { skillName: SKILLS[key]?.name || key, workers: 0, trips: 0 };
+    acc[key].workers += a.workerCount;
+    acc[key].trips += a.tripsCompleted;
+    return acc;
+  }, {});
+
+  return (
+    <div className="p-3 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex justify-between items-center cursor-pointer"
+        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)' }}
+      >
+        <span className="text-xs font-bold">
+          Other Skills: {totalWorkers} worker{totalWorkers !== 1 ? 's' : ''} deployed
+        </span>
+        <span className="text-xs">{expanded ? '[-]' : '[+]'}</span>
+      </button>
+      {expanded && (
+        <div className="mt-2 space-y-1">
+          {Object.entries(grouped).map(([skillId, info]) => (
+            <div key={skillId} className="flex justify-between text-xs px-1">
+              <span style={{ color: 'var(--color-text-primary)' }}>{info.skillName}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>
+                {info.workers} worker{info.workers !== 1 ? 's' : ''} | {info.trips} trips
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Goal Setter (gathering only) ──────────────────────────── */
+function GoalSetter({ skillId }: { skillId: string }) {
+  const gatheringGoal = useGameStore(s => s.gatheringGoal);
+  const setGatheringGoal = useGameStore(s => s.setGatheringGoal);
+  const resources = useGameStore(s => s.resources);
+  const skills = useGameStore(s => s.skills);
+  const activeSubActivityId = useGameStore(s => s.activeSubActivityId);
+  const skillDef = SKILLS[skillId];
+  const playerSkill = skills[skillId];
+  const [goalType, setGoalType] = useState<'none' | 'collect_amount' | 'reach_level'>(gatheringGoal.type);
+  const [targetAmount, setTargetAmount] = useState(1000);
+  const [targetLevel, setTargetLevel] = useState(playerSkill ? playerSkill.level + 5 : 10);
+  const [selectedResource, setSelectedResource] = useState('');
+
+  const activity = skillDef?.subActivities?.find(a => a.id === activeSubActivityId);
+  const availableResources = activity?.resourceDrops.map(d => d.resourceId) || [];
+
+  const handleSetGoal = () => {
+    if (goalType === 'collect_amount' && selectedResource) {
+      setGatheringGoal({ type: 'collect_amount', resourceId: selectedResource, targetAmount });
+    } else if (goalType === 'reach_level') {
+      setGatheringGoal({ type: 'reach_level', targetLevel });
+    } else {
+      setGatheringGoal({ type: 'none' });
+    }
+  };
+
+  return (
+    <div className="p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+      <h3 className="font-bold text-sm mb-3">Set Goal</h3>
+
+      {gatheringGoal.type !== 'none' && (
+        <div className="p-2 rounded mb-3 flex justify-between items-center" style={{ backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-accent)' }}>
+          <span className="text-xs" style={{ color: 'var(--color-accent)' }}>
+            {gatheringGoal.type === 'collect_amount'
+              ? `Gathering ${gatheringGoal.targetAmount?.toLocaleString()} ${gatheringGoal.resourceId?.replace(/_/g, ' ')} (have: ${(resources[gatheringGoal.resourceId!] || 0).toLocaleString()})`
+              : `Training to level ${gatheringGoal.targetLevel} (current: ${playerSkill?.level})`}
+          </span>
+          <button onClick={() => setGatheringGoal({ type: 'none' })}
+            className="px-2 py-0.5 rounded text-xs cursor-pointer" style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>Clear</button>
+        </div>
+      )}
+
+      <div className="flex gap-2 mb-2">
+        {(['none', 'collect_amount', 'reach_level'] as const).map(t => (
+          <button key={t} onClick={() => setGoalType(t)}
+            className="px-2 py-1 rounded text-xs cursor-pointer"
+            style={{ backgroundColor: goalType === t ? 'var(--color-accent)' : 'var(--color-bg-tertiary)', color: goalType === t ? '#000' : 'var(--color-text-muted)', border: 'none' }}>
+            {t === 'none' ? 'No Goal' : t === 'collect_amount' ? 'Gather Amount' : 'Reach Level'}
+          </button>
+        ))}
+      </div>
+
+      {goalType === 'collect_amount' && (
+        <div className="flex gap-2 mb-2">
+          <select value={selectedResource} onChange={e => setSelectedResource(e.target.value)}
+            className="flex-1 p-2 rounded text-xs" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}>
+            <option value="">-- Resource --</option>
+            {availableResources.map(r => (
+              <option key={r} value={r}>{RESOURCES[r]?.name || r} (have: {resources[r] || 0})</option>
+            ))}
+          </select>
+          <input type="number" value={targetAmount} onChange={e => setTargetAmount(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-24 p-2 rounded text-xs" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }} min={1} />
+        </div>
+      )}
+
+      {goalType === 'reach_level' && (
+        <div className="flex gap-2 mb-2 items-center">
+          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Target Level:</span>
+          <input type="number" value={targetLevel} onChange={e => setTargetLevel(Math.max((playerSkill?.level || 1) + 1, Math.min(100, parseInt(e.target.value) || 1)))}
+            className="w-20 p-2 rounded text-xs" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
+            min={(playerSkill?.level || 1) + 1} max={100} />
+          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>(current: {playerSkill?.level})</span>
+        </div>
+      )}
+
+      {goalType !== 'none' && (
+        <button onClick={handleSetGoal}
+          className="w-full p-2 rounded text-xs font-bold cursor-pointer"
+          style={{ backgroundColor: 'var(--color-accent)', color: '#000', border: 'none' }}>
+          Set Goal
+        </button>
+      )}
+    </div>
+  );
+}
