@@ -231,10 +231,11 @@ export function useGameTick() {
     return () => clearInterval(interval);
   }, [gameTick, populationTick, combatTick, expeditionTick, craftTick]);
 
-  // Periodic market cleanup (every 5 minutes)
+  // Periodic market cleanup and price adjustment (every 5 minutes)
   useEffect(() => {
     const interval = setInterval(() => {
       useMarketStore.getState().cleanExpired();
+      useMarketStore.getState().tickPrices();
     }, 300_000);
     return () => clearInterval(interval);
   }, []);

@@ -503,6 +503,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
   const equipItem = useEquipmentStore(s => s.equipItem);
   const unequipItem = useEquipmentStore(s => s.unequipItem);
   const deployments = useCombatZoneStore(s => s.deployments);
+  const resources = useGameStore(s => s.resources);
   const [expandedSlot, setExpandedSlot] = useState<EquipmentSlot | null>(null);
 
   const isDeployed = deployments.some(d => d.heroIds.includes(heroId));
@@ -612,11 +613,27 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
         {isExpanded && (
                 <div className="mt-1 p-2 rounded space-y-1 overflow-y-auto" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', maxHeight: '240px' }}>
                   {equippedGear && (
-                    <button onClick={() => { unequipItem(heroId, slot); setExpandedSlot(null); }}
-                      className="w-full text-left p-1.5 rounded text-xs cursor-pointer"
-                      style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
-                      Unequip {equippedTemplate?.name}
-                    </button>
+                    <>
+                      <button onClick={() => { unequipItem(heroId, slot); setExpandedSlot(null); }}
+                        className="w-full text-left p-1.5 rounded text-xs cursor-pointer"
+                        style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
+                        Unequip {equippedTemplate?.name}
+                      </button>
+                      <div className="flex gap-1 mt-1">
+                        <button onClick={() => { useEquipmentStore.getState().rerollFacet(equippedGear.instanceId); }}
+                          className="flex-1 p-1 rounded text-xs cursor-pointer"
+                          style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-info)', border: '1px solid var(--color-border)' }}>
+                          Re-roll Facet ({resources['facet_stone'] || 0})
+                        </button>
+                        {equippedGear.rarity !== 'common' && (
+                          <button onClick={() => { useEquipmentStore.getState().rerollEnchantments(equippedGear.instanceId); }}
+                            className="flex-1 p-1 rounded text-xs cursor-pointer"
+                            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-xp)', border: '1px solid var(--color-border)' }}>
+                            Re-roll Enchants ({resources['enhancement_shard'] || 0})
+                          </button>
+                        )}
+                      </div>
+                    </>
                   )}
                   {available.length === 0 && !equippedGear && (
                     <div className="text-xs p-1" style={{ color: 'var(--color-text-muted)' }}>No gear available for this slot.</div>

@@ -94,6 +94,12 @@ export const RESOURCES: Record<string, Resource> = {
   // SPECIAL / BOSS DROP RESOURCES
   // =============================================
   icqor_chess_piece: { id: 'icqor_chess_piece', name: 'Icqor Chess Piece', description: 'A mysterious artifact dropped by powerful bosses. Used to unlock Starlight nodes.', sourceSkillId: 'combat', sellValue: 50 },
+
+  // =============================================
+  // ENHANCEMENT MATERIALS
+  // =============================================
+  facet_stone: { id: 'facet_stone', name: 'Facet Stone', description: 'A rare crystalline stone that can re-roll the facet on a piece of gear. Craft via Tinkering.', sourceSkillId: 'tinkering', sellValue: 75 },
+  enhancement_shard: { id: 'enhancement_shard', name: 'Enhancement Shard', description: 'A glowing shard that can re-roll enchantments on gear. Craft via Biochemistry.', sourceSkillId: 'biochemistry', sellValue: 100 },
 };
 
 export function getResourceById(id: string): Resource | undefined {

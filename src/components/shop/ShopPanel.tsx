@@ -31,16 +31,28 @@ export function ShopPanel() {
     ? new Date(entitlement.expiresAt).toLocaleDateString()
     : null;
 
-  const handlePurchase = (sku: string) => {
+  const handlePurchase = async (sku: string) => {
     if (!isSteam) return;
     startPurchase(sku as any);
 
-    // In production, this would go through Steam Microtransaction API.
-    // For now, complete immediately for testing/development.
-    // TODO: Replace with actual Steam purchase flow via Supabase Edge Functions
-    setTimeout(() => {
-      completePurchase(sku as any);
-    }, 500);
+    try {
+      // Attempt Steam Microtransaction API via IPC
+      if (window.__STEAM_API__ && 'initiatePurchase' in window.__STEAM_API__) {
+        const result = await (window.__STEAM_API__ as any).initiatePurchase(sku);
+        if (result?.success) {
+          completePurchase(sku as any);
+          return;
+        }
+        throw new Error(result?.error || 'Purchase declined');
+      }
+
+      // Development fallback: complete immediately for testing
+      setTimeout(() => {
+        completePurchase(sku as any);
+      }, 500);
+    } catch (e: any) {
+      useGoldenCapStore.getState().failPurchase(e.message || 'Purchase failed');
+    }
   };
 
   return (

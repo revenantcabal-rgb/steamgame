@@ -12,7 +12,7 @@ export function BottomPanel() {
   const totalUnread = Object.values(unreadCounts).reduce((sum, n) => sum + n, 0);
 
   return (
-    <div>
+    <div className="shrink-0" style={{ maxHeight: '250px' }}>
       {/* Tab Bar */}
       <div
         className="flex"

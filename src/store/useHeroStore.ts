@@ -10,10 +10,21 @@ import { ABILITIES } from '../config/abilities';
 import { CONSUMABLES } from '../config/consumables';
 import { getPremiumBonuses } from '../engine/PremiumBonuses';
 
+/** Equippable combat skill items with rank 1-5 (found as drops, upgraded via duplicates) */
+export interface OwnedSkillItem {
+  skillId: string;
+  rank: number;       // 1-5
+  duplicates: number; // duplicates collected toward next rank
+}
+
+/** Duplicates needed per rank: Rank 2=3, Rank 3=8, Rank 4=25, Rank 5=84 */
+const RANK_UPGRADE_COST = [0, 0, 3, 8, 25, 84];
+
 interface HeroState {
   heroes: Hero[];
   selectedHeroId: string | null;
   ownedAbilities: string[];
+  ownedSkillItems: OwnedSkillItem[];
 
   recruit: (classId: string, isFree?: boolean) => Hero | null;
   dismissHero: (heroId: string) => void;
@@ -31,6 +42,11 @@ interface HeroState {
   equipConsumable: (heroId: string, slotIndex: number, consumableId: string) => boolean;
   unequipConsumable: (heroId: string, slotIndex: number) => void;
 
+  /** Add a skill item drop (or add duplicate if already owned) */
+  addSkillItem: (skillId: string) => void;
+  /** Attempt to upgrade a skill item to the next rank using collected duplicates */
+  upgradeSkillRank: (skillId: string) => boolean;
+
   getSerializableState: () => SerializedHeroState;
   loadState: (state: SerializedHeroState) => void;
 }
@@ -38,12 +54,14 @@ interface HeroState {
 export interface SerializedHeroState {
   heroes: Hero[];
   ownedAbilities?: string[];
+  ownedSkillItems?: OwnedSkillItem[];
 }
 
 export const useHeroStore = create<HeroState>((set, get) => ({
   heroes: [],
   selectedHeroId: null,
   ownedAbilities: ['o_thick_skin', 'r_crushing_blow', 'g_quick_shot', 'w_first_aid'],
+  ownedSkillItems: [],
 
   recruit: (classId, isFree) => {
     const gameStore = useGameStore.getState();
@@ -309,7 +327,64 @@ export const useHeroStore = create<HeroState>((set, get) => ({
     }));
   },
 
-  getSerializableState: () => ({ heroes: get().heroes, ownedAbilities: get().ownedAbilities }),
+  addSkillItem: (skillId) => {
+    const state = get();
+    const existing = state.ownedSkillItems.find(s => s.skillId === skillId);
+    const gameStore = useGameStore.getState();
+
+    if (existing) {
+      // Already owned — add as duplicate
+      set({
+        ownedSkillItems: state.ownedSkillItems.map(s =>
+          s.skillId === skillId ? { ...s, duplicates: s.duplicates + 1 } : s
+        ),
+      });
+      const nextRankCost = RANK_UPGRADE_COST[existing.rank + 1] || Infinity;
+      const newDupes = existing.duplicates + 1;
+      gameStore.addLog(
+        `Skill duplicate: ${skillId} (${newDupes}/${nextRankCost} to Rank ${existing.rank + 1})`,
+        'drop',
+      );
+    } else {
+      // New skill item at Rank 1
+      set({
+        ownedSkillItems: [...state.ownedSkillItems, { skillId, rank: 1, duplicates: 0 }],
+      });
+      gameStore.addLog(`New combat skill found: ${skillId} (Rank 1)!`, 'levelup');
+    }
+  },
+
+  upgradeSkillRank: (skillId) => {
+    const state = get();
+    const item = state.ownedSkillItems.find(s => s.skillId === skillId);
+    if (!item) return false;
+
+    if (item.rank >= 5) {
+      useGameStore.getState().addLog(`${skillId} is already at maximum Rank 5.`, 'error');
+      return false;
+    }
+
+    const cost = RANK_UPGRADE_COST[item.rank + 1];
+    if (item.duplicates < cost) {
+      useGameStore.getState().addLog(
+        `Need ${cost} duplicates to upgrade ${skillId} to Rank ${item.rank + 1} (have ${item.duplicates}).`,
+        'error',
+      );
+      return false;
+    }
+
+    set({
+      ownedSkillItems: state.ownedSkillItems.map(s =>
+        s.skillId === skillId
+          ? { ...s, rank: s.rank + 1, duplicates: s.duplicates - cost }
+          : s
+      ),
+    });
+    useGameStore.getState().addLog(`Skill upgraded! ${skillId} is now Rank ${item.rank + 1}!`, 'levelup');
+    return true;
+  },
+
+  getSerializableState: () => ({ heroes: get().heroes, ownedAbilities: get().ownedAbilities, ownedSkillItems: get().ownedSkillItems }),
 
   loadState: (saved) => {
     // Migrate legacy heroes missing RES stat and ability fields
@@ -322,6 +397,7 @@ export const useHeroStore = create<HeroState>((set, get) => ({
       equippedConsumables: h.equippedConsumables || [null],
     }));
     const ownedAbilities = saved.ownedAbilities || ['o_thick_skin', 'r_crushing_blow', 'g_quick_shot'];
-    set({ heroes: migratedHeroes, selectedHeroId: null, ownedAbilities });
+    const ownedSkillItems = saved.ownedSkillItems || [];
+    set({ heroes: migratedHeroes, selectedHeroId: null, ownedAbilities, ownedSkillItems });
   },
 }));

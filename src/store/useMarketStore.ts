@@ -48,6 +48,8 @@ interface MarketState {
   searchListings: (query: string) => MarketListing[];
   ensureBotPOs: (itemId: string, itemName: string, category: MarketCategory) => void;
   cleanExpired: () => void;
+  /** Periodic price adjustment based on supply vs demand */
+  tickPrices: () => void;
 
   getSerializableState: () => SerializedMarketState;
   loadState: (state: SerializedMarketState) => void;
@@ -626,6 +628,46 @@ export const useMarketStore = create<MarketState>((set, get) => ({
       listings: state.listings.filter(l => l.expiresAt > now || (l.sellerId !== PLAYER_ID && l.expiresAt > now)),
       purchaseOrders: state.purchaseOrders.filter(po => po.expiresAt > now),
     });
+  },
+
+  tickPrices: () => {
+    const state = get();
+    const newBasePrices = { ...state.basePrices };
+    let changed = false;
+
+    // For each item with active listings or POs, adjust base price toward equilibrium
+    const supplyByItem: Record<string, number> = {};
+    const demandByItem: Record<string, number> = {};
+
+    for (const listing of state.listings) {
+      supplyByItem[listing.itemId] = (supplyByItem[listing.itemId] || 0) + listing.quantity;
+    }
+    for (const po of state.purchaseOrders) {
+      if (!po.isBot) {
+        demandByItem[po.itemId] = (demandByItem[po.itemId] || 0) + (po.quantity - po.quantityFilled);
+      }
+    }
+
+    // Adjust prices: if demand > supply, price rises 1%; if supply > demand, price drops 1%
+    const allItems = new Set([...Object.keys(supplyByItem), ...Object.keys(demandByItem)]);
+    for (const itemId of allItems) {
+      const supply = supplyByItem[itemId] || 0;
+      const demand = demandByItem[itemId] || 0;
+      const currentBase = newBasePrices[itemId];
+      if (!currentBase) continue;
+
+      if (demand > supply * 1.5) {
+        newBasePrices[itemId] = Math.floor(currentBase * 1.01);
+        changed = true;
+      } else if (supply > demand * 1.5) {
+        newBasePrices[itemId] = Math.max(1, Math.floor(currentBase * 0.99));
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      set({ basePrices: newBasePrices });
+    }
   },
 
   getSerializableState: () => ({

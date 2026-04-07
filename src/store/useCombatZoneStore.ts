@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { COMBAT_ZONES, ZONE_TIER_MULTIPLIERS } from '../config/combatZones';
 import { simulateFight, simulateBossFight, getFightDuration, canEnterZone, getDynamicDifficultyMultiplier } from '../engine/IdleCombatEngine';
-import { addHeroXp } from '../engine/HeroEngine';
+import { addHeroXp, getHeroFocusRing } from '../engine/HeroEngine';
 import { useGameStore } from './useGameStore';
 import { useHeroStore } from './useHeroStore';
 import { useEquipmentStore } from './useEquipmentStore';
@@ -202,7 +202,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           let bossWon = false;
           for (const hero of activeHeroes) {
             const result = simulateBossFight(hero, dep.zoneId, dep.zoneTier, dep.waveMultiplier, difficultyMult);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier));
+            const eqStore = useEquipmentStore.getState();
+            const focusRing = getHeroFocusRing(hero.id, eqStore.heroEquipment, eqStore.inventory);
+            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier), focusRing);
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {
@@ -283,7 +285,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           for (const hero of activeHeroes) {
             const enemy = target?.enemy || zone.targets[0].enemy;
             const result = simulateFight(hero, enemy, dep.zoneTier, zone.minLevel, dep.waveMultiplier, difficultyMult);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier));
+            const eqStoreNorm = useEquipmentStore.getState();
+            const focusRingNorm = getHeroFocusRing(hero.id, eqStoreNorm.heroEquipment, eqStoreNorm.inventory);
+            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier), focusRingNorm);
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {
