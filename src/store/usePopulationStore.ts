@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { getTripDuration, processTrip } from '../engine/PopulationEngine';
-import { SKILLS } from '../config/skills';
+import { getTripDuration, processTrip, POPULATION_MILESTONES } from '../engine/PopulationEngine';
+import { SKILLS, GATHERING_SKILLS } from '../config/skills';
 import type { WorkerAssignment, PopulationState } from '../types/population';
 import { useGameStore } from './useGameStore';
+import { useHeroStore } from './useHeroStore';
+import { useStoryStore } from './useStoryStore';
 
 interface PopulationActions {
   /** Create a new worker assignment */
@@ -13,6 +15,8 @@ interface PopulationActions {
   adjustWorkers: (assignmentId: string, newCount: number) => void;
   /** Process one second of population work */
   tick: () => void;
+  /** Check and claim any eligible milestones */
+  checkMilestones: () => void;
   /** Get total assigned workers */
   getAssignedWorkerCount: () => number;
   /** Serializable state */
@@ -29,6 +33,7 @@ export interface SerializedPopulationState {
 }
 
 let nextAssignmentId = 1;
+let milestoneCheckCounter = 0;
 
 export const usePopulationStore = create<PopulationState & PopulationActions>((set, get) => ({
   availableWorkers: 3,
@@ -107,6 +112,12 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
   },
 
   tick: () => {
+    // Check milestones every 5 ticks (5 seconds)
+    if (++milestoneCheckCounter >= 5) {
+      milestoneCheckCounter = 0;
+      get().checkMilestones();
+    }
+
     const state = get();
     if (state.assignments.length === 0) return;
 
@@ -193,6 +204,86 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
       totalWorkers: state.totalWorkers - workersLostThisTick,
       availableWorkers: state.availableWorkers + workersFreed,
     });
+  },
+
+  checkMilestones: () => {
+    const state = get();
+    const gameStore = useGameStore.getState();
+    const gatheringSkillIds = GATHERING_SKILLS.map(s => s.id);
+
+    // Get current game state for checking conditions
+    const heroCount = useHeroStore.getState().heroes.length;
+    const skills = gameStore.skills;
+
+    // Helper: highest gathering skill level
+    const maxGatheringLevel = Math.max(0, ...gatheringSkillIds.map(id => skills[id]?.level || 0));
+    const allGatheringAt100 = gatheringSkillIds.length > 0 && gatheringSkillIds.every(id => (skills[id]?.level || 0) >= 100);
+
+    // Story completion check (tutorial = story 1 complete)
+    const storyState = useStoryStore.getState();
+    const tutorialComplete = storyState.completedStories?.includes(1) ?? false;
+
+    // Check each milestone
+    let workersGained = 0;
+    const newClaimed = [...state.claimedMilestones];
+
+    for (const milestone of POPULATION_MILESTONES) {
+      if (newClaimed.includes(milestone.id)) continue; // Already claimed
+      if (milestone.id === 'start') continue; // Auto-claimed at init
+
+      let eligible = false;
+      switch (milestone.id) {
+        case 'tutorial_complete':
+          eligible = tutorialComplete;
+          break;
+        case 'first_hero':
+          eligible = heroCount >= 1;
+          break;
+        case 'gathering_15':
+          eligible = maxGatheringLevel >= 15;
+          break;
+        case 'gathering_30':
+          eligible = maxGatheringLevel >= 30;
+          break;
+        case 'gathering_45':
+          eligible = maxGatheringLevel >= 45;
+          break;
+        case 'gathering_60':
+          eligible = maxGatheringLevel >= 60;
+          break;
+        case 'gathering_80':
+          eligible = maxGatheringLevel >= 80;
+          break;
+        case 'gathering_100':
+          eligible = maxGatheringLevel >= 100;
+          break;
+        case 'all_gathering_100':
+          eligible = allGatheringAt100;
+          break;
+        // PVP and clan milestones — skip for now (systems may not exist yet)
+        case 'first_pvp_win':
+        case 'join_clan':
+          eligible = false;
+          break;
+      }
+
+      if (eligible) {
+        newClaimed.push(milestone.id);
+        workersGained += milestone.workers;
+        gameStore.addLog(
+          `Milestone: ${milestone.description}! +${milestone.workers} worker${milestone.workers > 1 ? 's' : ''}.`,
+          'levelup',
+        );
+      }
+    }
+
+    if (workersGained > 0) {
+      set({
+        claimedMilestones: newClaimed,
+        totalWorkers: state.totalWorkers + workersGained,
+        availableWorkers: state.availableWorkers + workersGained,
+      });
+    }
   },
 
   getAssignedWorkerCount: () => {

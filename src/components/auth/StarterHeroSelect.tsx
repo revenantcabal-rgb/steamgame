@@ -1,6 +1,8 @@
 import { CLASSES } from '../../config/classes';
 import { useHeroStore } from '../../store/useHeroStore';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useStoryStore } from '../../store/useStoryStore';
+import { ItemIcon } from '../../utils/itemIcons';
 
 const STARTER_CLASSES = [
   {
@@ -35,12 +37,18 @@ export function StarterHeroSelect() {
     const hero = recruit(classId, true);
     if (!hero) return;
 
-    // Mark starter hero as chosen on the character slot
+    // Mark starter hero as chosen on the character slot and save the class ID
     const authState = useAuthStore.getState();
     const slots = authState.characterSlots.map(s =>
-      s.slotIndex === activeSlot ? { ...s, starterHeroChosen: true } : s
+      s.slotIndex === activeSlot ? { ...s, starterHeroChosen: true, starterClassId: classId } : s
     );
     useAuthStore.setState({ characterSlots: slots });
+
+    // Set starterCombatStyle in the story store
+    const classDef = CLASSES[classId];
+    if (classDef) {
+      useStoryStore.setState({ starterCombatStyle: classDef.primaryCombatStyle });
+    }
 
     // Persist the slot update
     if (activeSlot !== null) {
@@ -92,7 +100,9 @@ export function StarterHeroSelect() {
                   (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
                 }}
               >
-                <div className="text-4xl mb-3">{starter.icon}</div>
+                <div className="mb-3">
+                  <ItemIcon itemId={starter.classId} itemType="hero" size={64} fallbackLabel={starter.icon} fallbackColor={starter.accentColor} />
+                </div>
                 <div
                   className="text-lg font-bold mb-1"
                   style={{ color: starter.accentColor }}

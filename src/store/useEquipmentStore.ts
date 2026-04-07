@@ -8,15 +8,29 @@ import { useAnticheatStore } from './useAnticheatStore';
 import { useAchievementStore } from './useAchievementStore';
 import { useStoryStore } from './useStoryStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useCombatZoneStore } from './useCombatZoneStore';
 import type { GearInstance, HeroEquipment, EquipmentSlot } from '../types/equipment';
+import { getCraftTime } from '../types/equipment';
+
+interface ActiveCraft {
+  templateId: string;
+  craftSkillLevel: number;
+  progress: number;  // seconds elapsed
+  duration: number;  // total seconds needed
+}
 
 interface EquipmentState {
   /** All gear instances owned by the player */
   inventory: GearInstance[];
   /** Per-hero equipment (heroId -> equipped gear instance IDs) */
   heroEquipment: Record<string, HeroEquipment>;
+  /** Currently in-progress craft (null if idle) */
+  activeCraft: ActiveCraft | null;
 
   craftItem: (templateId: string, craftSkillLevel: number) => GearInstance | null;
+  startCraft: (templateId: string, craftSkillLevel: number) => boolean;
+  cancelCraft: () => void;
+  tickCraft: () => void;
   equipItem: (heroId: string, slot: EquipmentSlot, instanceId: string) => boolean;
   unequipItem: (heroId: string, slot: EquipmentSlot) => void;
   discardItem: (instanceId: string) => void;
@@ -28,11 +42,120 @@ interface EquipmentState {
 export interface SerializedEquipmentState {
   inventory: GearInstance[];
   heroEquipment: Record<string, HeroEquipment>;
+  activeCraft?: ActiveCraft | null;
 }
 
 export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   inventory: [],
   heroEquipment: {},
+  activeCraft: null,
+
+  // startCraft: validates, consumes resources, starts the timer
+  startCraft: (templateId, craftSkillLevel) => {
+    const state = get();
+    if (state.activeCraft) {
+      useGameStore.getState().addLog('Already crafting something. Wait for it to finish.', 'error');
+      return false;
+    }
+
+    const template = GEAR_TEMPLATES[templateId];
+    if (!template) return false;
+
+    const gameStore = useGameStore.getState();
+
+    // Check previous tier gear requirement (gear chaining)
+    let prevTierGearIdx = -1;
+    if (template.requiresPreviousTier) {
+      prevTierGearIdx = state.inventory.findIndex(g => {
+        if (g.templateId !== template.requiresPreviousTier) return false;
+        for (const eq of Object.values(state.heroEquipment)) {
+          for (const slotVal of Object.values(eq)) {
+            if (slotVal === g.instanceId) return false;
+          }
+        }
+        return true;
+      });
+      if (prevTierGearIdx === -1) {
+        const prevTemplate = GEAR_TEMPLATES[template.requiresPreviousTier];
+        gameStore.addLog(`Need a ${prevTemplate?.name || template.requiresPreviousTier} (unequipped) to forge ${template.name}.`, 'error');
+        return false;
+      }
+    }
+
+    // Check resources
+    const resources = { ...gameStore.resources };
+    for (const input of template.craftingInputs) {
+      if ((resources[input.resourceId] || 0) < input.quantity) {
+        gameStore.addLog(`Not enough ${input.resourceId.replace(/_/g, ' ')} to craft ${template.name}.`, 'error');
+        return false;
+      }
+    }
+
+    // Consume resources upfront
+    for (const input of template.craftingInputs) {
+      resources[input.resourceId] -= input.quantity;
+    }
+    useGameStore.setState({ resources });
+
+    // Consume previous tier gear (gear chaining)
+    let newInventory = [...state.inventory];
+    if (prevTierGearIdx >= 0) {
+      newInventory.splice(prevTierGearIdx, 1);
+    }
+
+    const duration = getCraftTime(template);
+    gameStore.addLog(`Started crafting ${template.name} (${duration}s)...`, 'info');
+
+    set({
+      inventory: newInventory,
+      activeCraft: { templateId, craftSkillLevel, progress: 0, duration },
+    });
+    return true;
+  },
+
+  cancelCraft: () => {
+    const state = get();
+    if (!state.activeCraft) return;
+    const template = GEAR_TEMPLATES[state.activeCraft.templateId];
+    useGameStore.getState().addLog(`Cancelled crafting ${template?.name || 'item'}. Resources were already consumed.`, 'info');
+    set({ activeCraft: null });
+  },
+
+  tickCraft: () => {
+    const state = get();
+    if (!state.activeCraft) return;
+
+    const newProgress = state.activeCraft.progress + 1;
+    if (newProgress >= state.activeCraft.duration) {
+      // Craft complete — produce the item
+      const gear = craftGear(state.activeCraft.templateId, state.activeCraft.craftSkillLevel);
+      if (gear) {
+        const template = GEAR_TEMPLATES[state.activeCraft.templateId];
+        const rarityLabel = gear.rarity.charAt(0).toUpperCase() + gear.rarity.slice(1);
+        const facetPrefix = gear.facet ? `${gear.facet.name} ` : '';
+        useGameStore.getState().addLog(
+          `Crafted [${rarityLabel}] ${facetPrefix}${template?.name || 'item'}!`,
+          gear.rarity === 'plague' || gear.rarity === 'unique' ? 'levelup' : 'info',
+        );
+
+        // Anti-cheat + achievements
+        const actorId = useAuthStore.getState().user?.id || 'system';
+        useAnticheatStore.getState().logItemEvent(gear.gameId, 'craft', actorId, undefined, 1, { templateId: state.activeCraft.templateId, rarity: gear.rarity });
+        useAchievementStore.getState().incrementStat('gearCrafted');
+
+        set(s => ({
+          inventory: [...s.inventory, gear],
+          activeCraft: null,
+        }));
+      } else {
+        set({ activeCraft: null });
+      }
+    } else {
+      set(s => ({
+        activeCraft: s.activeCraft ? { ...s.activeCraft, progress: newProgress } : null,
+      }));
+    }
+  },
 
   craftItem: (templateId, craftSkillLevel) => {
     const template = GEAR_TEMPLATES[templateId];
@@ -118,6 +241,12 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     const hero = useHeroStore.getState().heroes.find(h => h.id === heroId);
     if (!hero) return false;
 
+    // Block equipment changes while hero is deployed in combat
+    if (useCombatZoneStore.getState().isHeroDeployed(heroId)) {
+      useGameStore.getState().addLog(`${hero.name} is deployed in combat — recall first to change equipment.`, 'error');
+      return false;
+    }
+
     const totalStats = getTotalStats(hero);
     for (const req of template.statRequirements) {
       if (totalStats[req.stat] < req.value) {
@@ -180,6 +309,13 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   },
 
   unequipItem: (heroId, slot) => {
+    // Block equipment changes while hero is deployed in combat
+    if (useCombatZoneStore.getState().isHeroDeployed(heroId)) {
+      const hero = useHeroStore.getState().heroes.find(h => h.id === heroId);
+      useGameStore.getState().addLog(`${hero?.name || 'Hero'} is deployed in combat — recall first to change equipment.`, 'error');
+      return;
+    }
+
     set(state => ({
       heroEquipment: {
         ...state.heroEquipment,
@@ -218,12 +354,14 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   getSerializableState: () => ({
     inventory: get().inventory,
     heroEquipment: get().heroEquipment,
+    activeCraft: get().activeCraft,
   }),
 
   loadState: (saved) => {
     set({
       inventory: saved.inventory,
       heroEquipment: saved.heroEquipment,
+      activeCraft: saved.activeCraft || null,
     });
   },
 }));

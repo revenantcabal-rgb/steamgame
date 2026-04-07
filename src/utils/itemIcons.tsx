@@ -1,5 +1,18 @@
 import type { GearSlotCategory } from '../types/equipment';
 
+/** Map class IDs to available hero PNG filenames where names don't match */
+const HERO_ICON_MAP: Record<string, string> = {
+  warden: 'vanguard',
+  trapper: 'scout',
+  bombardier: 'mad_bomber',
+  deadeye: 'sniper',
+  demolisher: 'demolitionist',
+  scavenger: 'gladiator',
+  ranger: 'gunslinger',
+  prospector: 'war_engineer',
+  artificer: 'pyromaniac',
+};
+
 /**
  * Returns the icon path for a given item.
  * itemType: 'weapon' | 'armor' | 'accessory' | 'resource' | 'consumable' | 'tool' | 'hero'
@@ -34,7 +47,7 @@ export function getItemIconPath(
     case 'tool':
       return `/assets/tools/${itemId}.png`;
     case 'hero':
-      return `/assets/heroes/${itemId}.png`;
+      return `/assets/heroes/${HERO_ICON_MAP[itemId] || itemId}.png`;
     default:
       return `/assets/resources/${itemId}.png`;
   }

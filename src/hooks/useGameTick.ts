@@ -23,6 +23,7 @@ export function useGameTick() {
   const populationTick = usePopulationStore(s => s.tick);
   const combatTick = useCombatZoneStore(s => s.tick);
   const expeditionTick = useExpeditionStore(s => s.tick);
+  const craftTick = useEquipmentStore(s => s.tickCraft);
   const hasLoadedRef = useRef(false);
   const saveKeyRef = useRef<string | null>(null);
 
@@ -203,9 +204,10 @@ export function useGameTick() {
       populationTick();
       combatTick();
       expeditionTick();
+      craftTick();
     }, TICK_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [gameTick, populationTick, combatTick, expeditionTick]);
+  }, [gameTick, populationTick, combatTick, expeditionTick, craftTick]);
 
   // Periodic market cleanup (every 5 minutes)
   useEffect(() => {

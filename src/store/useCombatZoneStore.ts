@@ -37,6 +37,7 @@ interface CombatZoneState {
   tierUnlocks: Record<string, number>;
   bossKillCounts: Record<string, number>;
 
+  isHeroDeployed: (heroId: string) => boolean;
   deployParty: (heroIds: string[], zoneId: string, targetId: string, tier: number) => boolean;
   recallParty: (partyId: string) => void;
   recallHero: (partyId: string, heroId: string) => void;
@@ -58,6 +59,10 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
   deployments: [],
   tierUnlocks: {},
   bossKillCounts: {},
+
+  isHeroDeployed: (heroId) => {
+    return get().deployments.some(d => d.heroIds.includes(heroId));
+  },
 
   deployParty: (heroIds, zoneId, targetId, tier) => {
     const state = get();

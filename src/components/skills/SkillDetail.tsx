@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/useGameStore';
 import { usePopulationStore } from '../../store/usePopulationStore';
 import { SKILLS } from '../../config/skills';
@@ -19,6 +19,15 @@ export function SkillDetail() {
   const actionProgress = useGameStore(s => s.actionProgress);
   const setSubActivity = useGameStore(s => s.setSubActivity);
   const resources = useGameStore(s => s.resources);
+  const isActionRunning = useGameStore(s => s.isActionRunning);
+  const actionQueue = useGameStore(s => s.actionQueue);
+  const currentActionRepeatTarget = useGameStore(s => s.currentActionRepeatTarget);
+  const currentActionRepeatCount = useGameStore(s => s.currentActionRepeatCount);
+  const startAction = useGameStore(s => s.startAction);
+  const stopAction = useGameStore(s => s.stopAction);
+  const setRepeatTarget = useGameStore(s => s.setRepeatTarget);
+  const addToQueue = useGameStore(s => s.addToQueue);
+  const removeFromQueue = useGameStore(s => s.removeFromQueue);
 
   if (!activeSkillId) {
     return (
@@ -49,6 +58,14 @@ export function SkillDetail() {
   const isProduction = skillDef.category === 'production';
   const scaling = isGathering ? getGatheringSpeedMultiplier(playerSkill.level) : null;
 
+  const REPEAT_OPTIONS = [
+    { label: '1', value: 1 },
+    { label: '10', value: 10 },
+    { label: '100', value: 100 },
+    { label: '1000', value: 1000 },
+    { label: '\u221E', value: 0 },
+  ];
+
   return (
     <div className="flex-1 p-6 overflow-y-auto">
       {/* Header */}
@@ -67,6 +84,189 @@ export function SkillDetail() {
           </div>
         )}
       </div>
+
+      {/* Action Controls (Production skills only — gathering uses worker deployment) */}
+      {!isGathering && (
+        <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>Action Controls</h3>
+
+          {/* Repeat selector */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Repeat:</span>
+            <div className="flex gap-1">
+              {REPEAT_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setRepeatTarget(opt.value)}
+                  className="px-3 py-1 rounded text-xs font-bold cursor-pointer transition-all"
+                  style={{
+                    backgroundColor: currentActionRepeatTarget === opt.value ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+                    color: currentActionRepeatTarget === opt.value ? '#000' : 'var(--color-text-muted)',
+                    border: currentActionRepeatTarget === opt.value ? '1px solid var(--color-accent)' : '1px solid var(--color-border)',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <span className="text-xs ml-2" style={{ color: 'var(--color-text-muted)' }}>
+              {isActionRunning
+                ? currentActionRepeatTarget === 0
+                  ? `Running (\u221E)`
+                  : `Action ${currentActionRepeatCount} of ${currentActionRepeatTarget}`
+                : currentActionRepeatTarget === 0
+                  ? 'Infinite'
+                  : `${currentActionRepeatTarget} actions`}
+            </span>
+          </div>
+
+          {/* Start / Stop / Queue buttons */}
+          <div className="flex gap-2">
+            {!isActionRunning ? (
+              <button
+                onClick={startAction}
+                disabled={!activeSubActivityId}
+                className="flex-1 px-4 py-2 rounded font-bold text-sm cursor-pointer transition-all"
+                style={{
+                  backgroundColor: activeSubActivityId ? '#27ae60' : 'var(--color-bg-tertiary)',
+                  color: activeSubActivityId ? '#fff' : 'var(--color-text-muted)',
+                  border: 'none',
+                  opacity: activeSubActivityId ? 1 : 0.5,
+                  cursor: activeSubActivityId ? 'pointer' : 'not-allowed',
+                }}
+              >
+                &#9654; Start
+              </button>
+            ) : (
+              <button
+                onClick={stopAction}
+                className="flex-1 px-4 py-2 rounded font-bold text-sm cursor-pointer transition-all"
+                style={{
+                  backgroundColor: '#e74c3c',
+                  color: '#fff',
+                  border: 'none',
+                }}
+              >
+                &#9632; Stop
+              </button>
+            )}
+            <button
+              onClick={() => {
+                if (activeSkillId && activeSubActivityId) {
+                  addToQueue(activeSkillId, activeSubActivityId, currentActionRepeatTarget);
+                }
+              }}
+              disabled={!activeSubActivityId}
+              className="px-4 py-2 rounded font-bold text-sm cursor-pointer transition-all"
+              style={{
+                backgroundColor: activeSubActivityId ? 'var(--color-info)' : 'var(--color-bg-tertiary)',
+                color: activeSubActivityId ? '#fff' : 'var(--color-text-muted)',
+                border: 'none',
+                opacity: activeSubActivityId ? 1 : 0.5,
+                cursor: activeSubActivityId ? 'pointer' : 'not-allowed',
+              }}
+            >
+              + Queue
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Action Progress (only when running, production only) */}
+      {!isGathering && isActionRunning && activeSubActivityId && (
+        <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <div className="flex justify-between items-center mb-2">
+            <span className="font-bold text-sm">
+              {activeActivity ? (isProduction ? `Crafting: ${activeActivity.name}` : activeActivity.name) : 'Action Progress'}
+            </span>
+            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              {actionProgress.toFixed(0)}s / {actionTime.toFixed(1)}s
+            </span>
+          </div>
+          <ProgressBar value={actionProgress} max={actionTime} color={isProduction ? 'var(--color-accent)' : 'var(--color-energy)'} height="10px" />
+
+          {/* Show current recipe costs while crafting */}
+          {isProduction && activeActivity?.resourceInputs && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {activeActivity.resourceInputs.map(input => {
+                const have = resources[input.resourceId] || 0;
+                const enough = have >= input.quantity;
+                return (
+                  <span key={input.resourceId} className="text-xs px-2 py-0.5 rounded" style={{
+                    backgroundColor: 'var(--color-bg-tertiary)',
+                    color: enough ? 'var(--color-success)' : 'var(--color-danger)',
+                  }}>
+                    {input.resourceId.replace(/_/g, ' ')}: {have}/{input.quantity}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Action Queue (production only) */}
+      {!isGathering && actionQueue.length > 0 && (
+        <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>
+            Action Queue ({actionQueue.length})
+          </h3>
+          <div className="space-y-2">
+            {actionQueue.map((item, idx) => {
+              const qSkillDef = SKILLS[item.skillId];
+              const qActivity = qSkillDef?.subActivities?.find(a => a.id === item.subActivityId);
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 rounded text-xs"
+                  style={{ backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-border)' }}
+                >
+                  <div className="flex-1">
+                    <span className="font-bold" style={{ color: 'var(--color-text-primary)' }}>
+                      {qSkillDef?.name || item.skillId}
+                    </span>
+                    <span style={{ color: 'var(--color-text-muted)' }}> - </span>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>
+                      {qActivity?.name || item.subActivityId}
+                    </span>
+                    <span className="ml-2" style={{ color: 'var(--color-text-muted)' }}>
+                      {item.repeatCount === 0 ? '\u221E' : `${item.completedCount}/${item.repeatCount}`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeFromQueue(idx)}
+                    className="px-2 py-0.5 rounded text-xs cursor-pointer"
+                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}
+                  >
+                    x
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* WORKERS SECTION (Gathering skills only) */}
+      {/* ============================================================ */}
+      {isGathering && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-3" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
+            <span className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>Workers</span>
+            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>
+              Settlement Population
+            </span>
+          </div>
+
+          <WorkerSummaryBar />
+          <WorkerDeployForm skillId={activeSkillId} />
+          <WorkerAssignments skillId={activeSkillId} />
+        </div>
+      )}
+
+      {/* Gathering Goal (gathering only) */}
+      {isGathering && activeSkillId && <GoalSetter skillId={activeSkillId} />}
 
       {/* Sub-Activity / Recipe Selector */}
       {hasSubActivities && (
@@ -180,39 +380,6 @@ export function SkillDetail() {
         </div>
       </div>
 
-      {/* Action Progress */}
-      {activeSubActivityId && (
-        <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-bold text-sm">
-              {activeActivity ? (isProduction ? `Crafting: ${activeActivity.name}` : activeActivity.name) : 'Action Progress'}
-            </span>
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              {actionProgress.toFixed(0)}s / {actionTime.toFixed(1)}s
-            </span>
-          </div>
-          <ProgressBar value={actionProgress} max={actionTime} color={isProduction ? 'var(--color-accent)' : 'var(--color-energy)'} height="10px" />
-
-          {/* Show current recipe costs while crafting */}
-          {isProduction && activeActivity?.resourceInputs && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {activeActivity.resourceInputs.map(input => {
-                const have = resources[input.resourceId] || 0;
-                const enough = have >= input.quantity;
-                return (
-                  <span key={input.resourceId} className="text-xs px-2 py-0.5 rounded" style={{
-                    backgroundColor: 'var(--color-bg-tertiary)',
-                    color: enough ? 'var(--color-success)' : 'var(--color-danger)',
-                  }}>
-                    {input.resourceId.replace(/_/g, ' ')}: {have}/{input.quantity}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Current Drops (gathering only) */}
       {isGathering && activeActivity && scaling && (
         <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
@@ -237,27 +404,6 @@ export function SkillDetail() {
           </div>
         </div>
       )}
-
-      {/* Gathering Goal (gathering only) */}
-      {isGathering && activeSkillId && <GoalSetter skillId={activeSkillId} />}
-
-      {/* ============================================================ */}
-      {/* WORKERS SECTION (Gathering skills only) */}
-      {/* ============================================================ */}
-      {isGathering && (
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3" style={{ borderTop: '1px solid var(--color-border)', paddingTop: '16px' }}>
-            <span className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>Workers</span>
-            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>
-              Settlement Population
-            </span>
-          </div>
-
-          <WorkerSummaryBar />
-          <WorkerDeployForm skillId={activeSkillId} />
-          <WorkerAssignments skillId={activeSkillId} />
-        </div>
-      )}
     </div>
   );
 }
@@ -274,15 +420,51 @@ function WorkerSummaryBar() {
   const availableWorkers = usePopulationStore(s => s.availableWorkers);
   const getAssignedWorkerCount = usePopulationStore(s => s.getAssignedWorkerCount);
   const totalWorkersLost = usePopulationStore(s => s.totalWorkersLost);
+  const assignments = usePopulationStore(s => s.assignments);
+  const removeAssignment = usePopulationStore(s => s.removeAssignment);
 
   const assigned = getAssignedWorkerCount();
 
   return (
-    <div className="grid grid-cols-4 gap-2 mb-4">
-      <MiniStat label="Total" value={totalWorkers} color="var(--color-accent)" />
-      <MiniStat label="Available" value={availableWorkers} color="var(--color-success)" />
-      <MiniStat label="Assigned" value={assigned} color="var(--color-info)" />
-      <MiniStat label="Lost" value={totalWorkersLost} color="var(--color-danger)" />
+    <div className="mb-4">
+      <div className="grid grid-cols-4 gap-2 mb-2">
+        <MiniStat label="Total" value={totalWorkers} color="var(--color-accent)" />
+        <MiniStat label="Available" value={availableWorkers} color="var(--color-success)" />
+        <MiniStat label="Assigned" value={assigned} color="var(--color-info)" />
+        <MiniStat label="Lost" value={totalWorkersLost} color="var(--color-danger)" />
+      </div>
+
+      {/* Compact assignment breakdown */}
+      {assignments.length > 0 && (
+        <div className="p-2 rounded text-xs space-y-1" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+          {assignments.map(a => {
+            const sk = SKILLS[a.skillId];
+            const act = sk?.subActivities?.find(sa => sa.id === a.subActivityId);
+            const resNames = act?.resourceDrops.map(d => RESOURCES[d.resourceId]?.name || d.resourceId).join(', ') || '?';
+            return (
+              <div key={a.id} className="flex justify-between items-center">
+                <span style={{ color: 'var(--color-text-muted)' }}>
+                  {a.workerCount}w → <span style={{ color: 'var(--color-text-primary)' }}>{sk?.name}</span>: {act?.name} <span style={{ color: 'var(--color-accent)' }}>({resNames})</span>
+                </span>
+                <button
+                  onClick={() => removeAssignment(a.id)}
+                  className="px-1.5 py-0.5 rounded cursor-pointer ml-1"
+                  style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '9px' }}
+                >Recall</button>
+              </div>
+            );
+          })}
+          {assignments.length > 1 && (
+            <button
+              onClick={() => assignments.forEach(a => removeAssignment(a.id))}
+              className="w-full p-1 rounded text-xs font-bold cursor-pointer mt-1"
+              style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}
+            >
+              Recall All
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -300,8 +482,16 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
 function WorkerDeployForm({ skillId }: { skillId: string }) {
   const availableWorkers = usePopulationStore(s => s.availableWorkers);
   const createAssignment = usePopulationStore(s => s.createAssignment);
+  const removeAssignment = usePopulationStore(s => s.removeAssignment);
+  const assignments = usePopulationStore(s => s.assignments);
   const [selectedActivity, setSelectedActivity] = useState('');
-  const [workerCount, setWorkerCount] = useState(1);
+  const [workerCount, setWorkerCount] = useState(() => Math.max(1, Math.min(1, availableWorkers)));
+
+  const otherAssignments = assignments.filter(a => a.skillId !== skillId);
+
+  useEffect(() => {
+    setWorkerCount(prev => availableWorkers <= 0 ? 0 : Math.max(1, Math.min(prev, availableWorkers)));
+  }, [availableWorkers]);
 
   const skillDef = SKILLS[skillId];
   const activities = skillDef?.subActivities || [];
@@ -344,7 +534,8 @@ function WorkerDeployForm({ skillId }: { skillId: string }) {
             min={1}
             max={availableWorkers}
             value={workerCount}
-            onChange={e => setWorkerCount(Math.max(1, Math.min(availableWorkers, parseInt(e.target.value) || 1)))}
+            onChange={e => setWorkerCount(availableWorkers <= 0 ? 0 : Math.max(1, Math.min(availableWorkers, parseInt(e.target.value) || 1)))}
+            disabled={availableWorkers <= 0}
             className="w-full p-2 rounded text-sm"
             style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
           />
@@ -366,13 +557,48 @@ function WorkerDeployForm({ skillId }: { skillId: string }) {
         disabled={!selectedActivity || availableWorkers <= 0}
         className="w-full p-2 rounded text-sm font-bold cursor-pointer transition-all"
         style={{
-          backgroundColor: selectedActivity ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
-          color: selectedActivity ? '#000' : 'var(--color-text-muted)',
+          backgroundColor: selectedActivity && availableWorkers > 0 ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+          color: selectedActivity && availableWorkers > 0 ? '#000' : 'var(--color-text-muted)',
           border: 'none',
         }}
       >
         Deploy {workerCount} Worker{workerCount > 1 ? 's' : ''}
       </button>
+
+      {/* Cross-category reassignment prompt when no workers available */}
+      {availableWorkers <= 0 && otherAssignments.length > 0 && (
+        <div className="mt-3 p-3 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-energy)' }}>
+          <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-energy)' }}>
+            All workers are currently assigned elsewhere:
+          </div>
+          <div className="space-y-1 mb-2">
+            {otherAssignments.map(a => {
+              const sk = SKILLS[a.skillId];
+              const act = sk?.subActivities?.find(sa => sa.id === a.subActivityId);
+              const resNames = act?.resourceDrops.map(d => RESOURCES[d.resourceId]?.name || d.resourceId).join(', ') || '?';
+              return (
+                <div key={a.id} className="flex justify-between items-center text-xs">
+                  <span style={{ color: 'var(--color-text-primary)' }}>
+                    {a.workerCount}w → {sk?.name}: {act?.name} <span style={{ color: 'var(--color-accent)' }}>({resNames})</span>
+                  </span>
+                  <button
+                    onClick={() => removeAssignment(a.id)}
+                    className="px-2 py-0.5 rounded text-xs cursor-pointer ml-2"
+                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '9px' }}
+                  >Recall</button>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => otherAssignments.forEach(a => removeAssignment(a.id))}
+            className="w-full p-1.5 rounded text-xs font-bold cursor-pointer"
+            style={{ backgroundColor: 'var(--color-energy)', color: '#000', border: 'none' }}
+          >
+            Recall All Workers
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -431,6 +657,14 @@ function AssignmentCard({ assignment }: { assignment: WorkerAssignment }) {
           <div className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>
             {activity?.name || assignment.subActivityId}
           </div>
+          {activity && activity.resourceDrops.length > 0 && (
+            <div className="text-xs" style={{ color: 'var(--color-accent)' }}>
+              Gathering: {activity.resourceDrops.map(d => {
+                const res = RESOURCES[d.resourceId];
+                return `${res?.name || d.resourceId} (${d.minQty}-${d.maxQty}/trip)`;
+              }).join(', ')}
+            </div>
+          )}
           <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             {assignment.workerCount} worker{assignment.workerCount > 1 ? 's' : ''} |
             Trips: {assignment.tripsCompleted} |
@@ -489,13 +723,17 @@ function AssignmentCard({ assignment }: { assignment: WorkerAssignment }) {
 
 /* ─── Collapsed summary of workers on other skills ──────────── */
 function OtherAssignments({ assignments, totalWorkers }: { assignments: WorkerAssignment[]; totalWorkers: number }) {
+  const removeAssignment = usePopulationStore(s => s.removeAssignment);
   const [expanded, setExpanded] = useState(false);
 
-  const grouped = assignments.reduce<Record<string, { skillName: string; workers: number; trips: number }>>((acc, a) => {
+  const grouped = assignments.reduce<Record<string, { skillName: string; workers: number; trips: number; details: { activityName: string; resources: string; workerCount: number; assignmentId: string }[] }>>((acc, a) => {
     const key = a.skillId;
-    if (!acc[key]) acc[key] = { skillName: SKILLS[key]?.name || key, workers: 0, trips: 0 };
+    if (!acc[key]) acc[key] = { skillName: SKILLS[key]?.name || key, workers: 0, trips: 0, details: [] };
     acc[key].workers += a.workerCount;
     acc[key].trips += a.tripsCompleted;
+    const activity = SKILLS[key]?.subActivities?.find(sa => sa.id === a.subActivityId);
+    const resourceNames = activity?.resourceDrops.map(d => RESOURCES[d.resourceId]?.name || d.resourceId).join(', ') || '?';
+    acc[key].details.push({ activityName: activity?.name || a.subActivityId, resources: resourceNames, workerCount: a.workerCount, assignmentId: a.id });
     return acc;
   }, {});
 
@@ -512,13 +750,27 @@ function OtherAssignments({ assignments, totalWorkers }: { assignments: WorkerAs
         <span className="text-xs">{expanded ? '[-]' : '[+]'}</span>
       </button>
       {expanded && (
-        <div className="mt-2 space-y-1">
+        <div className="mt-2 space-y-2">
           {Object.entries(grouped).map(([skillId, info]) => (
-            <div key={skillId} className="flex justify-between text-xs px-1">
-              <span style={{ color: 'var(--color-text-primary)' }}>{info.skillName}</span>
-              <span style={{ color: 'var(--color-text-muted)' }}>
-                {info.workers} worker{info.workers !== 1 ? 's' : ''} | {info.trips} trips
-              </span>
+            <div key={skillId} className="px-1">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="font-bold" style={{ color: 'var(--color-text-primary)' }}>{info.skillName}</span>
+                <span style={{ color: 'var(--color-text-muted)' }}>
+                  {info.workers} worker{info.workers !== 1 ? 's' : ''} | {info.trips} trips
+                </span>
+              </div>
+              {info.details.map(d => (
+                <div key={d.assignmentId} className="flex justify-between items-center text-xs pl-2 py-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                  <span>
+                    {d.workerCount}w → {d.activityName} <span style={{ color: 'var(--color-accent)' }}>({d.resources})</span>
+                  </span>
+                  <button
+                    onClick={() => removeAssignment(d.assignmentId)}
+                    className="px-1.5 py-0.5 rounded text-xs cursor-pointer ml-1"
+                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '9px' }}
+                  >Recall</button>
+                </div>
+              ))}
             </div>
           ))}
         </div>

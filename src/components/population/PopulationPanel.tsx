@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePopulationStore } from '../../store/usePopulationStore';
 import { GATHERING_SKILLS, SKILLS } from '../../config/skills';
 import { RESOURCES } from '../../config/resources';
@@ -68,7 +68,11 @@ function NewAssignmentForm() {
   const createAssignment = usePopulationStore(s => s.createAssignment);
   const [selectedSkill, setSelectedSkill] = useState('');
   const [selectedActivity, setSelectedActivity] = useState('');
-  const [workerCount, setWorkerCount] = useState(1);
+  const [workerCount, setWorkerCount] = useState(() => Math.max(1, Math.min(1, availableWorkers)));
+
+  useEffect(() => {
+    setWorkerCount(prev => availableWorkers <= 0 ? 0 : Math.max(1, Math.min(prev, availableWorkers)));
+  }, [availableWorkers]);
 
   const skillDef = selectedSkill ? SKILLS[selectedSkill] : null;
   const activities = skillDef?.subActivities || [];
@@ -132,7 +136,8 @@ function NewAssignmentForm() {
               min={1}
               max={availableWorkers}
               value={workerCount}
-              onChange={e => setWorkerCount(Math.max(1, Math.min(availableWorkers, parseInt(e.target.value) || 1)))}
+              onChange={e => setWorkerCount(availableWorkers <= 0 ? 0 : Math.max(1, Math.min(availableWorkers, parseInt(e.target.value) || 1)))}
+              disabled={availableWorkers <= 0}
               className="w-full p-2 rounded text-sm"
               style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
             />

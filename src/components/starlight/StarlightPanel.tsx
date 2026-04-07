@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useStarlightStore } from '../../store/useStarlightStore';
 import { useGameStore } from '../../store/useGameStore';
 import { STARLIGHT_PATHS, STARLIGHT_NODES, getPathNodes, getStarlightNode } from '../../config/starlight';
@@ -13,7 +13,6 @@ const NODE_SPREAD = 10; // degrees offset for 3 nodes per ring (-10, 0, +10)
 const NODE_RADIUS = 12;
 const CENTER_RADIUS = 20;
 const SVG_SIZE = 700;
-const SVG_HALF = SVG_SIZE / 2;
 
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
@@ -53,6 +52,53 @@ export function StarlightPanel() {
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  // Zoom & pan state
+  const [zoom, setZoom] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
+
+  const viewSize = SVG_SIZE / zoom;
+  const viewHalf = viewSize / 2;
+  const dynamicViewBox = `${-viewHalf + panX} ${-viewHalf + panY} ${viewSize} ${viewSize}`;
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setZoom(prev => {
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      return Math.min(3, Math.max(0.5, prev + delta));
+    });
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (zoom <= 1) return;
+    isPanning.current = true;
+    panStart.current = { x: e.clientX, y: e.clientY, panX, panY };
+  }, [zoom, panX, panY]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isPanning.current) return;
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    // Convert pixel movement to SVG coordinate movement
+    const scale = viewSize / rect.width;
+    const dx = (e.clientX - panStart.current.x) * scale;
+    const dy = (e.clientY - panStart.current.y) * scale;
+    setPanX(panStart.current.panX - dx);
+    setPanY(panStart.current.panY - dy);
+  }, [viewSize]);
+
+  const handleMouseUp = useCallback(() => {
+    isPanning.current = false;
+  }, []);
+
+  const handleZoomReset = useCallback(() => {
+    setZoom(1);
+    setPanX(0);
+    setPanY(0);
+  }, []);
 
   const selectedNode = selectedNodeId ? getStarlightNode(selectedNodeId) : null;
   const selectedPath = selectedNode ? STARLIGHT_PATHS.find(p => p.id === selectedNode.pathId) : null;
@@ -131,10 +177,98 @@ export function StarlightPanel() {
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Left panel: SVG sphere grid (70%) */}
-      <div className="flex-[7] overflow-auto flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      <div className="flex-[7] overflow-auto flex items-center justify-center p-4 relative" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+        {/* Zoom controls */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '16px',
+            left: '16px',
+            zIndex: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+          }}
+        >
+          <button
+            onClick={() => setZoom(prev => Math.min(3, prev + 0.2))}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Zoom in"
+          >+</button>
+          <button
+            onClick={() => setZoom(prev => Math.max(0.5, prev - 0.2))}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Zoom out"
+          >-</button>
+          <button
+            onClick={handleZoomReset}
+            style={{
+              width: '32px',
+              height: 'auto',
+              padding: '4px 0',
+              borderRadius: '6px',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--color-bg-secondary)',
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Reset zoom"
+          >Reset</button>
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: '10px',
+              color: 'var(--color-text-muted)',
+              marginTop: '2px',
+            }}
+          >
+            {Math.round(zoom * 100)}%
+          </div>
+        </div>
         <svg
-          viewBox={`${-SVG_HALF} ${-SVG_HALF} ${SVG_SIZE} ${SVG_SIZE}`}
-          style={{ width: '100%', maxWidth: '700px', maxHeight: '85vh' }}
+          viewBox={dynamicViewBox}
+          style={{
+            width: '100%',
+            maxWidth: '700px',
+            maxHeight: '85vh',
+            cursor: zoom > 1 ? (isPanning.current ? 'grabbing' : 'grab') : 'default',
+          }}
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         >
           {/* Background ring circles */}
           {RING_RADII.map((r, i) => (

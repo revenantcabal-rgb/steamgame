@@ -27,7 +27,7 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
 
   return (
     <div
-      className="w-64 min-w-56 h-screen overflow-y-auto flex flex-col shrink-0"
+      className="w-48 xl:w-64 min-w-44 h-screen overflow-y-auto flex flex-col shrink-0"
       style={{
         backgroundColor: 'var(--color-bg-secondary)',
         borderRight: '1px solid var(--color-border)',

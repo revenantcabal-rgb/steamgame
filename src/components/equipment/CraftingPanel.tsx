@@ -3,17 +3,20 @@ import { useEquipmentStore } from '../../store/useEquipmentStore';
 import { useGameStore } from '../../store/useGameStore';
 import { GEAR_TEMPLATE_LIST, GEAR_TEMPLATES } from '../../config/gear';
 import { RESOURCES } from '../../config/resources';
-import { RARITY_COLORS, RARITY_LABELS } from '../../types/equipment';
+import { RARITY_COLORS, RARITY_LABELS, getCraftTime } from '../../types/equipment';
 import type { GearInstance } from '../../types/equipment';
 import { ItemIcon } from '../../utils/itemIcons';
 import { getResourceSources } from '../../utils/resourceSources';
 import { useNavigation } from '../../utils/NavigationContext';
+import { ProgressBar } from '../common/ProgressBar';
 
 export function CraftingPanel() {
   const skills = useGameStore(s => s.skills);
   const resources = useGameStore(s => s.resources);
   const inventory = useEquipmentStore(s => s.inventory);
-  const craftItem = useEquipmentStore(s => s.craftItem);
+  const startCraft = useEquipmentStore(s => s.startCraft);
+  const cancelCraft = useEquipmentStore(s => s.cancelCraft);
+  const activeCraft = useEquipmentStore(s => s.activeCraft);
   const discardItem = useEquipmentStore(s => s.discardItem);
   const [filterSlot, setFilterSlot] = useState<string>('all');
   const navigation = useNavigation();
@@ -30,7 +33,7 @@ export function CraftingPanel() {
     const template = GEAR_TEMPLATES[templateId];
     if (!template) return;
     const skill = skills[template.craftSkillId];
-    craftItem(templateId, skill?.level || 1);
+    startCraft(templateId, skill?.level || 1);
   };
 
   const canAfford = (templateId: string): boolean => {
@@ -55,10 +58,33 @@ export function CraftingPanel() {
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
       {/* Crafting recipes */}
-      <div className="w-1/2 overflow-y-auto p-4" style={{ borderRight: '1px solid var(--color-border)' }}>
+      <div className="w-full lg:w-1/2 overflow-y-auto p-4" style={{ borderRight: '1px solid var(--color-border)' }}>
         <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--color-text-primary)' }}>Forge Equipment</h3>
+
+        {/* Active Craft Progress */}
+        {activeCraft && (
+          <div className="mb-3 p-3 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-accent)' }}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-bold" style={{ color: 'var(--color-accent)' }}>
+                Crafting: {GEAR_TEMPLATES[activeCraft.templateId]?.name || activeCraft.templateId}
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  {activeCraft.progress}s / {activeCraft.duration}s
+                </span>
+                <button onClick={cancelCraft}
+                  className="px-2 py-0.5 rounded text-xs cursor-pointer"
+                  style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <ProgressBar value={activeCraft.progress} max={activeCraft.duration} color="var(--color-accent)" height="8px" />
+          </div>
+        )}
+
         <div className="flex gap-1 mb-3 flex-wrap">
           {['all', 'weapon', 'armor', 'legs', 'gloves', 'boots', 'shield', 'ring', 'earring', 'necklace'].map(s => (
             <button key={s} onClick={() => setFilterSlot(s)}
@@ -83,12 +109,20 @@ export function CraftingPanel() {
                       <ItemIcon itemId={t.id} itemType="equipment" gearSlot={t.slot} size={20} fallbackLabel={t.name.charAt(0)} />
                       {t.name} <span style={{ color: 'var(--color-text-muted)' }}>(T{t.tier} {t.slot})</span>
                     </span>
-                    <button onClick={() => handleCraft(t.id)} disabled={!affordable}
-                      className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
-                      style={{ backgroundColor: affordable ? 'var(--color-accent)' : 'var(--color-bg-tertiary)', color: affordable ? '#000' : 'var(--color-text-muted)', border: 'none' }}>
-                      Craft
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{getCraftTime(t)}s</span>
+                      <button onClick={() => handleCraft(t.id)} disabled={!affordable || !!activeCraft}
+                        className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
+                        style={{ backgroundColor: affordable && !activeCraft ? 'var(--color-accent)' : 'var(--color-bg-tertiary)', color: affordable && !activeCraft ? '#000' : 'var(--color-text-muted)', border: 'none' }}>
+                        {activeCraft ? 'Busy' : 'Craft'}
+                      </button>
+                    </div>
                   </div>
+                  {t.description && (
+                    <div className="text-xs mb-1" style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                      {t.description}
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2 text-xs">
                     {t.craftingInputs.map(i => {
                       const have = resources[i.resourceId] || 0;
@@ -98,19 +132,38 @@ export function CraftingPanel() {
                       const combatTip = sources?.combatZones.length
                         ? `Drops from: ${sources.combatZones.map(z => `${z.enemyName} (${z.zoneName})`).join(', ')}`
                         : '';
+                      const hasSkillSource = !enough && sources?.skill;
+                      const hasCombatSource = !enough && sources?.combatZones && sources.combatZones.length > 0;
                       return (
                         <span key={i.resourceId} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: enough ? 'var(--color-success)' : 'var(--color-danger)' }}>
                           <ItemIcon itemId={i.resourceId} itemType="resource" size={14} fallbackLabel={resName.charAt(0)} />
-                          {!enough && sources?.skill ? (
+                          {hasSkillSource ? (
                             <span
-                              title={combatTip || `Gather via ${sources.skill.name}`}
-                              style={{ textDecoration: 'underline', cursor: 'pointer' }}
-                              onClick={(e) => { e.stopPropagation(); navigation.navigateToSkill(sources.skill!.id); }}
+                              title={combatTip || `Gather via ${sources!.skill!.name}`}
+                              style={{ textDecoration: 'underline', cursor: 'pointer', textDecorationColor: 'var(--color-success)' }}
+                              onClick={(e) => { e.stopPropagation(); navigation.navigateToSkill(sources!.skill!.id); }}
+                            >
+                              {resName}: {have}/{i.quantity}
+                            </span>
+                          ) : hasCombatSource ? (
+                            <span
+                              title={combatTip}
+                              style={{ textDecoration: 'underline', cursor: 'pointer', textDecorationColor: 'var(--color-danger)' }}
+                              onClick={(e) => { e.stopPropagation(); navigation.navigateToCombatZone(sources!.combatZones[0].zoneId); }}
                             >
                               {resName}: {have}/{i.quantity}
                             </span>
                           ) : (
                             <span>{resName}: {have}/{i.quantity}</span>
+                          )}
+                          {hasSkillSource && hasCombatSource && (
+                            <span
+                              title={combatTip}
+                              style={{ cursor: 'pointer', color: 'var(--color-danger)', fontSize: '10px', textDecoration: 'underline' }}
+                              onClick={(e) => { e.stopPropagation(); navigation.navigateToCombatZone(sources!.combatZones[0].zoneId); }}
+                            >
+                              [combat]
+                            </span>
                           )}
                         </span>
                       );
@@ -134,7 +187,7 @@ export function CraftingPanel() {
       </div>
 
       {/* Inventory */}
-      <div className="w-1/2 overflow-y-auto p-4">
+      <div className="w-full lg:w-1/2 overflow-y-auto p-4">
         <h3 className="font-bold text-sm mb-2" style={{ color: 'var(--color-text-primary)' }}>
           Inventory ({inventory.length})
         </h3>

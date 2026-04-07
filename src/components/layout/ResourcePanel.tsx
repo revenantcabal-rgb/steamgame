@@ -21,7 +21,7 @@ export function ResourcePanel() {
 
   return (
     <div
-      className="w-56 min-w-48 h-screen overflow-y-auto flex flex-col shrink-0"
+      className="w-44 xl:w-56 min-w-40 h-screen overflow-y-auto flex flex-col shrink-0"
       style={{
         backgroundColor: 'var(--color-bg-secondary)',
         borderLeft: '1px solid var(--color-border)',

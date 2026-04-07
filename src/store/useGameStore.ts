@@ -17,6 +17,13 @@ export interface GameLog {
   type: 'info' | 'levelup' | 'drop' | 'error' | 'system';
 }
 
+export interface QueuedAction {
+  skillId: string;
+  subActivityId: string;
+  repeatCount: number;   // 0 = infinite
+  completedCount: number;
+}
+
 export type GatheringGoalType = 'none' | 'collect_amount' | 'reach_level';
 
 export interface GatheringGoal {
@@ -42,6 +49,12 @@ interface GameState {
   /** Goal for current gathering/training session */
   gatheringGoal: GatheringGoal;
 
+  // Action control
+  isActionRunning: boolean;
+  actionQueue: QueuedAction[];
+  currentActionRepeatTarget: number;  // 0 = infinite, >0 = stop after N
+  currentActionRepeatCount: number;   // how many completed
+
   // Resources
   resources: Record<string, number>;
 
@@ -59,6 +72,11 @@ interface GameState {
   setActiveSkill: (skillId: string | null, subActivityId?: string | null) => void;
   setSubActivity: (subActivityId: string) => void;
   setGatheringGoal: (goal: GatheringGoal) => void;
+  startAction: () => void;
+  stopAction: () => void;
+  setRepeatTarget: (count: number) => void;
+  addToQueue: (skillId: string, subActivityId: string, repeatCount: number) => void;
+  removeFromQueue: (index: number) => void;
   tick: () => void;
   processOfflineProgress: () => OfflineResult | null;
   addLog: (message: string, type: GameLog['type']) => void;
@@ -78,6 +96,10 @@ export interface SerializedGameState {
   resources: Record<string, number>;
   idle: IdleState;
   xpMultiplier: number;
+  isActionRunning?: boolean;
+  actionQueue?: QueuedAction[];
+  currentActionRepeatTarget?: number;
+  currentActionRepeatCount?: number;
   version: number;
 }
 
@@ -99,6 +121,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   activeSubActivityId: null,
   actionProgress: 0,
   gatheringGoal: { type: 'none' },
+  isActionRunning: false,
+  actionQueue: [],
+  currentActionRepeatTarget: 0,
+  currentActionRepeatCount: 0,
   resources: {},
   idle: createInitialIdleState(),
   xpMultiplier: 1,
@@ -107,32 +133,36 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setActiveSkill: (skillId, subActivityId) => {
     if (!skillId) {
-      set({ activeSkillId: null, activeSubActivityId: null, actionProgress: 0 });
+      set({ activeSkillId: null, activeSubActivityId: null, actionProgress: 0, isActionRunning: false });
       return;
     }
+    // If switching skills while running, stop the current action
+    const state = get();
+    const wasRunning = state.isActionRunning;
+    const subId = subActivityId ?? null;
+    set({
+      activeSkillId: skillId,
+      activeSubActivityId: subId,
+      actionProgress: 0,
+      isActionRunning: false,
+      currentActionRepeatCount: 0,
+    });
     const skillDef = SKILLS[skillId];
-    // Auto-select first sub-activity if skill has them and none specified
-    let subId = subActivityId ?? null;
-    if (skillDef?.subActivities?.length && !subId) {
-      subId = skillDef.subActivities[0].id;
+    if (wasRunning && state.activeSkillId && state.activeSkillId !== skillId) {
+      get().addLog(`Stopped action. Viewing ${skillDef?.name || skillId}.`, 'info');
+    } else {
+      get().addLog(`Viewing ${skillDef?.name || skillId}.`, 'info');
     }
-    set({ activeSkillId: skillId, activeSubActivityId: subId, actionProgress: 0 });
-    const activityName = subId
-      ? skillDef?.subActivities?.find(a => a.id === subId)?.name
-      : null;
-    const msg = activityName
-      ? `Started ${skillDef!.name}: ${activityName}.`
-      : `Started training ${skillDef?.name || skillId}.`;
-    get().addLog(msg, 'info');
   },
 
   setSubActivity: (subActivityId) => {
-    set({ activeSubActivityId: subActivityId, actionProgress: 0 });
+    // If changing sub-activity while running, stop the action and reset progress
+    set({ activeSubActivityId: subActivityId, actionProgress: 0, isActionRunning: false, currentActionRepeatCount: 0 });
     const state = get();
     const skillDef = state.activeSkillId ? SKILLS[state.activeSkillId] : null;
     const activity = skillDef?.subActivities?.find(a => a.id === subActivityId);
     if (activity) {
-      get().addLog(`Switched to ${activity.name}.`, 'info');
+      get().addLog(`Selected ${activity.name}.`, 'info');
     }
   },
 
@@ -145,6 +175,42 @@ export const useGameStore = create<GameState>((set, get) => ({
     } else {
       get().addLog('Goal cleared. Training indefinitely.', 'system');
     }
+  },
+
+  startAction: () => {
+    const state = get();
+    if (!state.activeSkillId || !state.activeSubActivityId) return;
+    set({ isActionRunning: true, currentActionRepeatCount: 0 });
+    const skillDef = SKILLS[state.activeSkillId];
+    const activity = skillDef?.subActivities?.find(a => a.id === state.activeSubActivityId);
+    const activityName = activity?.name || state.activeSubActivityId;
+    get().addLog(`Started ${skillDef?.name}: ${activityName}.`, 'info');
+  },
+
+  stopAction: () => {
+    set({ isActionRunning: false, actionProgress: 0 });
+    get().addLog('Action stopped.', 'info');
+  },
+
+  setRepeatTarget: (count) => {
+    set({ currentActionRepeatTarget: count });
+  },
+
+  addToQueue: (skillId, subActivityId, repeatCount) => {
+    const state = get();
+    const newQueue = [...state.actionQueue, { skillId, subActivityId, repeatCount, completedCount: 0 }];
+    set({ actionQueue: newQueue });
+    const skillDef = SKILLS[skillId];
+    const activity = skillDef?.subActivities?.find(a => a.id === subActivityId);
+    const countLabel = repeatCount === 0 ? 'infinite' : `${repeatCount}`;
+    get().addLog(`Queued: ${skillDef?.name} - ${activity?.name || subActivityId} (x${countLabel})`, 'system');
+  },
+
+  removeFromQueue: (index) => {
+    const state = get();
+    const newQueue = [...state.actionQueue];
+    newQueue.splice(index, 1);
+    set({ actionQueue: newQueue });
   },
 
   tick: () => {
@@ -160,8 +226,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    // No active skill? Just update timers
-    if (!state.activeSkillId) {
+    // No active skill, not running, or no sub-activity selected? Just update timers
+    if (!state.activeSkillId || !state.isActionRunning || !state.activeSubActivityId) {
       set({
         idle: { ...newIdle, lastActiveTime: now },
         totalPlayTime: state.totalPlayTime + 1,
@@ -175,6 +241,37 @@ export const useGameStore = create<GameState>((set, get) => ({
     const skillState = state.skills[state.activeSkillId];
     const actionTime = getActionTime(state.activeSkillId, skillState.level);
     const newProgress = state.actionProgress + 1;
+
+    // Helper: after a successful action completion, handle repeat count & queue transitions
+    const handleActionCompletion = () => {
+      const s = get();
+      const newCount = s.currentActionRepeatCount + 1;
+      const target = s.currentActionRepeatTarget;
+
+      // If target > 0 and we've reached it, check queue or stop
+      if (target > 0 && newCount >= target) {
+        if (s.actionQueue.length > 0) {
+          const next = s.actionQueue[0];
+          const remainingQueue = s.actionQueue.slice(1);
+          set({
+            activeSkillId: next.skillId,
+            activeSubActivityId: next.subActivityId,
+            currentActionRepeatTarget: next.repeatCount,
+            currentActionRepeatCount: 0,
+            actionQueue: remainingQueue,
+            actionProgress: 0,
+          });
+          const nextSkillDef = SKILLS[next.skillId];
+          const nextActivity = nextSkillDef?.subActivities?.find(a => a.id === next.subActivityId);
+          get().addLog(`Queue: starting ${nextSkillDef?.name} - ${nextActivity?.name || next.subActivityId}.`, 'system');
+        } else {
+          set({ isActionRunning: false, actionProgress: 0, currentActionRepeatCount: newCount });
+          get().addLog('Action complete.', 'system');
+        }
+      } else {
+        set({ currentActionRepeatCount: newCount });
+      }
+    };
 
     // Check if action is complete
     if (newProgress >= actionTime) {
@@ -305,6 +402,7 @@ export const useGameStore = create<GameState>((set, get) => ({
             idle: { ...newIdle, lastActiveTime: now, idleSecondsUsedToday: newIdle.idleSecondsUsedToday + 1 },
             totalPlayTime: state.totalPlayTime + 1,
           });
+          handleActionCompletion();
           return;
         }
 
@@ -351,6 +449,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           idle: { ...newIdle, lastActiveTime: now, idleSecondsUsedToday: newIdle.idleSecondsUsedToday + 1 },
           totalPlayTime: state.totalPlayTime + 1,
         });
+        handleActionCompletion();
         return;
       }
 
@@ -418,6 +517,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           totalPlayTime: state.totalPlayTime + 1,
           ...(goalMet ? { gatheringGoal: { type: 'none' as const } } : {}),
         });
+        handleActionCompletion();
       }
     } else {
       set({
@@ -492,6 +592,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       activeSkillId: null,
       activeSubActivityId: null,
       actionProgress: 0,
+      isActionRunning: false,
+      actionQueue: [],
+      currentActionRepeatTarget: 0,
+      currentActionRepeatCount: 0,
       resources: {},
       idle: createInitialIdleState(),
       xpMultiplier: 1,
@@ -511,6 +615,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       resources: state.resources,
       idle: state.idle,
       xpMultiplier: state.xpMultiplier,
+      isActionRunning: state.isActionRunning,
+      actionQueue: state.actionQueue,
+      currentActionRepeatTarget: state.currentActionRepeatTarget,
+      currentActionRepeatCount: state.currentActionRepeatCount,
       version: SAVE_VERSION,
     };
   },
@@ -531,6 +639,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         resources: saved.resources,
         idle: saved.idle,
         xpMultiplier: saved.xpMultiplier,
+        isActionRunning: saved.isActionRunning ?? false,
+        actionQueue: saved.actionQueue ?? [],
+        currentActionRepeatTarget: saved.currentActionRepeatTarget ?? 0,
+        currentActionRepeatCount: saved.currentActionRepeatCount ?? 0,
       });
     } else {
       console.warn('Save version too old, starting fresh');

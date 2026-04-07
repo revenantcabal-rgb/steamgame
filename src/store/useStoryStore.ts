@@ -3,8 +3,10 @@ import { STORY_CHAPTERS } from '../config/story';
 import type { ObjectiveType, StoryChapter, StoryPart } from '../config/story';
 import { GEAR_TEMPLATES } from '../config/gear';
 import { SKILLS } from '../config/skills';
+import { CLASSES } from '../config/classes';
 import { useGameStore } from './useGameStore';
 import { useChatStore } from './useChatStore';
+import { useAuthStore } from './useAuthStore';
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -31,6 +33,16 @@ const GATHERING_SKILL_IDS = Object.keys(SKILLS).filter(id => SKILLS[id].category
 /** Production skill IDs */
 const PRODUCTION_SKILL_IDS = Object.keys(SKILLS).filter(id => SKILLS[id].category === 'production');
 
+/** T1 weapons by combat style for the starter_weapon objective */
+const STARTER_WEAPONS: Record<string, string[]> = {
+  melee: ['sharpened_pipe', 'rusty_machete'],
+  ranged: ['scrap_bow', 'slingshot'],
+  demolitions: ['pipe_bomb', 'molotov'],
+};
+
+/** All T1 weapon IDs (fallback when combat style is unknown) */
+const ALL_T1_WEAPON_IDS = Object.values(STARTER_WEAPONS).flat();
+
 // ──────────────────────────────────────────────
 // State types
 // ──────────────────────────────────────────────
@@ -46,6 +58,7 @@ interface StoryState {
   bossesDefeated: string[];
   consumablesCrafted: number;
   slotsEquipped: number;
+  starterCombatStyle: string | null;
 
   checkObjective: (type: ObjectiveType, target: string, incrementBy?: number) => void;
   completePart: () => void;
@@ -66,6 +79,7 @@ export interface SerializedStoryState {
   bossesDefeated: string[];
   consumablesCrafted: number;
   slotsEquipped: number;
+  starterCombatStyle?: string | null;
 }
 
 // ──────────────────────────────────────────────
@@ -83,6 +97,7 @@ export const useStoryStore = create<StoryState>((set, get) => ({
   bossesDefeated: [],
   consumablesCrafted: 0,
   slotsEquipped: 0,
+  starterCombatStyle: null,
 
   checkObjective: (type, target, incrementBy = 1) => {
     const state = get();
@@ -278,10 +293,29 @@ export const useStoryStore = create<StoryState>((set, get) => ({
       bossesDefeated: s.bossesDefeated,
       consumablesCrafted: s.consumablesCrafted,
       slotsEquipped: s.slotsEquipped,
+      starterCombatStyle: s.starterCombatStyle,
     };
   },
 
   loadState: (saved) => {
+    // Derive starterCombatStyle from saved data or from auth store's starterClassId
+    let starterCombatStyle = saved.starterCombatStyle ?? null;
+    if (!starterCombatStyle) {
+      // Migration: try to derive from the character slot's starterClassId
+      try {
+        const authState = useAuthStore.getState();
+        const slot = authState.characterSlots.find(s => s.slotIndex === authState.activeSlot);
+        if (slot?.starterClassId) {
+          const classDef = CLASSES[slot.starterClassId];
+          if (classDef) {
+            starterCombatStyle = classDef.primaryCombatStyle;
+          }
+        }
+      } catch {
+        // Ignore if auth store is not available during initialization
+      }
+    }
+
     set({
       currentStoryNumber: saved.currentStoryNumber ?? 1,
       currentPartIndex: saved.currentPartIndex ?? 0,
@@ -293,6 +327,7 @@ export const useStoryStore = create<StoryState>((set, get) => ({
       bossesDefeated: saved.bossesDefeated ?? [],
       consumablesCrafted: saved.consumablesCrafted ?? 0,
       slotsEquipped: saved.slotsEquipped ?? 0,
+      starterCombatStyle,
     });
   },
 }));
@@ -322,9 +357,21 @@ function doesMatch(
     case 'equip':
       // 'slots' target matches any equip event
       if (objTarget === 'slots') return true;
+      // 'any_weapon' matches any equip event (accepts any weapon)
+      if (objTarget === 'any_weapon') return true;
       break;
 
     case 'craft':
+      // starter_weapon: match T1 weapons for the player's combat style
+      if (objTarget === 'starter_weapon') {
+        const storyState = useStoryStore.getState();
+        const style = storyState.starterCombatStyle;
+        if (style && STARTER_WEAPONS[style]) {
+          return STARTER_WEAPONS[style].includes(eventTarget);
+        }
+        // Fallback: accept any T1 weapon if combat style unknown
+        return ALL_T1_WEAPON_IDS.includes(eventTarget);
+      }
       // T2 weapon check
       if (objTarget === 'weapon_t2' && T2_WEAPON_IDS.includes(eventTarget)) return true;
       // T2 armor check

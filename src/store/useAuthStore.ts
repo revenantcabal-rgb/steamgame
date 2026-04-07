@@ -31,6 +31,8 @@ export interface CharacterSlot {
   saveKey: string;
   /** Whether the player has chosen their starter hero for this slot */
   starterHeroChosen?: boolean;
+  /** The class ID of the starter hero chosen for this slot */
+  starterClassId?: string | null;
 }
 
 const MAX_SLOTS = 4;
@@ -286,6 +288,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       lastPlayedAt: Date.now(),
       saveKey,
       starterHeroChosen: false,
+      starterClassId: null,
     };
 
     const newSlots = [...state.characterSlots, newSlot];

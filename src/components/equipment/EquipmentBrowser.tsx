@@ -138,7 +138,7 @@ function ItemDetail({ template: t }: { template: GearTemplate }) {
       <h3 className="text-xl font-bold mb-1" style={{ color: isSet ? SET_COLOR : 'var(--color-text-primary)' }}>
         {t.name}
       </h3>
-      <div className="flex gap-2 text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
+      <div className="flex gap-2 text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
         <span>Tier {t.tier}</span>
         <span>|</span>
         <span>{t.slot}</span>
@@ -147,6 +147,11 @@ function ItemDetail({ template: t }: { template: GearTemplate }) {
         {t.weaponType && <><span>|</span><span>{t.weaponType}</span></>}
         {t.isTwoHanded && <><span>|</span><span>Two-Handed</span></>}
       </div>
+      {t.description && (
+        <div className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+          {t.description}
+        </div>
+      )}
 
       {/* Base Stats */}
       <div className="p-3 rounded mb-3" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>

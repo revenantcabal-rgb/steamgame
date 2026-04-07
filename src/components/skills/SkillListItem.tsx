@@ -19,11 +19,13 @@ export function SkillListItem({ skillId, onSelect }: SkillListItemProps) {
   const skillDef = SKILLS[skillId];
   const playerSkill = useGameStore(s => s.skills[skillId]);
   const activeSkillId = useGameStore(s => s.activeSkillId);
+  const isActionRunning = useGameStore(s => s.isActionRunning);
   const setActiveSkill = useGameStore(s => s.setActiveSkill);
 
   if (!skillDef || !playerSkill) return null;
 
   const isActive = activeSkillId === skillId;
+  const isRunning = isActive && isActionRunning;
   const currentLevelXp = xpForLevel(playerSkill.level);
   const nextLevelXp = xpForLevel(playerSkill.level + 1);
   const xpIntoLevel = playerSkill.xp - currentLevelXp;
@@ -72,9 +74,14 @@ export function SkillListItem({ skillId, onSelect }: SkillListItemProps) {
       ) : (
         <div className="text-xs" style={{ color: 'var(--color-accent)' }}>MAX LEVEL</div>
       )}
-      {isActive && (
+      {isRunning && (
         <div className="mt-1 text-xs" style={{ color: CATEGORY_COLORS[skillDef.category] }}>
           &#9654; {skillDef.category === 'gathering' ? 'SCROUNGING...' : skillDef.category === 'production' ? 'CRAFTING...' : 'FIGHTING...'}
+        </div>
+      )}
+      {isActive && !isRunning && (
+        <div className="mt-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          Viewing
         </div>
       )}
     </button>

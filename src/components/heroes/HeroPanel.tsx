@@ -3,6 +3,7 @@ import { useHeroStore } from '../../store/useHeroStore';
 import { useEquipmentStore } from '../../store/useEquipmentStore';
 import { useStoryStore } from '../../store/useStoryStore';
 import { useGameStore } from '../../store/useGameStore';
+import { useCombatZoneStore } from '../../store/useCombatZoneStore';
 import { CLASS_LIST, CLASSES } from '../../config/classes';
 import { CATEGORIES } from '../../config/categories';
 import { GEAR_TEMPLATES } from '../../config/gear';
@@ -64,7 +65,7 @@ export function HeroPanel() {
   return (
     <div className="flex-1 flex overflow-hidden">
       {/* Hero List */}
-      <div className="w-72 shrink-0 overflow-y-auto p-3 space-y-2" style={{ borderRight: '1px solid var(--color-border)' }}>
+      <div className="w-56 xl:w-72 shrink-0 overflow-y-auto p-3 space-y-2" style={{ borderRight: '1px solid var(--color-border)' }}>
         <div className="flex justify-between items-center mb-2">
           <h3 className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>
             Roster ({heroes.length})
@@ -129,14 +130,22 @@ function HeroListCard({ hero, isSelected, onClick }: { hero: Hero; isSelected: b
       }}
     >
       <div className="flex justify-between items-center mb-1">
-        <span className="font-bold text-xs" style={{ color: 'var(--color-text-primary)' }}>{hero.name}</span>
+        <div className="flex items-center gap-2">
+          <ItemIcon itemId={hero.classId} itemType="hero" size={28} fallbackLabel={hero.name.charAt(0)} fallbackColor={catColor} />
+          <span className="font-bold text-xs" style={{ color: 'var(--color-text-primary)' }}>{hero.name}</span>
+        </div>
         <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: catColor + '22', color: catColor }}>
           Lv.{hero.level}
         </span>
       </div>
-      <div className="text-xs" style={{ color: catColor }}>
+      <div className="text-xs flex items-center gap-1" style={{ color: catColor }}>
         {classDef?.name || hero.classId}
         <span style={{ color: 'var(--color-text-muted)' }}> | {classDef?.heroType === 'specialist' ? 'Specialist' : 'Combat'}</span>
+        {classDef?.primaryStats?.[0] && (
+          <span style={{ color: STAT_COLORS[classDef.primaryStats[0] as keyof typeof STAT_COLORS], fontWeight: 'bold' }}>
+            {STAT_LABELS[classDef.primaryStats[0] as keyof PrimaryStats]}
+          </span>
+        )}
       </div>
       {hero.unspentPoints > 0 && (
         <div className="text-xs mt-1" style={{ color: 'var(--color-accent)' }}>
@@ -151,6 +160,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
   const allocateStat = useHeroStore(s => s.allocateStat);
   const allocateMultiple = useHeroStore(s => s.allocateMultiple);
   const dismissHero = useHeroStore(s => s.dismissHero);
+  const [pendingAllocation, setPendingAllocation] = useState<{ stat: keyof PrimaryStats; count: number } | null>(null);
   const classDef = CLASSES[hero.classId];
   const category = CATEGORIES[classDef?.categoryId || ''];
   const heroEquipment = useEquipmentStore(s => s.heroEquipment);
@@ -169,7 +179,9 @@ function HeroDetail({ hero }: { hero: Hero }) {
     <div>
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
-        <div>
+        <div className="flex gap-3 items-start">
+          <ItemIcon itemId={hero.classId} itemType="hero" size={48} fallbackLabel={hero.name.charAt(0)} fallbackColor={catColor} />
+          <div>
           <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{hero.name}</h2>
           <div className="flex gap-2 items-center mt-1">
             <span className="text-sm font-bold" style={{ color: catColor }}>{classDef?.name}</span>
@@ -182,8 +194,17 @@ function HeroDetail({ hero }: { hero: Hero }) {
             }}>
               {classDef?.heroType === 'specialist' ? 'Specialist' : 'Combat'}
             </span>
+            {classDef?.primaryStats?.[0] && (
+              <span className="text-xs px-2 py-0.5 rounded font-bold" style={{
+                backgroundColor: STAT_COLORS[classDef.primaryStats[0] as keyof typeof STAT_COLORS] + '22',
+                color: STAT_COLORS[classDef.primaryStats[0] as keyof typeof STAT_COLORS],
+              }}>
+                Primary: {STAT_LABELS[classDef.primaryStats[0] as keyof PrimaryStats]}
+              </span>
+            )}
           </div>
           <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{classDef?.description}</p>
+          </div>
         </div>
         <button
           onClick={() => { if (confirm(`Dismiss ${hero.name}? This is permanent.`)) dismissHero(hero.id); }}
@@ -217,9 +238,15 @@ function HeroDetail({ hero }: { hero: Hero }) {
             </span>
           )}
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {(Object.keys(STAT_LABELS) as (keyof PrimaryStats)[]).map(stat => (
-            <div key={stat} className="p-2 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-2">
+          {(Object.keys(STAT_LABELS) as (keyof PrimaryStats)[]).map(stat => {
+            const isPrimary = stat === classDef?.primaryStats?.[0];
+            return (
+            <div key={stat} className="p-2 rounded" style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              border: isPrimary ? `2px solid ${STAT_COLORS[stat]}` : '2px solid transparent',
+              boxShadow: isPrimary ? `0 0 8px ${STAT_COLORS[stat]}44` : 'none',
+            }}>
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-bold" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
@@ -230,11 +257,11 @@ function HeroDetail({ hero }: { hero: Hero }) {
                 </div>
                 {hero.unspentPoints > 0 && (
                   <div className="flex gap-1">
-                    <button onClick={() => allocateStat(hero.id, stat)}
+                    <button onClick={() => setPendingAllocation({ stat, count: 1 })}
                       className="w-6 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
                       style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+</button>
                     {hero.unspentPoints >= 5 && (
-                      <button onClick={() => allocateMultiple(hero.id, stat, 5)}
+                      <button onClick={() => setPendingAllocation({ stat, count: 5 })}
                         className="w-8 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
                         style={{ backgroundColor: STAT_COLORS[stat] + '88', color: '#000', border: 'none' }}>+5</button>
                     )}
@@ -245,74 +272,118 @@ function HeroDetail({ hero }: { hero: Hero }) {
                 {STAT_FULL_NAMES[stat]}: {STAT_DESCRIPTIONS[stat]}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         <div className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
           Base stat total: {getBaseStatTotal(hero)} | Combat style: {classDef?.primaryCombatStyle}
         </div>
+
+        {/* Stat Allocation Confirmation */}
+        {pendingAllocation && (
+          <div className="mt-3 p-2 rounded flex items-center justify-between" style={{
+            backgroundColor: STAT_COLORS[pendingAllocation.stat] + '15',
+            border: `1px solid ${STAT_COLORS[pendingAllocation.stat]}66`,
+          }}>
+            <span className="text-xs" style={{ color: 'var(--color-text-primary)' }}>
+              Allocate <b style={{ color: STAT_COLORS[pendingAllocation.stat] }}>{pendingAllocation.count}</b> point{pendingAllocation.count > 1 ? 's' : ''} to{' '}
+              <b style={{ color: STAT_COLORS[pendingAllocation.stat] }}>{STAT_FULL_NAMES[pendingAllocation.stat]}</b>?
+              <span style={{ color: 'var(--color-text-muted)' }}> (Cannot be undone)</span>
+            </span>
+            <div className="flex gap-1 ml-2 shrink-0">
+              <button
+                onClick={() => {
+                  if (pendingAllocation.count === 1) allocateStat(hero.id, pendingAllocation.stat);
+                  else allocateMultiple(hero.id, pendingAllocation.stat, pendingAllocation.count);
+                  setPendingAllocation(null);
+                }}
+                className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
+                style={{ backgroundColor: STAT_COLORS[pendingAllocation.stat], color: '#000', border: 'none' }}
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setPendingAllocation(null)}
+                className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
+                style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Derived Stats */}
+      {/* Combat Stats — grouped with visual hierarchy */}
       <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-        <h3 className="font-bold text-sm mb-2">Combat Stats</h3>
-        <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-          <DerivedRow label="Max HP" value={derived.maxHp.toFixed(0)} />
-          <DerivedRow label="Melee Atk" value={derived.meleeAttack.toFixed(0)} />
-          <DerivedRow label="Ranged Atk" value={derived.rangedAttack.toFixed(0)} />
-          <DerivedRow label="Blast Atk" value={derived.blastAttack.toFixed(0)} />
-          <DerivedRow label="Defense" value={derived.defense.toFixed(0)} suffix="(gear)" />
-          <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} />
-          <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} />
-          <DerivedRow label="Crit Chance" value={derived.critChance.toFixed(1) + '%'} />
-          <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} />
-          <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} />
-          <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1) + '/turn'} />
-          <DerivedRow label="Status Resist" value={derived.statusResist.toFixed(1) + '%'} />
-          <DerivedRow label="Ability Power" value={'+' + derived.abilityPower + '%'} />
-          <DerivedRow label="Skill Slots" value={derived.abilitySlots + '/4'} />
-          <DerivedRow label="Decree Slot" value={derived.canEquipAura ? 'Unlocked' : 'Need RES 50'} />
-          <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} />
-          <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1) + '/turn'} />
-          <DerivedRow label="SP Cost Reduction" value={derived.spCostReduction.toFixed(0) + '%'} />
-          <DerivedRow label="Consumable Slots" value={derived.consumableSlots + '/6'} />
+        <h3 className="font-bold text-sm mb-3">Combat Stats</h3>
+
+        {/* Offense */}
+        <div className="mb-3">
+          <div className="text-xs font-bold mb-1" style={{ color: '#e74c3c' }}>Offense</div>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+            <DerivedRow label="Melee Atk" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} />
+            <DerivedRow label="Ranged Atk" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} />
+            <DerivedRow label="Blast Atk" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} />
+            <DerivedRow label="Crit Chance" value={derived.critChance.toFixed(1) + '%'} />
+            <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} />
+            <DerivedRow label="Ability Power" value={'+' + derived.abilityPower + '%'} />
+          </div>
+        </div>
+
+        {/* Defense & Survivability */}
+        <div className="mb-3">
+          <div className="text-xs font-bold mb-1" style={{ color: '#27ae60' }}>Defense & Survivability</div>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+            <DerivedRow label="Max HP" value={derived.maxHp.toFixed(0)} highlight />
+            <DerivedRow label="Defense" value={derived.defense.toFixed(0)} suffix="(gear)" />
+            <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} />
+            <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1) + '/turn'} />
+            <DerivedRow label="Status Resist" value={derived.statusResist.toFixed(1) + '%'} />
+          </div>
+        </div>
+
+        {/* Speed & Accuracy */}
+        <div className="mb-3">
+          <div className="text-xs font-bold mb-1" style={{ color: '#3498db' }}>Speed & Accuracy</div>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+            <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} />
+            <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} />
+          </div>
+        </div>
+
+        {/* Resources (SP) */}
+        <div className="mb-3">
+          <div className="text-xs font-bold mb-1" style={{ color: '#e879f9' }}>Spirit Points</div>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+            <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} />
+            <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1) + '/turn'} />
+            <DerivedRow label="SP Cost Reduction" value={derived.spCostReduction.toFixed(0) + '%'} />
+          </div>
+        </div>
+
+        {/* Slots */}
+        <div>
+          <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Slots</div>
+          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+            <DerivedRow label="Ability Slots" value={derived.abilitySlots + '/4'} />
+            <DerivedRow label="Decree Slot" value={derived.canEquipAura ? 'Unlocked' : 'Need RES 50'} />
+            <DerivedRow label="Consumable Slots" value={derived.consumableSlots + '/6'} />
+          </div>
         </div>
       </div>
 
-      {/* Extended Combat Stats */}
-      {(derived.lifesteal > 0 || derived.burnDot > 0 || derived.poisonDot > 0 || derived.frostSlow > 0 ||
-        derived.thornsDamage > 0 || derived.blockChance > 0 || derived.armorPen > 0 || derived.damageReduction > 0) && (
-        <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-          <h3 className="font-bold text-sm mb-2">Extended Combat</h3>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            {derived.lifesteal > 0 && <DerivedRow label="Lifesteal" value={derived.lifesteal.toFixed(1) + '%'} />}
-            {derived.burnDot > 0 && <DerivedRow label="Burn DoT" value={derived.burnDot.toFixed(1) + '%'} />}
-            {derived.poisonDot > 0 && <DerivedRow label="Poison DoT" value={derived.poisonDot.toFixed(1) + '%'} />}
-            {derived.frostSlow > 0 && <DerivedRow label="Frost Slow" value={derived.frostSlow.toFixed(1)} />}
-            {derived.thornsDamage > 0 && <DerivedRow label="Thorns Dmg" value={derived.thornsDamage.toFixed(1) + '%'} />}
-            {derived.blockChance > 0 && <DerivedRow label="Block Chance" value={derived.blockChance.toFixed(1) + '%'} />}
-            {derived.armorPen > 0 && <DerivedRow label="Armor Pen" value={derived.armorPen.toFixed(1) + '%'} />}
-            {derived.damageReduction > 0 && <DerivedRow label="Dmg Reduction" value={derived.damageReduction.toFixed(1) + '%'} />}
-          </div>
-        </div>
-      )}
-
-      {/* Utility Bonuses */}
-      {(derived.dropChance > 0 || derived.gatheringSpeed > 0 || derived.gatheringYield > 0 || derived.productionSpeed > 0 ||
-        derived.xpBonus > 0 || derived.rareResourceChance > 0 || derived.rarityUpgrade > 0 || derived.doubleOutput > 0) && (
-        <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-          <h3 className="font-bold text-sm mb-2">Utility Bonuses</h3>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
-            {derived.dropChance > 0 && <DerivedRow label="Drop Chance" value={'+' + derived.dropChance.toFixed(1) + '%'} />}
-            {derived.gatheringSpeed > 0 && <DerivedRow label="Gather Speed" value={'+' + derived.gatheringSpeed.toFixed(1) + '%'} />}
-            {derived.gatheringYield > 0 && <DerivedRow label="Gather Yield" value={'+' + derived.gatheringYield.toFixed(1) + '%'} />}
-            {derived.productionSpeed > 0 && <DerivedRow label="Prod Speed" value={'+' + derived.productionSpeed.toFixed(1) + '%'} />}
-            {derived.xpBonus > 0 && <DerivedRow label="XP Bonus" value={'+' + derived.xpBonus.toFixed(1) + '%'} />}
-            {derived.rareResourceChance > 0 && <DerivedRow label="Rare Resource" value={'+' + derived.rareResourceChance.toFixed(1) + '%'} />}
-            {derived.rarityUpgrade > 0 && <DerivedRow label="Rarity Upgrade" value={'+' + derived.rarityUpgrade.toFixed(1) + '%'} />}
-            {derived.doubleOutput > 0 && <DerivedRow label="Double Output" value={'+' + derived.doubleOutput.toFixed(1) + '%'} />}
-          </div>
-        </div>
-      )}
+      {/* Advanced Stats (collapsible — Extended Combat + Utility) */}
+      {(() => {
+        const hasExtended = derived.lifesteal > 0 || derived.burnDot > 0 || derived.poisonDot > 0 || derived.frostSlow > 0 ||
+          derived.thornsDamage > 0 || derived.blockChance > 0 || derived.armorPen > 0 || derived.damageReduction > 0;
+        const hasUtility = derived.dropChance > 0 || derived.gatheringSpeed > 0 || derived.gatheringYield > 0 || derived.productionSpeed > 0 ||
+          derived.xpBonus > 0 || derived.rareResourceChance > 0 || derived.rarityUpgrade > 0 || derived.doubleOutput > 0;
+        if (!hasExtended && !hasUtility) return null;
+        return (
+          <AdvancedStatsSection derived={derived} hasExtended={hasExtended} hasUtility={hasUtility} />
+        );
+      })()}
 
       {/* Equipment */}
       <HeroEquipmentSection heroId={hero.id} />
@@ -338,8 +409,10 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
   const inventory = useEquipmentStore(s => s.inventory);
   const equipItem = useEquipmentStore(s => s.equipItem);
   const unequipItem = useEquipmentStore(s => s.unequipItem);
+  const deployments = useCombatZoneStore(s => s.deployments);
   const [expandedSlot, setExpandedSlot] = useState<EquipmentSlot | null>(null);
 
+  const isDeployed = deployments.some(d => d.heroIds.includes(heroId));
   const equipped = heroEquipment[heroId] || {};
 
   // Get all equipped instance IDs across all heroes (to exclude from available list)
@@ -352,9 +425,52 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
 
   return (
     <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-      <h3 className="font-bold text-sm mb-2">Equipment</h3>
-      <div className="grid grid-cols-2 gap-1">
-        {ALL_EQUIPMENT_SLOTS.map(({ slot, label, category }) => {
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="font-bold text-sm">Equipment</h3>
+        {isDeployed && (
+          <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>
+            Deployed — Equipment Locked
+          </span>
+        )}
+      </div>
+      {/* Combat Gear (left) + Accessories (right) */}
+      <div className="flex gap-2 mb-2">
+        {/* Left: Combat Gear Grid (3x2) */}
+        <div className="flex-1">
+          <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Combat Gear</div>
+          <div className="grid grid-cols-2 gap-1">
+            {ALL_EQUIPMENT_SLOTS.filter(s => ['weapon', 'shield', 'armor', 'legs', 'gloves', 'boots'].includes(s.category)).map(({ slot, label, category }) => renderSlot(slot, label, category))}
+          </div>
+        </div>
+        {/* Right: Accessories Column */}
+        <div style={{ width: '45%' }}>
+          <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Accessories</div>
+          <div className="space-y-1">
+            {ALL_EQUIPMENT_SLOTS.filter(s => ['ring', 'earring', 'necklace'].includes(s.category)).map(({ slot, label, category }) => renderSlot(slot, label, category))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom: Tool Bar (placeholder) */}
+      <div className="mb-1">
+        <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Profession Tools</div>
+        <div className="grid grid-cols-6 gap-1">
+          {['Scavenging', 'Foraging', 'Water Rec.', 'Prospecting', 'Tinkering', 'Cooking'].map(tool => (
+            <div key={tool} className="p-1.5 rounded text-center" style={{
+              backgroundColor: 'var(--color-bg-tertiary)',
+              border: '1px dashed var(--color-border)',
+              opacity: 0.5,
+            }}>
+              <div className="text-xs" style={{ color: 'var(--color-text-muted)', fontSize: 8 }}>{tool}</div>
+              <div className="text-xs" style={{ color: 'var(--color-text-muted)', fontSize: 7, fontStyle: 'italic' }}>Soon</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  function renderSlot(slot: EquipmentSlot, label: string, category: string) {
           const equippedId = (equipped as Record<string, string | null>)[slot] || null;
           const equippedGear = equippedId ? inventory.find(g => g.instanceId === equippedId) : null;
           const equippedTemplate = equippedGear ? GEAR_TEMPLATES[equippedGear.templateId] : null;
@@ -377,11 +493,13 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
           return (
             <div key={slot}>
               <button
-                onClick={() => setExpandedSlot(isExpanded ? null : slot)}
+                onClick={() => !isDeployed && setExpandedSlot(isExpanded ? null : slot)}
                 className="w-full text-left p-2 rounded text-xs cursor-pointer"
                 style={{
                   backgroundColor: 'var(--color-bg-tertiary)',
                   border: `1px solid ${isExpanded ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                  opacity: isDeployed ? 0.6 : 1,
+                  cursor: isDeployed ? 'not-allowed' : 'pointer',
                 }}
               >
                 <div className="flex justify-between items-center">
@@ -396,13 +514,47 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                   )}
                 </div>
                 {equippedGear && equippedTemplate && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {equippedTemplate.baseStats.map((s, i) => (
-                      <span key={i} style={{ color: 'var(--color-success)', fontSize: 9 }}>
-                        +{Math.round(s.value * equippedGear.sourcePowerMultiplier)} {s.stat}{s.isPercentage ? '%' : ''}
-                      </span>
-                    ))}
-                  </div>
+                  <>
+                    {equippedTemplate.description && (
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: 9, fontStyle: 'italic', marginTop: '2px' }}>
+                        {equippedTemplate.description}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {equippedTemplate.baseStats.map((s, i) => (
+                        <span key={i} style={{ color: 'var(--color-success)', fontSize: 9 }}>
+                          +{Math.round(s.value * equippedGear.sourcePowerMultiplier)} {s.stat}{s.isPercentage ? '%' : ''}
+                        </span>
+                      ))}
+                      {equippedTemplate.inherentDownside && (
+                        <span style={{ color: 'var(--color-danger)', fontSize: 9 }}>
+                          {equippedTemplate.inherentDownside.value} {equippedTemplate.inherentDownside.stat}{equippedTemplate.inherentDownside.isPercentage ? '%' : ''}
+                        </span>
+                      )}
+                    </div>
+                    {equippedGear.facet && equippedGear.facet.upside.stat !== 'none' && (
+                      <div style={{ color: 'var(--color-energy)', fontSize: 9, marginTop: '2px' }}>
+                        [{equippedGear.facet.name}] +{equippedGear.facet.upside.value}{equippedGear.facet.upside.isPercentage ? '%' : ''} {equippedGear.facet.upside.stat} / {equippedGear.facet.downside.value}{equippedGear.facet.downside.isPercentage ? '%' : ''} {equippedGear.facet.downside.stat}
+                      </div>
+                    )}
+                    {equippedGear.rarityBonuses.length > 0 && (
+                      <div className="flex flex-wrap gap-1" style={{ marginTop: '2px' }}>
+                        {equippedGear.rarityBonuses.map((b, i) => (
+                          <span key={i} style={{ color: RARITY_COLORS[equippedGear.rarity], fontSize: 9 }}>+{b.value}{b.isPercentage ? '%' : ''} {b.stat}</span>
+                        ))}
+                      </div>
+                    )}
+                    {equippedGear.enchantments.length > 0 && (
+                      <div style={{ marginTop: '2px' }}>
+                        {equippedGear.enchantments.map((e, i) => (
+                          <div key={i} style={{ color: e.isLegendary ? '#f97316' : '#60a5fa', fontSize: 9 }}>
+                            [{e.group}] {e.name}: +{e.effect.value}{e.effect.isPercentage ? '%' : ''} {e.effect.stat}
+                            {e.isLegendary && e.legendaryBonus && <span> ★ {e.legendaryBonus}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </button>
 
@@ -430,13 +582,57 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                           <ItemIcon itemId={tmpl.id} itemType="equipment" gearSlot={tmpl.slot} size={18} fallbackLabel={tmpl.name.charAt(0)} />
                           {gear.facet ? `${gear.facet.name} ` : ''}{tmpl.name} [{RARITY_LABELS[gear.rarity]}]
                         </div>
-                        <div className="flex flex-wrap gap-1">
+                        {tmpl.description && (
+                          <div style={{ color: 'var(--color-text-muted)', fontSize: 9, fontStyle: 'italic', marginTop: '2px' }}>
+                            {tmpl.description}
+                          </div>
+                        )}
+                        <div className="text-xs" style={{ color: 'var(--color-text-muted)', fontSize: 9, marginTop: '2px' }}>
+                          T{tmpl.tier} {tmpl.slot} | Lv.{tmpl.levelReq}+
+                          {tmpl.weaponType && ` | ${tmpl.weaponType}`}
+                          {tmpl.isTwoHanded && ' (2H)'}
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
                           {tmpl.baseStats.map((s, i) => (
                             <span key={i} style={{ color: 'var(--color-success)', fontSize: 9 }}>
                               +{Math.round(s.value * gear.sourcePowerMultiplier)} {s.stat}{s.isPercentage ? '%' : ''}
                             </span>
                           ))}
+                          {tmpl.inherentDownside && (
+                            <span style={{ color: 'var(--color-danger)', fontSize: 9 }}>
+                              {tmpl.inherentDownside.value} {tmpl.inherentDownside.stat}{tmpl.inherentDownside.isPercentage ? '%' : ''}
+                            </span>
+                          )}
                         </div>
+                        {gear.facet && gear.facet.upside.stat !== 'none' && (
+                          <div style={{ color: 'var(--color-energy)', fontSize: 9, marginTop: '2px' }}>
+                            [{gear.facet.name}] +{gear.facet.upside.value}{gear.facet.upside.isPercentage ? '%' : ''} {gear.facet.upside.stat} / {gear.facet.downside.value}{gear.facet.downside.isPercentage ? '%' : ''} {gear.facet.downside.stat}
+                          </div>
+                        )}
+                        {gear.rarityBonuses.length > 0 && (
+                          <div className="flex flex-wrap gap-1" style={{ marginTop: '2px' }}>
+                            {gear.rarityBonuses.map((b, i) => (
+                              <span key={i} style={{ color: RARITY_COLORS[gear.rarity], fontSize: 9 }}>+{b.value}{b.isPercentage ? '%' : ''} {b.stat}</span>
+                            ))}
+                          </div>
+                        )}
+                        {gear.rarityCurses.length > 0 && (
+                          <div className="flex flex-wrap gap-1" style={{ marginTop: '2px' }}>
+                            {gear.rarityCurses.map((c, i) => (
+                              <span key={i} style={{ color: '#ff4444', fontSize: 9 }}>CURSE: {c.value}{c.isPercentage ? '%' : ''} {c.stat}</span>
+                            ))}
+                          </div>
+                        )}
+                        {gear.enchantments.length > 0 && (
+                          <div style={{ marginTop: '2px' }}>
+                            {gear.enchantments.map((e, i) => (
+                              <div key={i} style={{ color: e.isLegendary ? '#f97316' : '#60a5fa', fontSize: 9 }}>
+                                [{e.group}] {e.name}: +{e.effect.value}{e.effect.isPercentage ? '%' : ''} {e.effect.stat}
+                                {e.isLegendary && e.legendaryBonus && <span> ★ {e.legendaryBonus}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -444,10 +640,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
               )}
             </div>
           );
-        })}
-      </div>
-    </div>
-  );
+  }
 }
 
 function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType<typeof calculateDerivedStats> }) {
@@ -822,13 +1015,63 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
   );
 }
 
-function DerivedRow({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+function DerivedRow({ label, value, suffix, highlight }: { label: string; value: string; suffix?: string; highlight?: boolean }) {
   return (
     <div className="flex justify-between">
-      <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
-      <span style={{ color: 'var(--color-text-primary)' }}>
+      <span style={{ color: highlight ? 'var(--color-text-primary)' : 'var(--color-text-muted)', fontWeight: highlight ? 'bold' : 'normal' }}>{label}</span>
+      <span style={{ color: highlight ? 'var(--color-accent)' : 'var(--color-text-primary)', fontWeight: highlight ? 'bold' : 'normal' }}>
         {value} {suffix && <span style={{ color: 'var(--color-text-muted)' }}>{suffix}</span>}
       </span>
+    </div>
+  );
+}
+
+function AdvancedStatsSection({ derived, hasExtended, hasUtility }: { derived: any; hasExtended: boolean; hasUtility: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex justify-between items-center cursor-pointer"
+        style={{ background: 'none', border: 'none', color: 'var(--color-text-primary)', padding: 0 }}
+      >
+        <h3 className="font-bold text-sm">Advanced Stats</h3>
+        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{expanded ? '▲ Collapse' : '▼ Expand'}</span>
+      </button>
+      {expanded && (
+        <div className="mt-2 space-y-3">
+          {hasExtended && (
+            <div>
+              <div className="text-xs font-bold mb-1" style={{ color: '#f39c12' }}>Extended Combat</div>
+              <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+                {derived.lifesteal > 0 && <DerivedRow label="Lifesteal" value={derived.lifesteal.toFixed(1) + '%'} />}
+                {derived.burnDot > 0 && <DerivedRow label="Burn DoT" value={derived.burnDot.toFixed(1) + '%'} />}
+                {derived.poisonDot > 0 && <DerivedRow label="Poison DoT" value={derived.poisonDot.toFixed(1) + '%'} />}
+                {derived.frostSlow > 0 && <DerivedRow label="Frost Slow" value={derived.frostSlow.toFixed(1)} />}
+                {derived.thornsDamage > 0 && <DerivedRow label="Thorns Dmg" value={derived.thornsDamage.toFixed(1) + '%'} />}
+                {derived.blockChance > 0 && <DerivedRow label="Block Chance" value={derived.blockChance.toFixed(1) + '%'} />}
+                {derived.armorPen > 0 && <DerivedRow label="Armor Pen" value={derived.armorPen.toFixed(1) + '%'} />}
+                {derived.damageReduction > 0 && <DerivedRow label="Dmg Reduction" value={derived.damageReduction.toFixed(1) + '%'} />}
+              </div>
+            </div>
+          )}
+          {hasUtility && (
+            <div>
+              <div className="text-xs font-bold mb-1" style={{ color: '#1abc9c' }}>Utility Bonuses</div>
+              <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+                {derived.dropChance > 0 && <DerivedRow label="Drop Chance" value={'+' + derived.dropChance.toFixed(1) + '%'} />}
+                {derived.gatheringSpeed > 0 && <DerivedRow label="Gather Speed" value={'+' + derived.gatheringSpeed.toFixed(1) + '%'} />}
+                {derived.gatheringYield > 0 && <DerivedRow label="Gather Yield" value={'+' + derived.gatheringYield.toFixed(1) + '%'} />}
+                {derived.productionSpeed > 0 && <DerivedRow label="Prod Speed" value={'+' + derived.productionSpeed.toFixed(1) + '%'} />}
+                {derived.xpBonus > 0 && <DerivedRow label="XP Bonus" value={'+' + derived.xpBonus.toFixed(1) + '%'} />}
+                {derived.rareResourceChance > 0 && <DerivedRow label="Rare Resource" value={'+' + derived.rareResourceChance.toFixed(1) + '%'} />}
+                {derived.rarityUpgrade > 0 && <DerivedRow label="Rarity Upgrade" value={'+' + derived.rarityUpgrade.toFixed(1) + '%'} />}
+                {derived.doubleOutput > 0 && <DerivedRow label="Double Output" value={'+' + derived.doubleOutput.toFixed(1) + '%'} />}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

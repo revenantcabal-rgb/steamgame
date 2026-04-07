@@ -115,7 +115,7 @@ function App() {
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab.id)}
-              className="px-6 py-3 text-sm font-bold cursor-pointer transition-all"
+              className="px-3 xl:px-6 py-2 xl:py-3 text-xs xl:text-sm font-bold cursor-pointer transition-all"
               style={{
                 backgroundColor: activeTopTab === tab.id ? 'var(--color-bg-primary)' : 'transparent',
                 color: activeTopTab === tab.id ? 'var(--color-accent)' : 'var(--color-text-muted)',

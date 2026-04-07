@@ -63,6 +63,7 @@ export interface Enchantment {
 export interface GearTemplate {
   id: string;
   name: string;
+  description?: string;
   slot: GearSlotCategory;
   tier: number; // 1-8
   levelReq: number;
@@ -92,6 +93,16 @@ export interface GearTemplate {
   requiresPreviousTier?: string;
   /** Set ID if this is part of a green set */
   setId?: string;
+  /** Crafting duration in seconds (derived from tier if not set) */
+  craftTime?: number;
+}
+
+/** Get the crafting duration for a gear template (seconds). Includes 2.5x balance multiplier. */
+export function getCraftTime(template: GearTemplate): number {
+  if (template.craftTime) return template.craftTime;
+  // Base time by tier (seconds), with 2.5x multiplier baked in
+  const BASE_TIMES: Record<number, number> = { 1: 12, 2: 25, 3: 50, 4: 100, 5: 150, 6: 225, 7: 300, 8: 450 };
+  return BASE_TIMES[template.tier] || 12;
 }
 
 export interface GearInstance {
