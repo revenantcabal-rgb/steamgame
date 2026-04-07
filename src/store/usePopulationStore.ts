@@ -201,21 +201,20 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
         }
         useGameStore.setState({ resources });
 
-        // Add worker XP (worker-specific progression)
+        // Add worker XP (worker efficiency progression)
         newWorkerSkillXp[assignment.skillId] = (newWorkerSkillXp[assignment.skillId] || 0) + result.xpGained;
 
-        // Also grant a portion of XP to the player's skill (25% of worker XP)
-        const playerXpShare = Math.max(1, Math.floor(result.xpGained * 0.25));
+        // Grant XP to the player's gathering skill level
         const playerSkills = { ...gameStore.skills };
         const currentSkill = playerSkills[assignment.skillId];
         if (currentSkill) {
-          const newTotalXp = currentSkill.xp + playerXpShare;
+          const newTotalXp = currentSkill.xp + result.xpGained;
           const newLevel = Math.min(100, levelFromXp(newTotalXp));
           playerSkills[assignment.skillId] = { level: newLevel, xp: newTotalXp };
           useGameStore.setState({ skills: playerSkills });
 
           if (newLevel > currentSkill.level) {
-            gameStore.addLog(`LEVEL UP! ${skillDef?.name || assignment.skillId} is now level ${newLevel}! (worker training)`, 'levelup');
+            gameStore.addLog(`LEVEL UP! ${skillDef?.name || assignment.skillId} is now level ${newLevel}!`, 'levelup');
             useStoryStore.getState().checkObjective('reach_skill_level', assignment.skillId, newLevel);
           }
         }
