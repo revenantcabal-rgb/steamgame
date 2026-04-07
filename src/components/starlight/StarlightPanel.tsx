@@ -237,7 +237,7 @@ export function StarlightPanel() {
               backgroundColor: 'var(--color-bg-secondary)',
               color: 'var(--color-text-primary)',
               cursor: 'pointer',
-              fontSize: '9px',
+              fontSize: '11px',
               fontWeight: 'bold',
               display: 'flex',
               alignItems: 'center',
@@ -248,7 +248,7 @@ export function StarlightPanel() {
           <div
             style={{
               textAlign: 'center',
-              fontSize: '10px',
+              fontSize: '11px',
               color: 'var(--color-text-muted)',
               marginTop: '2px',
             }}

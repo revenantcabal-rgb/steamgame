@@ -11,7 +11,7 @@ export function MarketPriceChart({ data, width = 260, height = 100 }: MarketPric
     return (
       <div style={{
         width, height, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        backgroundColor: 'var(--color-bg-tertiary)', borderRadius: 4, fontSize: 10,
+        backgroundColor: 'var(--color-bg-tertiary)', borderRadius: 4, fontSize: 11,
         color: 'var(--color-text-muted)',
       }}>
         Not enough data for chart

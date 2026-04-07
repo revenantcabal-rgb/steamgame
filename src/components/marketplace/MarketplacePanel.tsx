@@ -54,7 +54,7 @@ export function MarketplacePanel() {
               {collectables.length > 0 && (
                 <span style={{
                   position: 'absolute', top: -4, right: -4,
-                  backgroundColor: '#ef4444', color: '#fff', fontSize: 8, fontWeight: 'bold',
+                  backgroundColor: '#ef4444', color: '#fff', fontSize: 11, fontWeight: 'bold',
                   borderRadius: 8, padding: '1px 4px', minWidth: 14, textAlign: 'center',
                 }}>
                   {collectables.length}

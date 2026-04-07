@@ -301,7 +301,7 @@ export function SkillDetail() {
             {allTiers.map(tier => (
               <div key={tier} className="mb-4">
                 {allTiers.length > 1 && (
-                  <div className="text-[10px] font-bold uppercase mb-2 px-1" style={{ color: 'var(--color-text-muted)' }}>{tier}</div>
+                  <div className="text-[11px] font-bold uppercase mb-2 px-1" style={{ color: 'var(--color-text-muted)' }}>{tier}</div>
                 )}
 
                 {/* Regular activities — horizontal scrollable row */}
@@ -344,29 +344,29 @@ export function SkillDetail() {
 
                           {/* Lock badge */}
                           {isLocked && (
-                            <div className="text-[10px] px-1.5 py-0.5 rounded inline-block mb-1" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>Lv.{activity.levelReq}</div>
+                            <div className="text-[11px] px-1.5 py-0.5 rounded inline-block mb-1" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>Lv.{activity.levelReq}</div>
                           )}
 
                           {/* Resource info */}
                           {!isLocked && !isProduction && primaryDrop && (
-                            <div className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+                            <div className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>
                               {primaryRes?.name || primaryDrop.resourceId}: {primaryDrop.minQty}-{primaryDrop.maxQty}
                             </div>
                           )}
                           {!isLocked && isProduction && activity.resourceInputs && (
-                            <div className="text-[10px]" style={{ color: canAfford ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                            <div className="text-[11px]" style={{ color: canAfford ? 'var(--color-success)' : 'var(--color-danger)' }}>
                               {canAfford ? 'Ready' : 'Need mats'}
                             </div>
                           )}
 
                           {/* XP badge */}
                           {!isLocked && (
-                            <div className="text-[10px] mt-1" style={{ color: 'var(--color-xp)' }}>{activity.xpPerAction} XP</div>
+                            <div className="text-[11px] mt-1" style={{ color: 'var(--color-xp)' }}>{activity.xpPerAction} XP</div>
                           )}
 
                           {/* Gear badge */}
                           {activity.gearTemplateId && (
-                            <div className="text-[10px] px-1 py-0 rounded inline-block mt-1" style={{ backgroundColor: 'var(--color-info)', color: '#fff' }}>GEAR</div>
+                            <div className="text-[11px] px-1 py-0 rounded inline-block mt-1" style={{ backgroundColor: 'var(--color-info)', color: '#fff' }}>GEAR</div>
                           )}
                         </button>
                       );
@@ -393,13 +393,13 @@ export function SkillDetail() {
                       }}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: 'var(--color-accent)22', color: 'var(--color-accent)' }}>SWEEP ALL</span>
+                        <span className="text-[11px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: 'var(--color-accent)22', color: 'var(--color-accent)' }}>SWEEP ALL</span>
                         <span className="font-bold text-xs" style={{ color: isSelected ? 'var(--color-accent)' : 'var(--color-text-primary)' }}>{activity.name}</span>
-                        {isLocked && <span className="text-[10px] px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>Lv.{activity.levelReq}</span>}
-                        <span className="text-[10px] ml-auto" style={{ color: 'var(--color-xp)' }}>{activity.xpPerAction} XP</span>
+                        {isLocked && <span className="text-[11px] px-1 py-0.5 rounded" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>Lv.{activity.levelReq}</span>}
+                        <span className="text-[11px] ml-auto" style={{ color: 'var(--color-xp)' }}>{activity.xpPerAction} XP</span>
                       </div>
                       {!isLocked && (
-                        <div className="flex gap-3 text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+                        <div className="flex gap-3 text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>
                           {activity.resourceDrops.map(d => {
                             const res = RESOURCES[d.resourceId];
                             return <span key={d.resourceId}>{res?.name || d.resourceId}: {d.minQty}-{d.maxQty}</span>;
@@ -531,7 +531,7 @@ function WorkerSummaryBar() {
                 <button
                   onClick={() => removeAssignment(a.id)}
                   className="px-1.5 py-0.5 rounded cursor-pointer ml-1"
-                  style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '9px' }}
+                  style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '11px' }}
                 >Recall</button>
               </div>
             );
@@ -555,7 +555,7 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
   return (
     <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
       <div className="text-xl font-bold" style={{ color }}>{value}</div>
-      <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
+      <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
     </div>
   );
 }
@@ -666,7 +666,7 @@ function WorkerDeployForm({ skillId }: { skillId: string }) {
                   <button
                     onClick={() => removeAssignment(a.id)}
                     className="px-2 py-0.5 rounded text-xs cursor-pointer ml-2"
-                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '9px' }}
+                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '11px' }}
                   >Recall</button>
                 </div>
               );
@@ -755,7 +755,7 @@ function AssignmentCard({ assignment }: { assignment: WorkerAssignment }) {
               <span style={{ color: 'var(--color-danger)' }} title="Death risk per trip. Assign more workers together to reduce risk."> | Risk: {(scaling.deathRiskPerTrip * 100).toFixed(1)}%</span>
             )}
             {scaling.deathRiskPerTrip >= 0.05 && (
-              <span style={{ color: 'var(--color-danger)', fontSize: '9px' }}> (add workers to reduce)</span>
+              <span style={{ color: 'var(--color-danger)', fontSize: '11px' }}> (add workers to reduce)</span>
             )}
           </div>
         </div>
@@ -852,7 +852,7 @@ function OtherAssignments({ assignments, totalWorkers }: { assignments: WorkerAs
                   <button
                     onClick={() => removeAssignment(d.assignmentId)}
                     className="px-1.5 py-0.5 rounded text-xs cursor-pointer ml-1"
-                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '9px' }}
+                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none', fontSize: '11px' }}
                   >Recall</button>
                 </div>
               ))}

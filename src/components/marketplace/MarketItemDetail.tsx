@@ -144,7 +144,7 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
           <ItemIcon {...iconProps} size={40} fallbackColor={item.color || '#4a5568'} fallbackLabel={item.name.charAt(0)} />
           <div>
             <div style={{ fontSize: 14, fontWeight: 'bold', color: item.color || '#fff' }}>{item.name}</div>
-            <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Owned: {playerAmount}</div>
+            <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Owned: {playerAmount}</div>
           </div>
         </div>
 
@@ -168,7 +168,7 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
         <Sep />
 
         {/* Price Chart */}
-        <div style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
           Price History
         </div>
         <MarketPriceChart data={snapshot?.priceHistory || []} width={276} height={80} />
@@ -176,14 +176,14 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
         <Sep />
 
         {/* Price Ladder */}
-        <div style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
           Price Ladder
         </div>
         <div style={{ maxHeight: 120, overflowY: 'auto', marginBottom: 8 }}>
           {priceLadder.map((row, i) => (
             <div key={i} style={{
               display: 'grid', gridTemplateColumns: '40px 1fr 40px',
-              fontSize: 9, padding: '2px 4px', alignItems: 'center',
+              fontSize: 11, padding: '2px 4px', alignItems: 'center',
               backgroundColor: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
             }}>
               <span style={{ color: row.listed > 0 ? '#ef4444' : 'var(--color-text-muted)', textAlign: 'left' }}>
@@ -200,7 +200,7 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
               </span>
             </div>
           ))}
-          <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 40px', fontSize: 8, padding: '2px 4px', color: 'var(--color-text-muted)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 40px', fontSize: 11, padding: '2px 4px', color: 'var(--color-text-muted)' }}>
             <span>Sellers</span>
             <span style={{ textAlign: 'center' }}>Price</span>
             <span style={{ textAlign: 'right' }}>Buyers</span>
@@ -252,16 +252,16 @@ function PurchaseForm({ item, priceInfo }: { item: CatalogItem; priceInfo: Retur
 
   return (
     <div>
-      <div style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
         Purchase
       </div>
       <div style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 9, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Desired Price</label>
+          <label style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Desired Price</label>
           <div style={{ display: 'flex', gap: 2 }}>
             <button
               onClick={() => setBuyPrice(priceInfo.minPrice)}
-              style={{ fontSize: 8, padding: '2px 4px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+              style={{ fontSize: 11, padding: '2px 4px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', cursor: 'pointer' }}
             >MIN</button>
             <input
               type="number"
@@ -269,25 +269,25 @@ function PurchaseForm({ item, priceInfo }: { item: CatalogItem; priceInfo: Retur
               onChange={e => setBuyPrice(Math.max(priceInfo.minPrice, Math.min(priceInfo.maxPrice, parseInt(e.target.value) || 0)))}
               min={priceInfo.minPrice}
               max={priceInfo.maxPrice}
-              style={{ flex: 1, width: '100%', padding: '3px 4px', fontSize: 10, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }}
+              style={{ flex: 1, width: '100%', padding: '3px 4px', fontSize: 11, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }}
             />
             <button
               onClick={() => setBuyPrice(priceInfo.maxPrice)}
-              style={{ fontSize: 8, padding: '2px 4px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+              style={{ fontSize: 11, padding: '2px 4px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', cursor: 'pointer' }}
             >MAX</button>
           </div>
         </div>
         <div style={{ width: 60 }}>
-          <label style={{ fontSize: 9, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Amount</label>
+          <label style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Amount</label>
           <div style={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <button onClick={() => setBuyQty(Math.max(1, buyQty - 1))} style={{ fontSize: 10, padding: '2px 5px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>-</button>
+            <button onClick={() => setBuyQty(Math.max(1, buyQty - 1))} style={{ fontSize: 11, padding: '2px 5px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>-</button>
             <input type="number" value={buyQty} onChange={e => setBuyQty(Math.max(1, parseInt(e.target.value) || 1))} min={1}
-              style={{ width: 28, textAlign: 'center', padding: '3px 2px', fontSize: 10, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }} />
-            <button onClick={() => setBuyQty(buyQty + 1)} style={{ fontSize: 10, padding: '2px 5px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>+</button>
+              style={{ width: 28, textAlign: 'center', padding: '3px 2px', fontSize: 11, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }} />
+            <button onClick={() => setBuyQty(buyQty + 1)} style={{ fontSize: 11, padding: '2px 5px', border: 'none', borderRadius: 2, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>+</button>
           </div>
         </div>
       </div>
-      <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>
         Total: <b style={{ color: 'var(--color-accent)' }}>{totalCost.toLocaleString()} WC</b>
         <span style={{ marginLeft: 8 }}>After: {(playerWC - totalCost).toLocaleString()} WC</span>
       </div>
@@ -336,34 +336,34 @@ function SellForm({ item, priceInfo, playerAmount }: { item: CatalogItem; priceI
 
   return (
     <div>
-      <div style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
         Sell (You have {playerAmount})
       </div>
       <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 9, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Price per unit</label>
+          <label style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Price per unit</label>
           <input
             type="number"
             value={sellPrice}
             onChange={e => setSellPrice(Math.max(priceInfo.minPrice, Math.min(priceInfo.maxPrice, parseInt(e.target.value) || 0)))}
             min={priceInfo.minPrice}
             max={priceInfo.maxPrice}
-            style={{ width: '100%', padding: '3px 4px', fontSize: 10, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }}
+            style={{ width: '100%', padding: '3px 4px', fontSize: 11, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }}
           />
         </div>
         <div style={{ width: 60 }}>
-          <label style={{ fontSize: 9, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Qty</label>
+          <label style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Qty</label>
           <input
             type="number"
             value={sellQty}
             onChange={e => setSellQty(Math.max(1, Math.min(playerAmount, parseInt(e.target.value) || 1)))}
             min={1}
             max={playerAmount}
-            style={{ width: '100%', padding: '3px 4px', fontSize: 10, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }}
+            style={{ width: '100%', padding: '3px 4px', fontSize: 11, backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)', borderRadius: 2 }}
           />
         </div>
       </div>
-      <div style={{ fontSize: 9, color: 'var(--color-text-muted)', marginBottom: 4 }}>
+      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>
         Total: {totalRevenue.toLocaleString()} WC | Tax ({(MARKET_TAX_RATE * 100).toFixed(0)}%): {tax.toLocaleString()} | <b style={{ color: '#22c55e' }}>Receive: {receives.toLocaleString()} WC</b>
       </div>
       <button
@@ -392,7 +392,7 @@ function ResourceInfo({ id }: { id: string }) {
     <>
       <InfoLine label="Type" value="Resource" valueColor="#4fc3f7" />
       <InfoLine label="Source" value={SKILL_LABELS[res.sourceSkillId] || res.sourceSkillId} />
-      <div style={{ fontSize: '10px', color: '#9ca3af', fontStyle: 'italic', marginTop: '4px' }}>{res.description}</div>
+      <div style={{ fontSize: '11px', color: '#9ca3af', fontStyle: 'italic', marginTop: '4px' }}>{res.description}</div>
     </>
   );
 }
@@ -441,7 +441,7 @@ function AbilityInfo({ id }: { id: string }) {
     <>
       <InfoLine label="Type" value={ABILITY_COLOR_LABELS[a.color]} valueColor={ABILITY_COLOR_HEX[a.color]} />
       <InfoLine label="Requires" value={a.requirements.map((r: any) => `${r.value} ${STAT_LABELS[r.stat] || r.stat}`).join(', ')} />
-      <div style={{ fontSize: '10px', color: '#9ca3af', fontStyle: 'italic', margin: '4px 0' }}>{a.description}</div>
+      <div style={{ fontSize: '11px', color: '#9ca3af', fontStyle: 'italic', margin: '4px 0' }}>{a.description}</div>
       {a.cooldown > 0 && <InfoLine label="Cooldown" value={`${a.cooldown} turns`} />}
     </>
   );
@@ -456,7 +456,7 @@ function ConsumableInfo({ id }: { id: string }) {
       <InfoLine label="Type" value={`Consumable (${typeLabel})`} valueColor="#4fc3f7" />
       {c.duration > 0 && <InfoLine label="Duration" value={`${c.duration}s`} />}
       <InfoLine label="Cooldown" value={`${c.cooldown}s`} />
-      <div style={{ fontSize: '10px', color: '#22c55e', fontWeight: 'bold', marginBottom: '4px' }}>{c.effect}</div>
+      <div style={{ fontSize: '11px', color: '#22c55e', fontWeight: 'bold', marginBottom: '4px' }}>{c.effect}</div>
     </>
   );
 }
@@ -469,7 +469,7 @@ function ToolInfo({ id }: { id: string }) {
       <InfoLine label="Type" value={`${SKILL_LABELS[t.targetSkillId] || t.targetSkillId} Tool`} valueColor="#4fc3f7" />
       <InfoLine label="Requires" value={`${t.levelReq} ${SKILL_LABELS[t.targetSkillId] || t.targetSkillId}`} />
       <StatLine label={`${SKILL_LABELS[t.targetSkillId]} Speed`} value={t.speedBonus} isPercent />
-      <div style={{ fontSize: '10px', color: '#9ca3af', fontStyle: 'italic', margin: '4px 0' }}>{t.description}</div>
+      <div style={{ fontSize: '11px', color: '#9ca3af', fontStyle: 'italic', margin: '4px 0' }}>{t.description}</div>
     </>
   );
 }
@@ -482,7 +482,7 @@ function PassInfo({ id }: { id: string }) {
       <InfoLine label="Type" value="Expedition Pass" valueColor="#4fc3f7" />
       <InfoLine label="Zone" value={p.zone} />
       <InfoLine label="Min Level" value={`${p.level}`} />
-      <div style={{ fontSize: '10px', color: '#9ca3af', fontStyle: 'italic', margin: '4px 0' }}>{p.description}</div>
+      <div style={{ fontSize: '11px', color: '#9ca3af', fontStyle: 'italic', margin: '4px 0' }}>{p.description}</div>
     </>
   );
 }

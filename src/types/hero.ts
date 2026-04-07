@@ -33,6 +33,8 @@ export interface DerivedStats {
   lifesteal: number;
   burnDot: number;
   poisonDot: number;
+  radiationDot: number;
+  bleedDot: number;
   frostSlow: number;
   thornsDamage: number;
   blockChance: number;

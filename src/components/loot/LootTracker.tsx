@@ -97,23 +97,23 @@ export function LootTracker() {
       <div className="grid grid-cols-4 gap-3 mb-4">
         <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-lg font-bold" style={{ color: 'var(--color-accent)' }}>{totalItems.toLocaleString()}</div>
-          <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Total Items</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Total Items</div>
         </div>
         <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-lg font-bold" style={{ color: 'var(--color-info)' }}>{uniqueItems}</div>
-          <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Unique Types</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Unique Types</div>
         </div>
         <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-lg font-bold" style={{ color: 'var(--color-success)' }}>
             {elapsedHrs > 0 ? Math.round(totalItems / elapsedHrs).toLocaleString() : 0}
           </div>
-          <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Items/Hour</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Items/Hour</div>
         </div>
         <div className="p-3 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-lg font-bold" style={{ color: '#a855f7' }}>
             {byResource['icqor_chess_piece'] || 0}
           </div>
-          <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Icqor Pieces</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Icqor Pieces</div>
         </div>
       </div>
 
@@ -149,7 +149,7 @@ export function LootTracker() {
                 <div className="text-xs font-bold truncate" style={{ color: r.isRare ? '#a855f7' : 'var(--color-text-primary)' }}>
                   {r.name}
                 </div>
-                <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                   {elapsedHrs > 0 ? `${Math.round(r.qty / elapsedHrs).toLocaleString()}/hr` : ''}
                 </div>
               </div>
@@ -175,7 +175,7 @@ export function LootTracker() {
                 <span className="text-xs font-bold" style={{ color: SOURCE_COLORS[source] || '#888' }}>
                   {SOURCE_LABELS[source] || source}
                 </span>
-                <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                   ({Object.values(items).reduce((s, q) => s + q, 0).toLocaleString()} items)
                 </span>
               </div>
@@ -212,7 +212,7 @@ export function LootTracker() {
                 <span style={{ color: 'var(--color-text-primary)' }}>
                   +{e.quantity} {res?.name || e.resourceId}
                 </span>
-                <span className="ml-auto text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                <span className="ml-auto text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                   {e.skillOrZone} · {agoStr}
                 </span>
               </div>

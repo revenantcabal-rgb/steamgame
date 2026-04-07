@@ -76,7 +76,7 @@ export function ChatPanel() {
           {!isChatOpen && totalUnread > 0 && (
             <span
               className="text-xs px-1.5 py-0.5 rounded-full font-bold"
-              style={{ backgroundColor: 'var(--color-accent)', color: '#000', fontSize: '10px' }}
+              style={{ backgroundColor: 'var(--color-accent)', color: '#000', fontSize: '11px' }}
             >
               {totalUnread}
             </span>
@@ -120,7 +120,7 @@ export function ChatPanel() {
                       style={{
                         backgroundColor: CHANNEL_COLORS[ch],
                         color: '#000',
-                        fontSize: '9px',
+                        fontSize: '11px',
                         fontWeight: 'bold',
                       }}
                     >

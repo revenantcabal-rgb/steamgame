@@ -144,7 +144,7 @@ export function StoryPanel() {
                         Feature Unlocked!
                       </div>
                     )}
-                    <div className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                    <div className="text-[11px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
                       {collapsedChapters.has(chapter.number) ? '▶ Click to expand' : '▼ Click to collapse'}
                     </div>
                   </div>

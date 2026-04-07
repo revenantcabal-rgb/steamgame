@@ -39,6 +39,7 @@ interface CombatZoneState {
   deployments: PartyDeployment[];
   tierUnlocks: Record<string, number>;
   bossKillCounts: Record<string, number>;
+  nextPartyId: number;
 
   isHeroDeployed: (heroId: string) => boolean;
   deployParty: (heroIds: string[], zoneId: string, targetId: string, tier: number) => boolean;
@@ -54,14 +55,14 @@ export interface SerializedCombatZoneState {
   deployments: PartyDeployment[];
   tierUnlocks: Record<string, number>;
   bossKillCounts: Record<string, number>;
+  nextPartyId?: number;
 }
-
-let nextPartyId = 1;
 
 export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
   deployments: [],
   tierUnlocks: {},
   bossKillCounts: {},
+  nextPartyId: 1,
 
   isHeroDeployed: (heroId) => {
     return get().deployments.some(d => d.heroIds.includes(heroId));
@@ -95,7 +96,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
     const maxTier = state.tierUnlocks[zoneId] || 1;
     if (tier > maxTier) tier = maxTier;
 
-    const partyId = `party-${nextPartyId++}-${Date.now()}`;
+    const currentId = get().nextPartyId;
+    const partyId = `party-${currentId}-${Date.now()}`;
+    set({ nextPartyId: currentId + 1 });
 
     set(s => ({
       deployments: [...s.deployments, {
@@ -356,19 +359,22 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
     deployments: get().deployments,
     tierUnlocks: get().tierUnlocks,
     bossKillCounts: get().bossKillCounts,
+    nextPartyId: get().nextPartyId,
   }),
 
   loadState: (saved) => {
+    const savedNextId = saved.nextPartyId || 1;
     set({
       deployments: saved.deployments.map(d => ({
         ...d,
         waveMultiplier: d.waveMultiplier || 1.0,
         recoveryCooldowns: d.recoveryCooldowns || {},
-        partyId: d.partyId || `party-${nextPartyId++}-${Date.now()}`,
+        partyId: d.partyId || `party-${savedNextId}-${Date.now()}`,
         heroIds: d.heroIds || ((d as any).heroId ? [(d as any).heroId] : []),
       })),
       tierUnlocks: saved.tierUnlocks,
       bossKillCounts: saved.bossKillCounts,
+      nextPartyId: savedNextId + saved.deployments.length,
     });
   },
 }));

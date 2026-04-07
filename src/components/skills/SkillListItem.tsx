@@ -66,7 +66,7 @@ export function SkillListItem({ skillId, onSelect }: SkillListItemProps) {
         </div>
         <div className="flex items-center gap-1">
           {hasWorkers && (
-            <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: '#27ae6022', color: '#27ae60', fontSize: '10px' }}>
+            <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: '#27ae6022', color: '#27ae60', fontSize: '11px' }}>
               {workerCount}w
             </span>
           )}

@@ -111,7 +111,7 @@ export function CraftingPanel() {
 
           {/* Batch Repeat Selector */}
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Quantity:</span>
+            <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Quantity:</span>
             <div className="flex gap-1">
               {CRAFT_REPEAT_OPTIONS.map(opt => (
                 <button
@@ -129,7 +129,7 @@ export function CraftingPanel() {
               ))}
             </div>
             {activeCraft && (
-              <span className="text-[10px] ml-1" style={{ color: 'var(--color-text-muted)' }}>
+              <span className="text-[11px] ml-1" style={{ color: 'var(--color-text-muted)' }}>
                 {craftRepeatTarget === 0
                   ? `Crafted ${craftRepeatCount} (\u221E)`
                   : `${craftRepeatCount + 1} of ${craftRepeatTarget}`}
@@ -168,7 +168,7 @@ export function CraftingPanel() {
           <div className="flex gap-1 mb-2 flex-wrap">
             {['all', 'weapon', 'armor', 'legs', 'gloves', 'boots', 'shield', 'ring', 'earring', 'necklace'].map(s => (
               <button key={s} onClick={() => setFilterSlot(s)}
-                className="px-2 py-0.5 rounded text-[10px] cursor-pointer"
+                className="px-2 py-0.5 rounded text-[11px] cursor-pointer"
                 style={{
                   backgroundColor: filterSlot === s ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
                   color: filterSlot === s ? '#000' : 'var(--color-text-muted)',
@@ -181,10 +181,10 @@ export function CraftingPanel() {
 
           {/* Tier filter + craftable toggle */}
           <div className="flex gap-1 items-center mb-2 flex-wrap">
-            <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Tier:</span>
+            <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Tier:</span>
             {[0, 1, 2, 3, 4, 5].map(t => (
               <button key={t} onClick={() => setFilterTier(t)}
-                className="px-1.5 py-0.5 rounded text-[10px] cursor-pointer"
+                className="px-1.5 py-0.5 rounded text-[11px] cursor-pointer"
                 style={{
                   backgroundColor: filterTier === t ? 'var(--color-info)' : 'var(--color-bg-tertiary)',
                   color: filterTier === t ? '#fff' : 'var(--color-text-muted)',
@@ -194,7 +194,7 @@ export function CraftingPanel() {
               </button>
             ))}
             <button onClick={() => setCraftableOnly(!craftableOnly)}
-              className="px-2 py-0.5 rounded text-[10px] cursor-pointer ml-1"
+              className="px-2 py-0.5 rounded text-[11px] cursor-pointer ml-1"
               style={{
                 backgroundColor: craftableOnly ? 'var(--color-success)' : 'var(--color-bg-tertiary)',
                 color: craftableOnly ? '#fff' : 'var(--color-text-muted)',
@@ -220,7 +220,7 @@ export function CraftingPanel() {
                     <span className="text-xs font-bold" style={{ color: SKILL_COLORS[skillId] || '#888' }}>
                       {SKILL_LABELS[skillId] || skillId}
                     </span>
-                    <span className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                    <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                       Lv.{skills[skillId]?.level || 0}
                     </span>
                   </div>
@@ -228,7 +228,7 @@ export function CraftingPanel() {
                   {Object.entries(tiers).sort(([a], [b]) => Number(a) - Number(b)).map(([tier, items]) => (
                     <div key={tier} className="mb-2">
                       {/* Tier Sub-header */}
-                      <div className="text-[10px] font-bold mb-1 px-1" style={{ color: 'var(--color-text-muted)' }}>
+                      <div className="text-[11px] font-bold mb-1 px-1" style={{ color: 'var(--color-text-muted)' }}>
                         Tier {tier} ({items.length})
                       </div>
 
@@ -252,17 +252,17 @@ export function CraftingPanel() {
                                 <div className="flex-1 min-w-0">
                                   <div className="font-bold text-xs truncate" style={{ color: 'var(--color-text-primary)' }}>{t.name}</div>
                                   <div className="flex gap-1 mt-0.5 flex-wrap">
-                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: SKILL_COLORS[t.craftSkillId] + '33', color: SKILL_COLORS[t.craftSkillId], fontSize: 9 }}>T{t.tier}</span>
-                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)', fontSize: 9 }}>{SLOT_LABELS[t.slot] || t.slot}</span>
-                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-xp)22', color: 'var(--color-xp)', fontSize: 9 }}>{t.craftXp}xp</span>
-                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)', fontSize: 9 }}>{getCraftTime(t)}s</span>
+                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: SKILL_COLORS[t.craftSkillId] + '33', color: SKILL_COLORS[t.craftSkillId], fontSize: 11 }}>T{t.tier}</span>
+                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)', fontSize: 11 }}>{SLOT_LABELS[t.slot] || t.slot}</span>
+                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-xp)22', color: 'var(--color-xp)', fontSize: 11 }}>{t.craftXp}xp</span>
+                                    <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)', fontSize: 11 }}>{getCraftTime(t)}s</span>
                                   </div>
                                 </div>
                                 <div className="shrink-0">
                                   {affordable ? (
-                                    <span className="text-[10px] font-bold" style={{ color: 'var(--color-success)' }}>Ready</span>
+                                    <span className="text-[11px] font-bold" style={{ color: 'var(--color-success)' }}>Ready</span>
                                   ) : (
-                                    <span className="text-[10px]" style={{ color: 'var(--color-danger)' }}>Need mats</span>
+                                    <span className="text-[11px]" style={{ color: 'var(--color-danger)' }}>Need mats</span>
                                   )}
                                 </div>
                               </div>
@@ -272,7 +272,7 @@ export function CraftingPanel() {
                                   const have = resources[i.resourceId] || 0;
                                   const enough = have >= i.quantity;
                                   return (
-                                    <span key={i.resourceId} className="flex items-center gap-0.5" style={{ color: enough ? 'var(--color-success)' : 'var(--color-danger)', fontSize: 9 }}>
+                                    <span key={i.resourceId} className="flex items-center gap-0.5" style={{ color: enough ? 'var(--color-success)' : 'var(--color-danger)', fontSize: 11 }}>
                                       <ItemIcon itemId={i.resourceId} itemType="resource" size={10} fallbackLabel="" />
                                       {have}/{i.quantity}
                                     </span>
@@ -350,14 +350,14 @@ function RecipeDetail({ template, affordable, isCrafting, onCraft, resources, na
         <div className="flex-1">
           <div className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>{template.name}</div>
           <div className="flex gap-1 mt-0.5 flex-wrap">
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: SKILL_COLORS[template.craftSkillId] + '33', color: SKILL_COLORS[template.craftSkillId] }}>T{template.tier}</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>{SLOT_LABELS[template.slot] || template.slot}</span>
-            <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>Lv.{template.levelReq}+</span>
+            <span className="px-1.5 py-0.5 rounded text-[11px] font-bold" style={{ backgroundColor: SKILL_COLORS[template.craftSkillId] + '33', color: SKILL_COLORS[template.craftSkillId] }}>T{template.tier}</span>
+            <span className="px-1.5 py-0.5 rounded text-[11px]" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>{SLOT_LABELS[template.slot] || template.slot}</span>
+            <span className="px-1.5 py-0.5 rounded text-[11px]" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>Lv.{template.levelReq}+</span>
             {template.weaponType && (
-              <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>{template.weaponType}</span>
+              <span className="px-1.5 py-0.5 rounded text-[11px]" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>{template.weaponType}</span>
             )}
             {template.isTwoHanded && (
-              <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ backgroundColor: '#e74c3c22', color: '#e74c3c' }}>2H</span>
+              <span className="px-1.5 py-0.5 rounded text-[11px]" style={{ backgroundColor: '#e74c3c22', color: '#e74c3c' }}>2H</span>
             )}
           </div>
         </div>
@@ -370,7 +370,7 @@ function RecipeDetail({ template, affordable, isCrafting, onCraft, resources, na
 
       {/* Stats */}
       <div className="mb-2">
-        <div className="text-[10px] font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Base Stats</div>
+        <div className="text-[11px] font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Base Stats</div>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
           {template.baseStats.map((s, i) => (
             <span key={i} className="text-xs" style={{ color: 'var(--color-success)' }}>+{s.value} {s.stat}{s.isPercentage ? '%' : ''}</span>
@@ -397,7 +397,7 @@ function RecipeDetail({ template, affordable, isCrafting, onCraft, resources, na
 
       {/* Materials */}
       <div className="mb-2">
-        <div className="text-[10px] font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Materials</div>
+        <div className="text-[11px] font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Materials</div>
         <div className="space-y-0.5">
           {template.craftingInputs.map(i => {
             const have = resources[i.resourceId] || 0;
@@ -416,7 +416,7 @@ function RecipeDetail({ template, affordable, isCrafting, onCraft, resources, na
                 {!enough && sources?.skill && (
                   <span
                     className="cursor-pointer"
-                    style={{ color: 'var(--color-text-muted)', fontSize: 9, textDecoration: 'underline' }}
+                    style={{ color: 'var(--color-text-muted)', fontSize: 11, textDecoration: 'underline' }}
                     onClick={() => navigation.navigateToSkill(sources.skill!.id)}
                   >
                     [{sources.skill.name}]
@@ -461,12 +461,12 @@ function CompactGearCard({ gear, onDiscard }: { gear: GearInstance; onDiscard: (
           {facetPrefix}{template.name}
         </div>
         <div className="flex gap-1">
-          <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>T{template.tier} {template.slot}</span>
-          <span style={{ fontSize: 9, color: rarityColor }}>{RARITY_LABELS[gear.rarity]}</span>
+          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>T{template.tier} {template.slot}</span>
+          <span style={{ fontSize: 11, color: rarityColor }}>{RARITY_LABELS[gear.rarity]}</span>
         </div>
       </div>
       <button onClick={onDiscard} className="px-1.5 py-0.5 rounded text-xs cursor-pointer shrink-0"
-        style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 9 }}>
+        style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', fontSize: 11 }}>
         ✕
       </button>
     </div>

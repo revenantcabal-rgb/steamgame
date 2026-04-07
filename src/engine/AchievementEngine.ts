@@ -13,6 +13,7 @@ export interface AchievementProgress {
     bossKills: number;
     marketTrades: number;
     maxSkillLevel: number;
+    resourceTotal: number;
   };
 }
 
@@ -22,7 +23,7 @@ export function createDefaultProgress(): AchievementProgress {
     stats: {
       heroCount: 0, maxHeroLevel: 0, gearCrafted: 0,
       expeditionsCompleted: 0, expeditionsHard: 0, expeditionsExtreme: 0,
-      bossKills: 0, marketTrades: 0, maxSkillLevel: 0,
+      bossKills: 0, marketTrades: 0, maxSkillLevel: 0, resourceTotal: 0,
     },
   };
 }
@@ -53,7 +54,7 @@ function isConditionMet(ach: AchievementDef, progress: AchievementProgress): boo
     case 'boss_kills': return s.bossKills >= ach.condition.target;
     case 'market_trades': return s.marketTrades >= ach.condition.target;
     case 'skill_level': return s.maxSkillLevel >= ach.condition.target;
-    case 'resource_total': return false; // TODO
+    case 'resource_total': return s.resourceTotal >= ach.condition.target;
     default: return false;
   }
 }

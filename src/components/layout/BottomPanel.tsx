@@ -51,7 +51,7 @@ export function BottomPanel() {
               style={{
                 backgroundColor: 'var(--color-accent)',
                 color: '#000',
-                fontSize: '9px',
+                fontSize: '11px',
                 fontWeight: 'bold',
               }}
             >

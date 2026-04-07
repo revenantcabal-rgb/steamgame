@@ -33,7 +33,7 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
 
   return (
     <div
-      className="w-48 xl:w-64 min-w-44 h-screen overflow-y-auto flex flex-col shrink-0"
+      className="w-56 md:w-48 lg:w-52 xl:w-64 min-w-44 h-screen overflow-y-auto flex flex-col shrink-0"
       style={{
         backgroundColor: 'var(--color-bg-secondary)',
         borderRight: '1px solid var(--color-border)',
@@ -164,7 +164,7 @@ function StoryIndicator({
       <div className="text-xs font-bold mb-0.5" style={{ color: 'var(--color-text-primary)' }}>
         {objective.part.title}
       </div>
-      <div className="text-[10px] mb-1" style={{ color: 'var(--color-text-muted)' }}>
+      <div className="text-[11px] mb-1" style={{ color: 'var(--color-text-muted)' }}>
         {objective.part.objective.description}
       </div>
       <div
@@ -176,7 +176,7 @@ function StoryIndicator({
           style={{ width: `${pct}%`, backgroundColor: 'var(--color-accent)' }}
         />
       </div>
-      <div className="text-[10px] mt-0.5 text-right" style={{ color: 'var(--color-text-muted)' }}>
+      <div className="text-[11px] mt-0.5 text-right" style={{ color: 'var(--color-text-muted)' }}>
         {progress}/{objective.part.objective.count}
       </div>
     </button>
@@ -229,7 +229,7 @@ function CombatZoneSection({
                   {zone.name}
                 </span>
               </div>
-              <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+              <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                 Lv.{zone.minLevel}+ | T{zone.baseGearTier} Drops
                 {hasDeployment && (
                   <span style={{ color: 'var(--color-danger)' }}> | {heroCount} hero{heroCount !== 1 ? 'es' : ''} fighting</span>

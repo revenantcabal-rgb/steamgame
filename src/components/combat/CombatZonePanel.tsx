@@ -138,7 +138,7 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                       width: 14, height: 14, borderRadius: 3, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       backgroundColor: isSelected ? '#000' : 'transparent',
                       border: isSelected ? 'none' : '1px solid var(--color-text-muted)',
-                      color: isSelected ? 'var(--color-accent)' : 'transparent', fontSize: 10,
+                      color: isSelected ? 'var(--color-accent)' : 'transparent', fontSize: 11,
                     }}>
                       {isSelected ? '✓' : ''}
                     </span>
@@ -222,7 +222,7 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                           const equipped = hero.equippedAbilities?.filter(a => a != null).length || 0;
                           const totalSlots = hero.equippedAbilities?.length || 4;
                           return equipped > 0 ? (
-                            <span style={{ color: 'var(--color-accent)', fontSize: 9, fontWeight: 'bold' }} title={`${equipped}/${totalSlots} abilities equipped`}>
+                            <span style={{ color: 'var(--color-accent)', fontSize: 11, fontWeight: 'bold' }} title={`${equipped}/${totalSlots} abilities equipped`}>
                               {equipped}/{totalSlots} AB
                             </span>
                           ) : null;
@@ -231,7 +231,7 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                           <span style={{ color: 'var(--color-danger)' }}> ({Math.floor(cooldown / 60)}m {cooldown % 60}s)</span>
                         )}
                         <button onClick={() => recallHero(dep.partyId, hero.id)}
-                          className="ml-1 cursor-pointer" style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', fontSize: 10 }}
+                          className="ml-1 cursor-pointer" style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', fontSize: 11 }}
                           title="Recall this hero">✕</button>
                       </div>
                     );
@@ -263,7 +263,7 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                       {/* Battle Indicator */}
                       <div className="flex flex-col items-center px-3">
                         <div className="text-lg font-bold combat-swords-icon">&#9876;</div>
-                        <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>{dep.fightProgress}s / {fastestDuration}s</div>
+                        <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{dep.fightProgress}s / {fastestDuration}s</div>
                       </div>
 
                       {/* Enemy Side */}
@@ -271,7 +271,7 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                         animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 1 ? 'combat-pulse 0.5s ease' : 'none',
                       }}>
                         <ItemIcon itemId={target?.enemy.id || 'unknown'} itemType="resource" size={40} fallbackLabel="?" fallbackColor="#e74c3c" />
-                        <div className="text-[9px] font-bold" style={{ color: 'var(--color-danger)' }}>{target?.enemy.name || '...'}</div>
+                        <div className="text-[11px] font-bold" style={{ color: 'var(--color-danger)' }}>{target?.enemy.name || '...'}</div>
                         {dep.waveMultiplier > 1 && (
                           <div className="text-[8px]" style={{ color: 'var(--color-energy)' }}>+{Math.round((dep.waveMultiplier - 1) * 100)}%</div>
                         )}
@@ -281,7 +281,7 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                     {/* Fight Progress Bar */}
                     <ProgressBar value={dep.fightProgress} max={fastestDuration} color="var(--color-energy)" height="5px" />
                     {target?.isSweep && (
-                      <div className="text-[9px] text-center mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                      <div className="text-[11px] text-center mt-1" style={{ color: 'var(--color-text-muted)' }}>
                         Fight {dep.fightCount}/50 to boss
                       </div>
                     )}

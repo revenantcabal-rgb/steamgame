@@ -30,7 +30,7 @@ export function MarketStatusPanel() {
         <div style={{
           padding: '6px 12px', backgroundColor: 'rgba(34,197,94,0.1)',
           borderBottom: '1px solid rgba(34,197,94,0.2)', overflowX: 'auto',
-          whiteSpace: 'nowrap', fontSize: 10, color: '#22c55e',
+          whiteSpace: 'nowrap', fontSize: 11, color: '#22c55e',
         }}>
           {recentTxns.map((t, i) => (
             <span key={t.id}>
@@ -72,7 +72,7 @@ export function MarketStatusPanel() {
           <button
             onClick={() => collectAll()}
             style={{
-              padding: '4px 12px', border: 'none', borderRadius: 3, fontSize: 10, fontWeight: 'bold', cursor: 'pointer',
+              padding: '4px 12px', border: 'none', borderRadius: 3, fontSize: 11, fontWeight: 'bold', cursor: 'pointer',
               backgroundColor: '#22c55e', color: '#000',
             }}
           >
@@ -132,13 +132,13 @@ function SellTab({ listings, collectables, onCancel, onCollect }: {
             }}>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-primary)' }}>{l.itemName}</div>
-                <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                   {l.quantity}x at {l.pricePerUnit.toLocaleString()} WC | Exp: {new Date(l.expiresAt).toLocaleDateString()}
                 </div>
               </div>
               <button
                 onClick={() => onCancel(l.id)}
-                style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 10, cursor: 'pointer', backgroundColor: 'var(--color-danger)', color: '#fff' }}
+                style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 11, cursor: 'pointer', backgroundColor: 'var(--color-danger)', color: '#fff' }}
               >
                 Cancel
               </button>
@@ -161,13 +161,13 @@ function SellTab({ listings, collectables, onCancel, onCollect }: {
               }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 'bold', color: '#22c55e' }}>{c.itemName}</div>
-                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                     {c.quantity}x | {new Date(c.completedAt).toLocaleDateString()}
                   </div>
                 </div>
                 <button
                   onClick={() => onCollect(c.id)}
-                  style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 10, cursor: 'pointer', backgroundColor: '#22c55e', color: '#000', fontWeight: 'bold' }}
+                  style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 11, cursor: 'pointer', backgroundColor: '#22c55e', color: '#000', fontWeight: 'bold' }}
                 >
                   Collect
                 </button>
@@ -209,16 +209,16 @@ function BuyTab({ orders, collectables, onCancel, onCollect }: {
             }}>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-primary)' }}>{o.itemName}</div>
-                <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                   {o.quantityFilled}/{o.quantity} filled at {o.bidPrice.toLocaleString()} WC | Esc: {o.escrowAmount.toLocaleString()} WC
                 </div>
-                <div style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                   Exp: {new Date(o.expiresAt).toLocaleDateString()}
                 </div>
               </div>
               <button
                 onClick={() => onCancel(o.id)}
-                style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 10, cursor: 'pointer', backgroundColor: 'var(--color-danger)', color: '#fff' }}
+                style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 11, cursor: 'pointer', backgroundColor: 'var(--color-danger)', color: '#fff' }}
               >
                 Cancel
               </button>
@@ -241,13 +241,13 @@ function BuyTab({ orders, collectables, onCancel, onCollect }: {
               }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 'bold', color: '#22c55e' }}>{c.itemName}</div>
-                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                     {c.quantity}x | {new Date(c.completedAt).toLocaleDateString()}
                   </div>
                 </div>
                 <button
                   onClick={() => onCollect(c.id)}
-                  style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 10, cursor: 'pointer', backgroundColor: '#22c55e', color: '#000', fontWeight: 'bold' }}
+                  style={{ padding: '3px 8px', border: 'none', borderRadius: 3, fontSize: 11, cursor: 'pointer', backgroundColor: '#22c55e', color: '#000', fontWeight: 'bold' }}
                 >
                   Collect
                 </button>

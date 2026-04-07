@@ -1,9 +1,12 @@
+export type CombatStyle = 'melee' | 'ranged' | 'demolitions';
+
 export interface Enemy {
   id: string;
   name: string;
   hp: number;
   damage: number;
   xpReward: number;
+  combatStyle?: CombatStyle;
   resourceDrops: { resourceId: string; chance: number; minQty: number; maxQty: number }[];
 }
 

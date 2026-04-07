@@ -1,5 +1,5 @@
 import { CLASSES } from '../config/classes';
-import { GEAR_TEMPLATES } from '../config/gear';
+import { GEAR_TEMPLATES, EQUIPMENT_SETS } from '../config/gear';
 import { ABILITIES } from '../config/abilities';
 import { levelFromXp } from '../types/skills';
 import type { Hero, PrimaryStats, DerivedStats } from '../types/hero';
@@ -91,14 +91,14 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
 
   // Base derived stats from primary stats
   const derived: DerivedStats = {
-    maxHp: 100 + stats.con * 10,
+    maxHp: 100 + stats.con * 8,
     meleeAttack: Math.floor((5 + stats.str * 2) * combatPenalty),
     rangedAttack: Math.floor((5 + stats.dex * 2) * combatPenalty),
     blastAttack: Math.floor((5 + stats.int * 2) * combatPenalty),
     defense: Math.floor(stats.str * 1 + stats.con * 1.5),
-    evasion: Math.min(50, 5 + stats.luk * 0.5),
+    evasion: Math.min(50, 5 + stats.dex * 0.3 + stats.luk * 0.5),
     accuracy: Math.min(99, 80 + stats.per * 0.8),
-    critChance: Math.min(60, 5 + stats.per * 0.5),
+    critChance: Math.min(60, 5 + stats.per * 0.4),
     critDamage: 150 + stats.int * 1,
     turnSpeed: 100 + stats.dex * 0.5,
     hpRegen: 1 + stats.con * 0.5,
@@ -110,12 +110,14 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
     consumableSlots: 1 + (hero.level >= 15 ? 1 : 0) + (hero.level >= 30 ? 1 : 0) + (hero.level >= 45 ? 1 : 0) + (hero.level >= 60 ? 1 : 0) + (hero.level >= 80 ? 1 : 0),
     // SP stats
     maxSp: 30 + stats.res * 3,
-    spRegen: Math.round((1 + stats.res * 0.2) * 10) / 10,
+    spRegen: Math.round((2 + stats.res * 0.1) * 10) / 10,
     spCostReduction: 0,
     // Extended combat stats
     lifesteal: 0,
     burnDot: 0,
     poisonDot: 0,
+    radiationDot: 0,
+    bleedDot: 0,
     frostSlow: 0,
     thornsDamage: 0,
     blockChance: 0,
@@ -182,6 +184,8 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
     derived.lifesteal = Math.min(25, Math.max(0, derived.lifesteal));
     derived.burnDot = Math.min(20, Math.max(0, derived.burnDot));
     derived.poisonDot = Math.min(15, Math.max(0, derived.poisonDot));
+    derived.radiationDot = Math.min(15, Math.max(0, derived.radiationDot));
+    derived.bleedDot = Math.min(20, Math.max(0, derived.bleedDot));
     derived.frostSlow = Math.min(50, Math.max(0, derived.frostSlow));
     derived.thornsDamage = Math.min(30, Math.max(0, derived.thornsDamage));
     derived.blockChance = Math.min(50, Math.max(0, derived.blockChance));
@@ -199,6 +203,28 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
     derived.maxSp = Math.max(10, derived.maxSp);
     derived.spRegen = Math.max(0, derived.spRegen);
     derived.spCostReduction = Math.min(50, Math.max(0, derived.spCostReduction));
+
+    // ── Equipment Set Bonuses ──
+    // Count how many pieces of each set are equipped
+    const setCounts: Record<string, number> = {};
+    for (const gear of equippedGear) {
+      const template = GEAR_TEMPLATES[gear.templateId];
+      if (template?.setId) {
+        setCounts[template.setId] = (setCounts[template.setId] || 0) + 1;
+      }
+    }
+    // Apply set bonuses at each threshold
+    for (const [setId, count] of Object.entries(setCounts)) {
+      const setDef = EQUIPMENT_SETS[setId];
+      if (!setDef) continue;
+      for (const bonus of setDef.bonuses) {
+        if (count >= bonus.piecesRequired) {
+          for (const effect of bonus.effects) {
+            applyBonus(derived, effect);
+          }
+        }
+      }
+    }
   }
 
   // Apply equipped passive abilities (orange tomes) and decrees (purple tomes)

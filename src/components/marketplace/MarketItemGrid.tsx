@@ -170,14 +170,14 @@ export function MarketItemGrid({ category, subcategory, searchQuery, selectedIte
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
-      <div style={{ fontSize: 10, marginBottom: 6, color: 'var(--color-text-muted)' }}>
+      <div style={{ fontSize: 11, marginBottom: 6, color: 'var(--color-text-muted)' }}>
         {searchQuery ? `Search: "${searchQuery}" (${filteredItems.length} results)` : `${filteredItems.length} items`}
       </div>
 
       {/* Table header */}
       <div style={{
         display: 'grid', gridTemplateColumns: '32px 1fr 70px 70px 50px',
-        padding: '4px 6px', fontSize: 9, fontWeight: 'bold', color: 'var(--color-text-muted)',
+        padding: '4px 6px', fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)',
         borderBottom: '1px solid var(--color-border)', gap: 4, textTransform: 'uppercase',
       }}>
         <span />
@@ -217,18 +217,18 @@ export function MarketItemGrid({ category, subcategory, searchQuery, selectedIte
                 {item.name}
               </div>
               {owned > 0 && (
-                <div style={{ fontSize: 9, color: 'var(--color-accent)' }}>Owned: {owned}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-accent)' }}>Owned: {owned}</div>
               )}
             </div>
-            <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--color-text-muted)' }}>
+            <div style={{ textAlign: 'right', fontSize: 11, color: 'var(--color-text-muted)' }}>
               {item.sellPrice.toLocaleString()}
             </div>
-            <div style={{ textAlign: 'right', fontSize: 10 }}>
+            <div style={{ textAlign: 'right', fontSize: 11 }}>
               <span style={{ color: delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : 'var(--color-text-primary)' }}>
                 {currentPrice.toLocaleString()}
               </span>
             </div>
-            <div style={{ textAlign: 'right', fontSize: 10, color: stock > 0 ? '#22c55e' : 'var(--color-text-muted)' }}>
+            <div style={{ textAlign: 'right', fontSize: 11, color: stock > 0 ? '#22c55e' : 'var(--color-text-muted)' }}>
               {stock}
             </div>
           </div>

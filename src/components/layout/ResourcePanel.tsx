@@ -58,7 +58,7 @@ export function ResourcePanel() {
 
   return (
     <div
-      className="w-44 xl:w-56 min-w-40 h-screen overflow-y-auto flex flex-col shrink-0"
+      className="w-44 lg:w-48 xl:w-56 min-w-40 h-screen overflow-y-auto flex flex-col shrink-0"
       style={{
         backgroundColor: 'var(--color-bg-secondary)',
         borderLeft: '1px solid var(--color-border)',
@@ -128,7 +128,7 @@ function ResourcesTab({ resources }: { resources: { id: string; name: string; de
     <div className="space-y-2">
       {Object.entries(grouped).map(([skillId, items]) => (
         <div key={skillId}>
-          <div className="text-[10px] font-bold uppercase px-1 mb-1" style={{ color: SOURCE_COLORS[skillId] || 'var(--color-text-muted)' }}>
+          <div className="text-[11px] font-bold uppercase px-1 mb-1" style={{ color: SOURCE_COLORS[skillId] || 'var(--color-text-muted)' }}>
             {SOURCE_SKILL_LABELS[skillId] || skillId}
           </div>
           <div className="space-y-0.5">
@@ -137,7 +137,7 @@ function ResourcesTab({ resources }: { resources: { id: string; name: string; de
                 <ItemIcon itemId={r.id} itemType="resource" size={16} fallbackLabel={r.name.charAt(0)} />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{r.name}</div>
-                  <div className="text-[9px] truncate" style={{ color: 'var(--color-text-muted)' }}>{r.description}</div>
+                  <div className="text-[11px] truncate" style={{ color: 'var(--color-text-muted)' }}>{r.description}</div>
                 </div>
                 <span className="text-xs font-mono font-bold shrink-0" style={{ color: SOURCE_COLORS[r.sourceSkillId] || 'var(--color-text-secondary)' }}>
                   {r.quantity.toLocaleString()}
@@ -169,7 +169,7 @@ function ConsumablesTab({ consumables }: { consumables: { id: string; name: stri
     <div className="space-y-2">
       {Object.entries(grouped).map(([type, items]) => (
         <div key={type}>
-          <div className="text-[10px] font-bold uppercase px-1 mb-1" style={{ color: TYPE_COLORS[type] || 'var(--color-text-muted)' }}>
+          <div className="text-[11px] font-bold uppercase px-1 mb-1" style={{ color: TYPE_COLORS[type] || 'var(--color-text-muted)' }}>
             {TYPE_LABELS[type] || type}
           </div>
           <div className="space-y-0.5">
@@ -178,7 +178,7 @@ function ConsumablesTab({ consumables }: { consumables: { id: string; name: stri
                 <ItemIcon itemId={c.id} itemType="consumable" size={16} fallbackLabel={c.name.charAt(0)} />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{c.name}</div>
-                  <div className="text-[9px] truncate" style={{ color: TYPE_COLORS[c.type] || 'var(--color-text-muted)' }}>{c.effect}</div>
+                  <div className="text-[11px] truncate" style={{ color: TYPE_COLORS[c.type] || 'var(--color-text-muted)' }}>{c.effect}</div>
                 </div>
                 <span className="text-xs font-mono font-bold shrink-0" style={{ color: TYPE_COLORS[c.type] || 'var(--color-text-secondary)' }}>
                   x{c.quantity}
@@ -212,14 +212,14 @@ function EquipmentTab({ items }: { items: { instanceId: string; rarity: string; 
                 <div className="text-xs font-bold truncate" style={{ color: rarityColor }}>
                   {item.facet ? `${item.facet.name} ` : ''}{item.template.name}
                 </div>
-                <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>
+                <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                   T{item.template.tier} {item.template.slot} | {RARITY_LABELS[item.rarity as keyof typeof RARITY_LABELS] || item.rarity}
                 </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-1 mt-0.5">
               {item.template.baseStats.slice(0, 2).map((s, i) => (
-                <span key={i} style={{ color: 'var(--color-success)', fontSize: 8 }}>+{s.value} {s.stat}{s.isPercentage ? '%' : ''}</span>
+                <span key={i} style={{ color: 'var(--color-success)', fontSize: 11 }}>+{s.value} {s.stat}{s.isPercentage ? '%' : ''}</span>
               ))}
             </div>
           </div>

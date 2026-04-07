@@ -10,7 +10,25 @@ import type { DerivedStats } from '../types/hero';
 import type { GearInstance } from '../types/equipment';
 import { getPremiumBonuses } from './PremiumBonuses';
 import { useEquipmentStore } from '../store/useEquipmentStore';
-import type { Enemy } from '../config/combatZones';
+import { CLASSES } from '../config/classes';
+import type { Enemy, CombatStyle } from '../config/combatZones';
+
+/**
+ * Combat Triangle: STR (melee) > INT (demolitions) > DEX (ranged) > STR (melee)
+ * Returns a damage multiplier: 1.10 for advantage, 0.90 for disadvantage, 1.0 for neutral.
+ */
+export function getCombatTriangleMultiplier(attackerStyle: CombatStyle | undefined, defenderStyle: CombatStyle | undefined): number {
+  if (!attackerStyle || !defenderStyle || attackerStyle === defenderStyle) return 1.0;
+  // melee beats demolitions, demolitions beats ranged, ranged beats melee
+  if (
+    (attackerStyle === 'melee' && defenderStyle === 'demolitions') ||
+    (attackerStyle === 'demolitions' && defenderStyle === 'ranged') ||
+    (attackerStyle === 'ranged' && defenderStyle === 'melee')
+  ) {
+    return 1.10;
+  }
+  return 0.90;
+}
 
 export interface FightResult {
   enemyName: string;
@@ -195,6 +213,11 @@ export function simulateFight(
 
   const heroTotalAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
 
+  // Combat triangle multiplier (hero style vs enemy style)
+  const classDef = CLASSES[hero.classId];
+  const heroStyle = classDef?.primaryCombatStyle as CombatStyle | undefined;
+  const triangleMult = getCombatTriangleMultiplier(heroStyle, enemy.combatStyle);
+
   // Accuracy affects hit rate
   const hitRate = Math.min(1, derived.accuracy / 100);
 
@@ -205,11 +228,11 @@ export function simulateFight(
   const enemyBaseDefense = 0.10;
   const effectiveEnemyDefense = enemyBaseDefense * Math.max(0, 1 - derived.armorPen / 100);
 
-  // DPS with accuracy, crits, and armor pen
-  let heroDps = heroTotalAttack * hitRate * critMult * (1 - effectiveEnemyDefense);
+  // DPS with accuracy, crits, armor pen, and combat triangle
+  let heroDps = heroTotalAttack * hitRate * critMult * (1 - effectiveEnemyDefense) * triangleMult;
 
-  // DoT bonus: burn and poison add % of attack as extra DPS
-  heroDps += heroTotalAttack * (derived.burnDot / 100 + derived.poisonDot / 100);
+  // DoT bonus: burn, poison, radiation, and bleed add % of attack as extra DPS
+  heroDps += heroTotalAttack * (derived.burnDot / 100 + derived.poisonDot / 100 + derived.radiationDot / 100 + derived.bleedDot / 100);
 
   // Ability contribution (active abilities equipped on this hero)
   const fightDurationEstimate = Math.max(2, Math.ceil(scaledEnemyHp / Math.max(1, heroDps)));

@@ -45,6 +45,14 @@ export const useAchievementStore = create<AchievementState>((set, get) => ({
 
   checkAndUnlock: () => {
     const state = get();
+
+    // Compute live resource total from game store
+    const resources = useGameStore.getState().resources;
+    const resourceTotal = Object.values(resources).reduce((sum, qty) => sum + qty, 0);
+    if (resourceTotal > state.stats.resourceTotal) {
+      state.stats.resourceTotal = resourceTotal;
+    }
+
     const progress: AchievementProgress = {
       unlockedIds: state.unlockedIds,
       stats: state.stats,

@@ -64,7 +64,7 @@ export function MarketSidebar({ selectedCategory, selectedSubcategory, onSelectC
       width: 160, minWidth: 160, borderRight: '1px solid var(--color-border)',
       backgroundColor: 'var(--color-bg-secondary)', overflowY: 'auto',
     }}>
-      <div style={{ padding: '8px 6px', fontSize: 10, fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--color-border)' }}>
+      <div style={{ padding: '8px 6px', fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase', borderBottom: '1px solid var(--color-border)' }}>
         Categories
       </div>
       {CATEGORIES.map(cat => {
@@ -90,7 +90,7 @@ export function MarketSidebar({ selectedCategory, selectedSubcategory, onSelectC
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {cat.subcategories && (
-                  <span style={{ fontSize: 8, color: 'var(--color-text-muted)', width: 10 }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', width: 10 }}>
                     {isExpanded ? '\u25BC' : '\u25B6'}
                   </span>
                 )}
@@ -99,7 +99,7 @@ export function MarketSidebar({ selectedCategory, selectedSubcategory, onSelectC
                 </span>
               </div>
               {count > 0 && (
-                <span style={{ fontSize: 9, color: 'var(--color-text-muted)', backgroundColor: 'var(--color-bg-tertiary)', borderRadius: 8, padding: '1px 5px' }}>
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', backgroundColor: 'var(--color-bg-tertiary)', borderRadius: 8, padding: '1px 5px' }}>
                   {count}
                 </span>
               )}
@@ -113,7 +113,7 @@ export function MarketSidebar({ selectedCategory, selectedSubcategory, onSelectC
                   key={sub.id}
                   onClick={() => onSelectCategory(cat.id, sub.id)}
                   style={{
-                    padding: '4px 8px 4px 28px', cursor: 'pointer', fontSize: 10,
+                    padding: '4px 8px 4px 28px', cursor: 'pointer', fontSize: 11,
                     color: isSub ? '#fff' : 'var(--color-text-muted)',
                     backgroundColor: isSub ? 'var(--color-bg-tertiary)' : 'transparent',
                     fontWeight: isSub ? 'bold' : 'normal',

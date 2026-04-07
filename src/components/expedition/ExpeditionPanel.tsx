@@ -121,7 +121,7 @@ export function ExpeditionPanel() {
                         width: 14, height: 14, borderRadius: 3, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         backgroundColor: isSelected ? '#000' : 'transparent',
                         border: isSelected ? 'none' : '1px solid var(--color-text-muted)',
-                        color: isSelected ? 'var(--color-accent)' : 'transparent', fontSize: 10,
+                        color: isSelected ? 'var(--color-accent)' : 'transparent', fontSize: 11,
                       }}>
                         {isSelected ? '✓' : ''}
                       </span>
@@ -129,7 +129,7 @@ export function ExpeditionPanel() {
                       <span style={{ color: isSelected ? 'rgba(0,0,0,0.6)' : 'var(--color-text-muted)' }}>
                         Lv.{h.level} {cls?.name}
                       </span>
-                      {!meetsLevel && <span style={{ color: 'var(--color-danger)', fontSize: 9 }}>Too low</span>}
+                      {!meetsLevel && <span style={{ color: 'var(--color-danger)', fontSize: 11 }}>Too low</span>}
                     </button>
                   );
                 })}

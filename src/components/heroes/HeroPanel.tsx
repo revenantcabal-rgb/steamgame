@@ -248,14 +248,14 @@ function HeroDetail({ hero }: { hero: Hero }) {
             </div>
             <div className="flex gap-1.5 items-center flex-wrap">
               <span className="text-xs font-bold" style={{ color: catColor }}>{classDef?.name}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: catColor + '22', color: catColor }}>{category?.name}</span>
+              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: catColor + '22', color: catColor }}>{category?.name}</span>
               {primaryStatKey && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{
+                <span className="text-[11px] px-1.5 py-0.5 rounded font-bold" style={{
                   backgroundColor: STAT_COLORS[primaryStatKey] + '22',
                   color: STAT_COLORS[primaryStatKey],
                 }}>{STAT_LABELS[primaryStatKey]}</span>
               )}
-              <span className="text-[10px] px-1.5 py-0.5 rounded" style={{
+              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{
                 backgroundColor: classDef?.heroType === 'specialist' ? '#f39c1222' : '#e74c3c22',
                 color: classDef?.heroType === 'specialist' ? '#f39c12' : '#e74c3c',
               }}>{classDef?.heroType === 'specialist' ? 'Specialist' : 'Combat'}</span>
@@ -264,12 +264,12 @@ function HeroDetail({ hero }: { hero: Hero }) {
             {hero.level < 100 && (
               <div className="flex items-center gap-2 mt-1.5">
                 <div className="flex-1"><ProgressBar value={xpIntoLevel} max={xpNeeded} color="var(--color-xp)" height="5px" /></div>
-                <span className="text-[10px] shrink-0" style={{ color: 'var(--color-text-muted)' }}>{xpIntoLevel.toLocaleString()}/{xpNeeded.toLocaleString()} XP</span>
+                <span className="text-[11px] shrink-0" style={{ color: 'var(--color-text-muted)' }}>{xpIntoLevel.toLocaleString()}/{xpNeeded.toLocaleString()} XP</span>
               </div>
             )}
           </div>
           {dismissStep === 0 && (
-            <button onClick={() => setDismissStep(1)} className="px-2 py-1 rounded text-[10px] cursor-pointer shrink-0"
+            <button onClick={() => setDismissStep(1)} className="px-2 py-1 rounded text-[11px] cursor-pointer shrink-0"
               style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}>
               Dismiss
             </button>
@@ -346,19 +346,19 @@ function HeroDetail({ hero }: { hero: Hero }) {
           <div className="text-xs font-bold" style={{ color: '#e74c3c' }}>
             {classDef?.primaryCombatStyle === 'melee' ? derived.meleeAttack.toFixed(0) : classDef?.primaryCombatStyle === 'ranged' ? derived.rangedAttack.toFixed(0) : derived.blastAttack.toFixed(0)}
           </div>
-          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Attack</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Attack</div>
         </div>
         <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-xs font-bold" style={{ color: '#27ae60' }}>{derived.maxHp.toFixed(0)}</div>
-          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>HP</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>HP</div>
         </div>
         <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-xs font-bold" style={{ color: '#27ae60' }}>{derived.defense.toFixed(0)}</div>
-          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Defense</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Defense</div>
         </div>
         <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-xs font-bold" style={{ color: '#9b59b6' }}>{derived.critChance.toFixed(1)}%</div>
-          <div className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>Crit</div>
+          <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Crit</div>
         </div>
       </div>
 
@@ -371,7 +371,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
             <div className="flex justify-between items-center mb-1.5">
               <h3 className="font-bold text-xs">Attributes</h3>
               {hero.unspentPoints > 0 && (
-                <span className="text-[10px] font-bold" style={{ color: 'var(--color-accent)' }}>
+                <span className="text-[11px] font-bold" style={{ color: 'var(--color-accent)' }}>
                   {hero.unspentPoints} pts
                 </span>
               )}
@@ -386,27 +386,27 @@ function HeroDetail({ hero }: { hero: Hero }) {
                     cursor: 'default',
                   }}>
                     {/* Instant tooltip */}
-                    <div className="absolute left-0 bottom-full mb-1 px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-100" style={{ backgroundColor: '#1a1a1a', border: '1px solid var(--color-border)', color: STAT_COLORS[stat] }}>
+                    <div className="absolute left-0 bottom-full mb-1 px-2 py-1 rounded text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-100" style={{ backgroundColor: '#1a1a1a', border: '1px solid var(--color-border)', color: STAT_COLORS[stat] }}>
                       <b>{STAT_FULL_NAMES[stat]}</b>: <span style={{ color: 'var(--color-text-secondary)' }}>{STAT_DESCRIPTIONS[stat]}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold w-6" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
+                      <span className="text-[11px] font-bold w-6" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
                       <span className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>{totalStats[stat]}</span>
-                      <span className="text-[9px]" style={{ color: 'var(--color-text-muted)' }}>({hero.baseStats[stat]}+{hero.allocatedStats[stat]})</span>
+                      <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>({hero.baseStats[stat]}+{hero.allocatedStats[stat]})</span>
                     </div>
                     {hero.unspentPoints > 0 && (
                       <div className="flex gap-0.5">
                         <button onClick={() => allocateStat(hero.id, stat)}
-                          className="w-5 h-5 rounded text-[10px] font-bold cursor-pointer flex items-center justify-center"
+                          className="w-5 h-5 rounded text-[11px] font-bold cursor-pointer flex items-center justify-center"
                           style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+</button>
                         {hero.unspentPoints >= 5 && (
                           <button onClick={() => allocateMultiple(hero.id, stat, 5)}
-                            className="w-6 h-5 rounded text-[10px] font-bold cursor-pointer flex items-center justify-center"
+                            className="w-6 h-5 rounded text-[11px] font-bold cursor-pointer flex items-center justify-center"
                             style={{ backgroundColor: STAT_COLORS[stat] + 'bb', color: '#000', border: 'none' }}>+5</button>
                         )}
                         {hero.unspentPoints > 1 && (
                           <button onClick={() => allocateMultiple(hero.id, stat, hero.unspentPoints)}
-                            className="px-1 h-5 rounded text-[9px] font-bold cursor-pointer flex items-center justify-center"
+                            className="px-1 h-5 rounded text-[11px] font-bold cursor-pointer flex items-center justify-center"
                             style={{ backgroundColor: STAT_COLORS[stat] + '66', color: '#000', border: 'none' }}>Max</button>
                         )}
                       </div>
@@ -422,7 +422,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
             <h3 className="font-bold text-xs mb-1.5">Combat Stats</h3>
             <div className="space-y-2">
               <div>
-                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e74c3c' }}>Offense</div>
+                <div className="text-[11px] font-bold mb-0.5" style={{ color: '#e74c3c' }}>Offense</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
                   <DerivedRow label="Melee" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} tooltip={statTipData('meleeAttack', baseOnly.meleeAttack)} />
                   <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} tooltip={statTipData('rangedAttack', baseOnly.rangedAttack)} />
@@ -433,7 +433,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#27ae60' }}>Defense</div>
+                <div className="text-[11px] font-bold mb-0.5" style={{ color: '#27ae60' }}>Defense</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
                   <DerivedRow label="HP" value={derived.maxHp.toFixed(0)} highlight tooltip={statTipData('maxHp', baseOnly.maxHp)} />
                   <DerivedRow label="Defense" value={derived.defense.toFixed(0)} tooltip={statTipData('defense', baseOnly.defense)} />
@@ -443,14 +443,14 @@ function HeroDetail({ hero }: { hero: Hero }) {
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#3498db' }}>Speed</div>
+                <div className="text-[11px] font-bold mb-0.5" style={{ color: '#3498db' }}>Speed</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
                   <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} tooltip={statTipData('turnSpeed', baseOnly.turnSpeed)} />
                   <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} tooltip={statTipData('accuracy', baseOnly.accuracy, '%')} />
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e879f9' }}>Spirit</div>
+                <div className="text-[11px] font-bold mb-0.5" style={{ color: '#e879f9' }}>Spirit</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
                   <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} tooltip={statTipData('maxSp', baseOnly.maxSp)} />
                   <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1)} tooltip={statTipData('spRegen', baseOnly.spRegen)} />
@@ -490,8 +490,8 @@ function HeroDetail({ hero }: { hero: Hero }) {
       {/* Category Bonus */}
       <div className="p-2.5 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
         <h3 className="font-bold text-xs mb-1" style={{ color: catColor }}>{category?.name} Bonus</h3>
-        <div className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>{category?.decreeDescription}</div>
-        <div className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Skirmish: {category?.skirmishDescription}</div>
+        <div className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>{category?.decreeDescription}</div>
+        <div className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Skirmish: {category?.skirmishDescription}</div>
       </div>
     </div>
   );
@@ -586,7 +586,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
             minHeight: '44px',
           }}
         >
-          <div className="text-[10px] mb-0.5" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
+          <div className="text-[11px] mb-0.5" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
           {equippedGear && equippedTemplate ? (
             <>
               <div className="font-bold flex items-center gap-1" style={{ color: RARITY_COLORS[equippedGear.rarity], fontSize: 11 }}>
@@ -595,17 +595,17 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
               </div>
               <div className="flex flex-wrap gap-1 mt-0.5">
                 {equippedTemplate.baseStats.slice(0, 2).map((s, i) => (
-                  <span key={i} style={{ color: 'var(--color-success)', fontSize: 9 }}>
+                  <span key={i} style={{ color: 'var(--color-success)', fontSize: 11 }}>
                     +{Math.round(s.value * equippedGear.sourcePowerMultiplier)} {s.stat}{s.isPercentage ? '%' : ''}
                   </span>
                 ))}
                 {equippedTemplate.baseStats.length > 2 && (
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: 9 }}>+{equippedTemplate.baseStats.length - 2} more</span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>+{equippedTemplate.baseStats.length - 2} more</span>
                 )}
               </div>
             </>
           ) : (
-            <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: 10 }}>Empty</div>
+            <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: 11 }}>Empty</div>
           )}
         </button>
 
@@ -634,50 +634,50 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                           {gear.facet ? `${gear.facet.name} ` : ''}{tmpl.name} [{RARITY_LABELS[gear.rarity]}]
                         </div>
                         {tmpl.description && (
-                          <div style={{ color: 'var(--color-text-muted)', fontSize: 9, fontStyle: 'italic', marginTop: '2px' }}>
+                          <div style={{ color: 'var(--color-text-muted)', fontSize: 11, fontStyle: 'italic', marginTop: '2px' }}>
                             {tmpl.description}
                           </div>
                         )}
-                        <div className="text-xs" style={{ color: 'var(--color-text-muted)', fontSize: 9, marginTop: '2px' }}>
+                        <div className="text-xs" style={{ color: 'var(--color-text-muted)', fontSize: 11, marginTop: '2px' }}>
                           T{tmpl.tier} {tmpl.slot} | Lv.{tmpl.levelReq}+
                           {tmpl.weaponType && ` | ${tmpl.weaponType}`}
                           {tmpl.isTwoHanded && ' (2H)'}
                         </div>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {tmpl.baseStats.map((s, i) => (
-                            <span key={i} style={{ color: 'var(--color-success)', fontSize: 9 }}>
+                            <span key={i} style={{ color: 'var(--color-success)', fontSize: 11 }}>
                               +{Math.round(s.value * gear.sourcePowerMultiplier)} {s.stat}{s.isPercentage ? '%' : ''}
                             </span>
                           ))}
                           {tmpl.inherentDownside && (
-                            <span style={{ color: 'var(--color-danger)', fontSize: 9 }}>
+                            <span style={{ color: 'var(--color-danger)', fontSize: 11 }}>
                               {tmpl.inherentDownside.value} {tmpl.inherentDownside.stat}{tmpl.inherentDownside.isPercentage ? '%' : ''}
                             </span>
                           )}
                         </div>
                         {gear.facet && gear.facet.upside.stat !== 'none' && (
-                          <div style={{ color: 'var(--color-energy)', fontSize: 9, marginTop: '2px' }}>
+                          <div style={{ color: 'var(--color-energy)', fontSize: 11, marginTop: '2px' }}>
                             [{gear.facet.name}] +{gear.facet.upside.value}{gear.facet.upside.isPercentage ? '%' : ''} {gear.facet.upside.stat} / {gear.facet.downside.value}{gear.facet.downside.isPercentage ? '%' : ''} {gear.facet.downside.stat}
                           </div>
                         )}
                         {gear.rarityBonuses.length > 0 && (
                           <div className="flex flex-wrap gap-1" style={{ marginTop: '2px' }}>
                             {gear.rarityBonuses.map((b, i) => (
-                              <span key={i} style={{ color: RARITY_COLORS[gear.rarity], fontSize: 9 }}>+{b.value}{b.isPercentage ? '%' : ''} {b.stat}</span>
+                              <span key={i} style={{ color: RARITY_COLORS[gear.rarity], fontSize: 11 }}>+{b.value}{b.isPercentage ? '%' : ''} {b.stat}</span>
                             ))}
                           </div>
                         )}
                         {gear.rarityCurses.length > 0 && (
                           <div className="flex flex-wrap gap-1" style={{ marginTop: '2px' }}>
                             {gear.rarityCurses.map((c, i) => (
-                              <span key={i} style={{ color: '#ff4444', fontSize: 9 }}>CURSE: {c.value}{c.isPercentage ? '%' : ''} {c.stat}</span>
+                              <span key={i} style={{ color: '#ff4444', fontSize: 11 }}>CURSE: {c.value}{c.isPercentage ? '%' : ''} {c.stat}</span>
                             ))}
                           </div>
                         )}
                         {gear.enchantments.length > 0 && (
                           <div style={{ marginTop: '2px' }}>
                             {gear.enchantments.map((e, i) => (
-                              <div key={i} style={{ color: e.isLegendary ? '#f97316' : '#60a5fa', fontSize: 9 }}>
+                              <div key={i} style={{ color: e.isLegendary ? '#f97316' : '#60a5fa', fontSize: 11 }}>
                                 [{e.group}] {e.name}: +{e.effect.value}{e.effect.isPercentage ? '%' : ''} {e.effect.stat}
                                 {e.isLegendary && e.legendaryBonus && <span> ★ {e.legendaryBonus}</span>}
                               </div>
@@ -832,7 +832,7 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
                           {ability.isPassive ? 'Passive' : `SP: ${ability.spCost} | CD: ${ability.cooldown}t`}
                         </span>
                       </div>
-                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 9, marginTop: 2 }}>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 11, marginTop: 2 }}>
                         {ability.effect}
                       </div>
                     </button>
@@ -910,7 +910,7 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
                       }}
                     >
                       <div className="font-bold" style={{ color: '#a855f7' }}>{ability.name}</div>
-                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 9, marginTop: 2 }}>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 11, marginTop: 2 }}>
                         {ability.effect}
                       </div>
                     </button>
@@ -1044,7 +1044,7 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
                           x{resources[consumable.id] || 0}
                         </span>
                       </div>
-                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 9, marginTop: 2 }}>
+                      <div style={{ color: 'var(--color-text-secondary)', fontSize: 11, marginTop: 2 }}>
                         {consumable.effect}
                         {consumable.duration > 0 && ` (${Math.floor(consumable.duration / 60)}m)`}
                       </div>
@@ -1096,7 +1096,7 @@ function DerivedRow({ label, value, suffix, highlight, tooltip }: { label: strin
         {value} {suffix && <span style={{ color: 'var(--color-text-muted)' }}>{suffix}</span>}
       </span>
       {pos && tooltip && (
-        <div className="fixed px-2 py-1.5 rounded text-[9px] pointer-events-none" style={{
+        <div className="fixed px-2 py-1.5 rounded text-[11px] pointer-events-none" style={{
           backgroundColor: '#111',
           border: '1px solid var(--color-border)',
           zIndex: 9998,
