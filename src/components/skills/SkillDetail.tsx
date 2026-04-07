@@ -376,7 +376,9 @@ export function SkillDetail() {
         )}
         <div className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
           Total XP: {playerSkill.xp.toLocaleString()}
-          {playerSkill.level < 100 && ` | Next level needs ${xpForSingleLevel(playerSkill.level + 1).toLocaleString()} XP`}
+          {playerSkill.level < 100 && (
+            <> | Lv.{playerSkill.level + 1} requires {xpForSingleLevel(playerSkill.level + 1).toLocaleString()} XP ({(xpForLevel(playerSkill.level + 1) - playerSkill.xp).toLocaleString()} remaining)</>
+          )}
         </div>
       </div>
 
@@ -420,19 +422,41 @@ function WorkerSummaryBar() {
   const availableWorkers = usePopulationStore(s => s.availableWorkers);
   const getAssignedWorkerCount = usePopulationStore(s => s.getAssignedWorkerCount);
   const totalWorkersLost = usePopulationStore(s => s.totalWorkersLost);
+  const respawningWorkers = usePopulationStore(s => s.respawningWorkers);
   const assignments = usePopulationStore(s => s.assignments);
   const removeAssignment = usePopulationStore(s => s.removeAssignment);
 
   const assigned = getAssignedWorkerCount();
+  const recovering = respawningWorkers.length;
 
   return (
     <div className="mb-4">
-      <div className="grid grid-cols-4 gap-2 mb-2">
+      <div className="grid grid-cols-5 gap-2 mb-2">
         <MiniStat label="Total" value={totalWorkers} color="var(--color-accent)" />
         <MiniStat label="Available" value={availableWorkers} color="var(--color-success)" />
         <MiniStat label="Assigned" value={assigned} color="var(--color-info)" />
-        <MiniStat label="Lost" value={totalWorkersLost} color="var(--color-danger)" />
+        <MiniStat label="Recovering" value={recovering} color="var(--color-energy)" />
+        <MiniStat label="Deaths" value={totalWorkersLost} color="var(--color-danger)" />
       </div>
+
+      {/* Respawning workers countdown */}
+      {recovering > 0 && (
+        <div className="p-2 rounded text-xs mb-2" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-energy)' }}>
+          <div className="font-bold mb-1" style={{ color: 'var(--color-energy)' }}>
+            Recovering Workers ({recovering})
+          </div>
+          {respawningWorkers.map((rw, i) => {
+            const remaining = Math.max(0, Math.ceil((rw.respawnAt - Date.now()) / 1000));
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            return (
+              <div key={i} style={{ color: 'var(--color-text-muted)' }}>
+                Worker recovering: {mins}:{secs.toString().padStart(2, '0')} remaining
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Compact assignment breakdown */}
       {assignments.length > 0 && (
@@ -670,7 +694,10 @@ function AssignmentCard({ assignment }: { assignment: WorkerAssignment }) {
             Trips: {assignment.tripsCompleted} |
             Lost: {assignment.workersLost}
             {scaling.deathRiskPerTrip > 0 && (
-              <span style={{ color: 'var(--color-danger)' }}> | Risk: {(scaling.deathRiskPerTrip * 100).toFixed(1)}%</span>
+              <span style={{ color: 'var(--color-danger)' }} title="Death risk per trip. Assign more workers together to reduce risk."> | Risk: {(scaling.deathRiskPerTrip * 100).toFixed(1)}%</span>
+            )}
+            {scaling.deathRiskPerTrip >= 0.05 && (
+              <span style={{ color: 'var(--color-danger)', fontSize: '9px' }}> (add workers to reduce)</span>
             )}
           </div>
         </div>

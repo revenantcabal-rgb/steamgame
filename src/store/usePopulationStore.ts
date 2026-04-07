@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { getTripDuration, processTrip, POPULATION_MILESTONES } from '../engine/PopulationEngine';
 import { SKILLS, GATHERING_SKILLS } from '../config/skills';
-import type { WorkerAssignment, PopulationState } from '../types/population';
+import type { WorkerAssignment, PopulationState, RespawningWorker } from '../types/population';
+import { WORKER_RESPAWN_MS, POPULATION_CAP } from '../types/population';
 import { useGameStore } from './useGameStore';
 import { useHeroStore } from './useHeroStore';
 import { useStoryStore } from './useStoryStore';
@@ -17,6 +18,8 @@ interface PopulationActions {
   tick: () => void;
   /** Check and claim any eligible milestones */
   checkMilestones: () => void;
+  /** Record a combat kill; every 10 kills rolls for population gain */
+  addCombatKill: (zoneTier: number) => void;
   /** Get total assigned workers */
   getAssignedWorkerCount: () => number;
   /** Serializable state */
@@ -28,8 +31,10 @@ export interface SerializedPopulationState {
   totalWorkers: number;
   totalWorkersLost: number;
   assignments: WorkerAssignment[];
+  respawningWorkers?: RespawningWorker[];
   workerSkillXp: Record<string, number>;
   claimedMilestones: string[];
+  combatKillCounter?: number;
 }
 
 let nextAssignmentId = 1;
@@ -40,8 +45,10 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
   totalWorkers: 3,
   totalWorkersLost: 0,
   assignments: [],
+  respawningWorkers: [],
   workerSkillXp: {},
   claimedMilestones: ['start'],
+  combatKillCounter: 0,
 
   createAssignment: (skillId, subActivityId, workerCount) => {
     const state = get();
@@ -119,10 +126,33 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
     }
 
     const state = get();
+
+    // Process worker respawns
+    const now = Date.now();
+    const stillRespawning: RespawningWorker[] = [];
+    let respawnedCount = 0;
+    for (const rw of state.respawningWorkers) {
+      if (now >= rw.respawnAt) {
+        respawnedCount++;
+      } else {
+        stillRespawning.push(rw);
+      }
+    }
+    if (respawnedCount > 0) {
+      const gameStore = useGameStore.getState();
+      gameStore.addLog(`${respawnedCount} worker${respawnedCount > 1 ? 's' : ''} recovered and ${respawnedCount > 1 ? 'are' : 'is'} available again.`, 'system');
+      set(s => ({
+        respawningWorkers: stillRespawning,
+        totalWorkers: s.totalWorkers + respawnedCount,
+        availableWorkers: s.availableWorkers + respawnedCount,
+      }));
+    }
+
     if (state.assignments.length === 0) return;
 
     const gameStore = useGameStore.getState();
     const newAssignments: WorkerAssignment[] = [];
+    const newRespawning: RespawningWorker[] = [];
     let workersFreed = 0;
     let workersLostThisTick = 0;
     const newWorkerSkillXp = { ...state.workerSkillXp };
@@ -154,17 +184,19 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
         }
 
         if (result.workerDied && assignment.workerCount > 0) {
-          // Worker died
+          // Worker died — enters respawn queue (3 min recovery)
           workersLostThisTick++;
+          const deathNow = Date.now();
+          newRespawning.push({ diedAt: deathNow, respawnAt: deathNow + WORKER_RESPAWN_MS });
           const skillDef = SKILLS[assignment.skillId];
           gameStore.addLog(
-            `A worker was lost in the wastes during ${skillDef?.name || assignment.skillId}! (${assignment.workerCount - 1} remain on duty)`,
+            `A worker was injured during ${skillDef?.name || assignment.skillId} and needs 3 min to recover. (${assignment.workerCount - 1} remain on duty)`,
             'error',
           );
 
           if (assignment.workerCount <= 1) {
-            // Last worker died, remove assignment
-            gameStore.addLog(`All workers on this assignment are gone. Task abandoned.`, 'error');
+            // Last worker on this assignment, remove it
+            gameStore.addLog(`All workers on this assignment are recovering. Task paused.`, 'error');
             continue; // Don't add to newAssignments
           }
 
@@ -197,13 +229,14 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
       }
     }
 
-    set({
+    set(s => ({
       assignments: newAssignments,
       workerSkillXp: newWorkerSkillXp,
-      totalWorkersLost: state.totalWorkersLost + workersLostThisTick,
-      totalWorkers: state.totalWorkers - workersLostThisTick,
-      availableWorkers: state.availableWorkers + workersFreed,
-    });
+      respawningWorkers: [...s.respawningWorkers, ...newRespawning],
+      totalWorkersLost: s.totalWorkersLost + workersLostThisTick,
+      totalWorkers: s.totalWorkers - workersLostThisTick,
+      availableWorkers: s.availableWorkers + workersFreed,
+    }));
   },
 
   checkMilestones: () => {
@@ -286,6 +319,33 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
     }
   },
 
+  addCombatKill: (zoneTier) => {
+    const state = get();
+    const newCounter = state.combatKillCounter + 1;
+
+    if (newCounter % 10 === 0) {
+      // Every 10 kills, roll for population gain
+      // Chance scales with tier: T1=10%, T2=15%, T3=20%, T4=25%, T5+=30%
+      const chance = Math.min(0.30, 0.10 + (zoneTier - 1) * 0.05);
+      const totalPop = state.totalWorkers + state.respawningWorkers.length;
+
+      if (totalPop < POPULATION_CAP && Math.random() < chance) {
+        useGameStore.getState().addLog(
+          `A survivor was found during combat! +1 worker. (${state.totalWorkers + 1} total)`,
+          'levelup',
+        );
+        set({
+          combatKillCounter: newCounter,
+          totalWorkers: state.totalWorkers + 1,
+          availableWorkers: state.availableWorkers + 1,
+        });
+        return;
+      }
+    }
+
+    set({ combatKillCounter: newCounter });
+  },
+
   getAssignedWorkerCount: () => {
     return get().assignments.reduce((sum, a) => sum + a.workerCount, 0);
   },
@@ -296,8 +356,10 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
       totalWorkers: state.totalWorkers,
       totalWorkersLost: state.totalWorkersLost,
       assignments: state.assignments,
+      respawningWorkers: state.respawningWorkers,
       workerSkillXp: state.workerSkillXp,
       claimedMilestones: state.claimedMilestones,
+      combatKillCounter: state.combatKillCounter,
     };
   },
 
@@ -307,8 +369,10 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
       totalWorkers: saved.totalWorkers,
       totalWorkersLost: saved.totalWorkersLost,
       assignments: saved.assignments,
+      respawningWorkers: saved.respawningWorkers || [],
       workerSkillXp: saved.workerSkillXp,
       claimedMilestones: saved.claimedMilestones,
+      combatKillCounter: saved.combatKillCounter || 0,
       availableWorkers: saved.totalWorkers - assigned,
     });
   },

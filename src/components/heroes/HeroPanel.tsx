@@ -256,14 +256,24 @@ function HeroDetail({ hero }: { hero: Hero }) {
                   </span>
                 </div>
                 {hero.unspentPoints > 0 && (
-                  <div className="flex gap-1">
+                  <div className="flex gap-0.5">
                     <button onClick={() => setPendingAllocation({ stat, count: 1 })}
                       className="w-6 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
-                      style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+</button>
+                      style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+1</button>
                     {hero.unspentPoints >= 5 && (
                       <button onClick={() => setPendingAllocation({ stat, count: 5 })}
+                        className="w-7 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
+                        style={{ backgroundColor: STAT_COLORS[stat] + 'bb', color: '#000', border: 'none' }}>+5</button>
+                    )}
+                    {hero.unspentPoints >= 10 && (
+                      <button onClick={() => setPendingAllocation({ stat, count: 10 })}
                         className="w-8 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
-                        style={{ backgroundColor: STAT_COLORS[stat] + '88', color: '#000', border: 'none' }}>+5</button>
+                        style={{ backgroundColor: STAT_COLORS[stat] + '99', color: '#000', border: 'none' }}>+10</button>
+                    )}
+                    {hero.unspentPoints > 1 && (
+                      <button onClick={() => setPendingAllocation({ stat, count: hero.unspentPoints })}
+                        className="px-1.5 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
+                        style={{ backgroundColor: STAT_COLORS[stat] + '66', color: '#000', border: 'none' }}>Max</button>
                     )}
                   </div>
                 )}

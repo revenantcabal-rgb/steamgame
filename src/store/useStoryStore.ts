@@ -316,12 +316,23 @@ export const useStoryStore = create<StoryState>((set, get) => ({
       }
     }
 
+    const completedStories = saved.completedStories ?? [];
+    const unlockedFeatures = [...(saved.unlockedFeatures ?? [])];
+
+    // Auto-repair: ensure completed stories have their unlocks in unlockedFeatures
+    for (const storyNum of completedStories) {
+      const chapter = STORY_CHAPTERS.find(c => c.number === storyNum);
+      if (chapter?.unlocks && !unlockedFeatures.includes(chapter.unlocks)) {
+        unlockedFeatures.push(chapter.unlocks);
+      }
+    }
+
     set({
       currentStoryNumber: saved.currentStoryNumber ?? 1,
       currentPartIndex: saved.currentPartIndex ?? 0,
-      completedStories: saved.completedStories ?? [],
+      completedStories,
       partProgress: saved.partProgress ?? {},
-      unlockedFeatures: saved.unlockedFeatures ?? [],
+      unlockedFeatures,
       totalWcEarned: saved.totalWcEarned ?? 0,
       totalKills: saved.totalKills ?? 0,
       bossesDefeated: saved.bossesDefeated ?? [],

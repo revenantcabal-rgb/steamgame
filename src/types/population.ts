@@ -16,19 +16,36 @@ export interface WorkerAssignment {
   workersLost: number;
 }
 
+export interface RespawningWorker {
+  /** Timestamp when the worker died */
+  diedAt: number;
+  /** Timestamp when the worker will be available again */
+  respawnAt: number;
+}
+
+/** Worker respawn time in milliseconds (3 minutes) */
+export const WORKER_RESPAWN_MS = 180_000;
+
+/** Maximum population capacity */
+export const POPULATION_CAP = 50;
+
 export interface PopulationState {
   /** Total workers available (not assigned) */
   availableWorkers: number;
-  /** Total workers owned (available + assigned) */
+  /** Total workers owned (available + assigned, NOT counting respawning) */
   totalWorkers: number;
-  /** Total workers lost permanently */
+  /** Total workers lost (cumulative death counter for stats) */
   totalWorkersLost: number;
   /** Active assignments */
   assignments: WorkerAssignment[];
+  /** Workers currently respawning after death */
+  respawningWorkers: RespawningWorker[];
   /** Worker skill levels (XP accumulated per gathering skill) */
   workerSkillXp: Record<string, number>;
   /** Milestones already claimed (to prevent double-claiming) */
   claimedMilestones: string[];
+  /** Global combat kill counter for population growth */
+  combatKillCounter: number;
 }
 
 /** Worker count scaling for gathering */

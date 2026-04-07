@@ -9,6 +9,7 @@ import { useAnticheatStore } from './useAnticheatStore';
 import { useAchievementStore } from './useAchievementStore';
 import { useStoryStore } from './useStoryStore';
 import { useAuthStore } from './useAuthStore';
+import { usePopulationStore } from './usePopulationStore';
 
 const BOSS_EVERY_N_FIGHTS = 50;
 const ENEMY_SCALE_EVERY_N = 10;
@@ -300,6 +301,11 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               updatedCooldowns[hero.id] = result.recoveryCooldown;
               gameStore.addLog(`${hero.name} was defeated by ${result.enemyName}! Recovering...`, 'error');
             }
+          }
+
+          // Track combat kills for population growth
+          if (anyWon) {
+            usePopulationStore.getState().addCombatKill(dep.zoneTier);
           }
 
           const newFightCount = target?.isSweep ? dep.fightCount + 1 : dep.fightCount;
