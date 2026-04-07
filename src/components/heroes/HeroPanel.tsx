@@ -326,11 +326,15 @@ function HeroDetail({ hero }: { hero: Hero }) {
               {(Object.keys(STAT_LABELS) as (keyof PrimaryStats)[]).map(stat => {
                 const isPrimary = stat === primaryStatKey;
                 return (
-                  <div key={stat} className="flex items-center justify-between px-2 py-1 rounded" title={`${STAT_FULL_NAMES[stat]}: ${STAT_DESCRIPTIONS[stat]}`} style={{
+                  <div key={stat} className="group relative flex items-center justify-between px-2 py-1 rounded" style={{
                     backgroundColor: 'var(--color-bg-tertiary)',
                     border: isPrimary ? `1px solid ${STAT_COLORS[stat]}` : '1px solid transparent',
-                    cursor: 'help',
+                    cursor: 'default',
                   }}>
+                    {/* Instant tooltip */}
+                    <div className="absolute left-0 bottom-full mb-1 px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-100" style={{ backgroundColor: '#1a1a1a', border: '1px solid var(--color-border)', color: STAT_COLORS[stat] }}>
+                      <b>{STAT_FULL_NAMES[stat]}</b>: <span style={{ color: 'var(--color-text-secondary)' }}>{STAT_DESCRIPTIONS[stat]}</span>
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-bold w-6" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
                       <span className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>{totalStats[stat]}</span>
