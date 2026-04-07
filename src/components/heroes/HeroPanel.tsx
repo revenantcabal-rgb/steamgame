@@ -179,6 +179,42 @@ function HeroDetail({ hero }: { hero: Hero }) {
   const xpNeeded = nextLevelXp - currentLevelXp;
   const primaryStatKey = classDef?.primaryStats?.[0] as keyof PrimaryStats | undefined;
 
+  // Compute base stats (no gear) vs total to build per-stat tooltips
+  const baseOnly = calculateDerivedStats(hero, []);
+  const gearContribs: Record<string, { name: string; stat: string; value: number; pct: boolean }[]> = {};
+  if (equippedGear) {
+    for (const gear of equippedGear) {
+      const tmpl = GEAR_TEMPLATES[gear.templateId];
+      if (!tmpl) continue;
+      const gearName = (gear.facet ? `${gear.facet.name} ` : '') + tmpl.name;
+      const allBonuses = [
+        ...tmpl.baseStats.map(b => ({ ...b })),
+        ...(tmpl.inherentDownside ? [{ stat: tmpl.inherentDownside.stat, value: tmpl.inherentDownside.value, isPercentage: tmpl.inherentDownside.isPercentage }] : []),
+        ...gear.rarityBonuses.map(b => ({ ...b })),
+        ...gear.rarityCurses.map(c => ({ stat: c.stat, value: -Math.abs(c.value), isPercentage: c.isPercentage })),
+        ...(gear.facet ? [gear.facet.upside, gear.facet.downside] : []),
+        ...gear.enchantments.map(e => e.effect),
+      ];
+      for (const b of allBonuses) {
+        if (!b || b.stat === 'none') continue;
+        if (!gearContribs[b.stat]) gearContribs[b.stat] = [];
+        gearContribs[b.stat].push({ name: gearName, stat: b.stat, value: b.value, pct: b.isPercentage });
+      }
+    }
+  }
+
+  function statTip(statKey: string, baseVal: number, unit: string = ''): string {
+    const contribs = gearContribs[statKey] || [];
+    let tip = `Base: ${baseVal.toFixed(unit === '%' ? 1 : 0)}${unit}`;
+    if (contribs.length > 0) {
+      for (const c of contribs) {
+        const sign = c.value >= 0 ? '+' : '';
+        tip += `\n${c.name}: ${sign}${c.value}${c.pct ? '%' : ''}`;
+      }
+    }
+    return tip;
+  }
+
   return (
     <div>
       {/* ─── Compact Header ─── */}
@@ -370,37 +406,37 @@ function HeroDetail({ hero }: { hero: Hero }) {
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e74c3c' }}>Offense</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="Melee" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} />
-                  <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} />
-                  <DerivedRow label="Blast" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} />
-                  <DerivedRow label="Crit" value={derived.critChance.toFixed(1) + '%'} />
-                  <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} />
-                  <DerivedRow label="Ability Pwr" value={'+' + derived.abilityPower + '%'} />
+                  <DerivedRow label="Melee" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} tooltip={statTip('meleeAttack', baseOnly.meleeAttack)} />
+                  <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} tooltip={statTip('rangedAttack', baseOnly.rangedAttack)} />
+                  <DerivedRow label="Blast" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} tooltip={statTip('blastAttack', baseOnly.blastAttack)} />
+                  <DerivedRow label="Crit" value={derived.critChance.toFixed(1) + '%'} tooltip={statTip('critChance', baseOnly.critChance, '%')} />
+                  <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} tooltip={statTip('critDamage', baseOnly.critDamage, '%')} />
+                  <DerivedRow label="Ability Pwr" value={'+' + derived.abilityPower + '%'} tooltip={statTip('abilityPower', baseOnly.abilityPower, '%')} />
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#27ae60' }}>Defense</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="HP" value={derived.maxHp.toFixed(0)} highlight />
-                  <DerivedRow label="Defense" value={derived.defense.toFixed(0)} />
-                  <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} />
-                  <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1)} />
-                  <DerivedRow label="Status Res" value={derived.statusResist.toFixed(1) + '%'} />
+                  <DerivedRow label="HP" value={derived.maxHp.toFixed(0)} highlight tooltip={statTip('maxHp', baseOnly.maxHp)} />
+                  <DerivedRow label="Defense" value={derived.defense.toFixed(0)} tooltip={statTip('defense', baseOnly.defense)} />
+                  <DerivedRow label="Evasion" value={derived.evasion.toFixed(1) + '%'} tooltip={statTip('evasion', baseOnly.evasion, '%')} />
+                  <DerivedRow label="HP Regen" value={derived.hpRegen.toFixed(1)} tooltip={statTip('hpRegen', baseOnly.hpRegen)} />
+                  <DerivedRow label="Status Res" value={derived.statusResist.toFixed(1) + '%'} tooltip={statTip('statusResist', baseOnly.statusResist, '%')} />
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#3498db' }}>Speed</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} />
-                  <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} />
+                  <DerivedRow label="Turn Speed" value={derived.turnSpeed.toFixed(1)} tooltip={statTip('turnSpeed', baseOnly.turnSpeed)} />
+                  <DerivedRow label="Accuracy" value={derived.accuracy.toFixed(1) + '%'} tooltip={statTip('accuracy', baseOnly.accuracy, '%')} />
                 </div>
               </div>
               <div>
                 <div className="text-[10px] font-bold mb-0.5" style={{ color: '#e879f9' }}>Spirit</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
-                  <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} />
-                  <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1)} />
-                  <DerivedRow label="SP Cost" value={'-' + derived.spCostReduction.toFixed(0) + '%'} />
+                  <DerivedRow label="Max SP" value={derived.maxSp.toFixed(0)} tooltip={statTip('maxSp', baseOnly.maxSp)} />
+                  <DerivedRow label="SP Regen" value={derived.spRegen.toFixed(1)} tooltip={statTip('spRegen', baseOnly.spRegen)} />
+                  <DerivedRow label="SP Cost" value={'-' + derived.spCostReduction.toFixed(0) + '%'} tooltip={statTip('spCostReduction', baseOnly.spCostReduction, '%')} />
                 </div>
               </div>
             </div>
@@ -1012,13 +1048,18 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
   );
 }
 
-function DerivedRow({ label, value, suffix, highlight }: { label: string; value: string; suffix?: string; highlight?: boolean }) {
+function DerivedRow({ label, value, suffix, highlight, tooltip }: { label: string; value: string; suffix?: string; highlight?: boolean; tooltip?: string }) {
   return (
-    <div className="flex justify-between">
+    <div className="group relative flex justify-between" style={{ cursor: tooltip ? 'default' : undefined }}>
       <span style={{ color: highlight ? 'var(--color-text-primary)' : 'var(--color-text-muted)', fontWeight: highlight ? 'bold' : 'normal' }}>{label}</span>
       <span style={{ color: highlight ? 'var(--color-accent)' : 'var(--color-text-primary)', fontWeight: highlight ? 'bold' : 'normal' }}>
         {value} {suffix && <span style={{ color: 'var(--color-text-muted)' }}>{suffix}</span>}
       </span>
+      {tooltip && (
+        <div className="absolute left-0 bottom-full mb-1 px-2 py-1 rounded text-[9px] whitespace-pre opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-100" style={{ backgroundColor: '#111', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', maxWidth: '280px' }}>
+          {tooltip}
+        </div>
+      )}
     </div>
   );
 }
