@@ -58,7 +58,7 @@ export function GatheringPanel() {
         <div className="p-3 pb-0 shrink-0">
           {/* Skill name + level badge */}
           <div className="flex items-center gap-2 mb-2">
-            <span style={{ fontSize: 20 }}>{SKILL_ICONS[activeSkillId] || '\u2699'}</span>
+            <ItemIcon itemId={activeSkillId} itemType="skill" size={24} fallbackLabel={SKILL_ICONS[activeSkillId] || '\u2699'} />
             <h3 className="font-bold text-base" style={{ color: 'var(--color-text-primary)' }}>{skillDef.name}</h3>
             <span className="text-xs px-2.5 py-0.5 rounded font-bold" style={{ backgroundColor: skillColor + '22', color: skillColor }}>
               Lv.{playerSkill.level}

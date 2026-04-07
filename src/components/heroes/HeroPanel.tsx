@@ -796,7 +796,8 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
                   equippedAbility ? (
                     <div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold" style={{ color: ABILITY_COLOR_HEX[equippedAbility.color] }}>
+                        <span className="text-xs font-bold flex items-center gap-1" style={{ color: ABILITY_COLOR_HEX[equippedAbility.color] }}>
+                          <ItemIcon itemId={equippedAbility.id} itemType="ability" size={20} fallbackColor={ABILITY_COLOR_HEX[equippedAbility.color]} />
                           Slot {slotIndex + 1}: {equippedAbility.name}
                         </span>
                         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
@@ -842,7 +843,8 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
                       }}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-bold" style={{ color: ABILITY_COLOR_HEX[ability.color] }}>
+                        <span className="font-bold flex items-center gap-1" style={{ color: ABILITY_COLOR_HEX[ability.color] }}>
+                          <ItemIcon itemId={ability.id} itemType="ability" size={16} fallbackColor={ABILITY_COLOR_HEX[ability.color]} />
                           {ability.name}
                         </span>
                         <span style={{ color: 'var(--color-text-muted)' }}>
@@ -883,7 +885,8 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
                   decreeAbility ? (
                     <div>
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold" style={{ color: '#a855f7' }}>
+                        <span className="text-xs font-bold flex items-center gap-1" style={{ color: '#a855f7' }}>
+                          <ItemIcon itemId={decreeAbility.id} itemType="ability" size={20} fallbackColor="#a855f7" />
                           Decree: {decreeAbility.name}
                         </span>
                         <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Party-wide</span>
@@ -926,7 +929,10 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
                         color: 'var(--color-text-primary)',
                       }}
                     >
-                      <div className="font-bold" style={{ color: '#a855f7' }}>{ability.name}</div>
+                      <div className="font-bold flex items-center gap-1" style={{ color: '#a855f7' }}>
+                        <ItemIcon itemId={ability.id} itemType="ability" size={16} fallbackColor="#a855f7" />
+                        {ability.name}
+                      </div>
                       <div style={{ color: 'var(--color-text-secondary)', fontSize: 11, marginTop: 2 }}>
                         {ability.effect}
                       </div>

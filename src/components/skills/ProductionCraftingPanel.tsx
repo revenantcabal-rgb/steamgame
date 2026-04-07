@@ -192,7 +192,7 @@ export function ProductionCraftingPanel() {
         <div className="p-3 pb-0 shrink-0">
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 18 }}>{SKILL_ICONS[activeSkillId] || '\u2699'}</span>
+              <ItemIcon itemId={activeSkillId} itemType="skill" size={22} fallbackLabel={SKILL_ICONS[activeSkillId] || '\u2699'} />
               <h3 className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>{skillDef.name}</h3>
               <span className="text-xs px-2 py-0.5 rounded font-bold" style={{ backgroundColor: skillColor + '22', color: skillColor }}>
                 Lv.{playerSkill.level}
@@ -418,7 +418,7 @@ export function ProductionCraftingPanel() {
         ) : (
           <div className="flex items-center justify-center p-8" style={{ color: 'var(--color-text-muted)', flex: '1 0 200px' }}>
             <div className="text-center">
-              <div className="text-3xl mb-3" style={{ opacity: 0.4 }}>{SKILL_ICONS[activeSkillId] || '\u2699'}</div>
+              <div className="mb-3" style={{ opacity: 0.4 }}><ItemIcon itemId={activeSkillId} itemType="skill" size={48} /></div>
               <div className="text-sm mb-1">Select a Recipe</div>
               <div className="text-xs" style={{ opacity: 0.6 }}>Choose a recipe from the list to view details and craft.</div>
             </div>

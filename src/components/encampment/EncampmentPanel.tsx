@@ -5,6 +5,7 @@ import { usePopulationStore } from '../../store/usePopulationStore';
 import { BUILDINGS, BUILDING_LIST, BUILDING_CATEGORIES, getBuildCost, getBonusAtLevel, getWorkerTickInterval } from '../../config/buildings';
 import type { BuildingDefinition, BuildingCategory } from '../../config/buildings';
 import { RESOURCES } from '../../config/resources';
+import { ItemIcon } from '../../utils/itemIcons';
 
 const BONUS_LABELS: Record<string, string> = {
   gathering_speed_scavenging: 'Scavenging Speed',
@@ -148,6 +149,7 @@ export function EncampmentPanel() {
                           }}
                         >
                           <div className="flex items-center gap-2">
+                            <ItemIcon itemId={def.id} itemType="building" size={28} fallbackLabel={def.name.charAt(0)} fallbackColor={getCategoryColor(def.category)} />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-xs" style={{ color: 'var(--color-text-primary)' }}>

@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useCombatZoneStore } from '../../store/useCombatZoneStore';
 import { useHeroStore } from '../../store/useHeroStore';
+import { useEquipmentStore } from '../../store/useEquipmentStore';
 import { COMBAT_ZONE_LIST, COMBAT_ZONES, ZONE_TIER_MULTIPLIERS } from '../../config/combatZones';
 import { CLASSES } from '../../config/classes';
-import { getFightDuration, canEnterZone } from '../../engine/IdleCombatEngine';
+import { ABILITIES } from '../../config/abilities';
+import { ABILITY_COLOR_HEX } from '../../config/abilities';
+import { getFightDuration, canEnterZone, calculateAbilityContribution, getCombatTriangleMultiplier } from '../../engine/IdleCombatEngine';
+import { calculateDerivedStats, getEquippedGear } from '../../engine/HeroEngine';
 import { ProgressBar } from '../common/ProgressBar';
 import { ItemIcon } from '../../utils/itemIcons';
+import type { Hero } from '../../types/hero';
 
 interface CombatZonePanelProps {
   /** Pre-select a zone when navigating from the sidebar */
@@ -19,6 +24,8 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
   const recallParty = useCombatZoneStore(s => s.recallParty);
   const recallHero = useCombatZoneStore(s => s.recallHero);
   const heroes = useHeroStore(s => s.heroes);
+  const inventory = useEquipmentStore(s => s.inventory);
+  const heroEquipment = useEquipmentStore(s => s.heroEquipment);
   const [selectedZone, setSelectedZone] = useState<string>(initialZoneId || '');
   const [selectedTarget, setSelectedTarget] = useState<string>('');
   const [selectedHeroIds, setSelectedHeroIds] = useState<string[]>([]);
@@ -245,46 +252,147 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                     <ProgressBar value={1} max={1} color="var(--color-danger)" height="6px" />
                   </div>
                 ) : (
-                  <div className="p-3 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+                  <div className="p-3 rounded" style={{
+                    backgroundImage: `url(/assets/battle-backgrounds/${dep.zoneId}.png)`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    position: 'relative',
+                  }}>
+                    {/* Overlay for text readability */}
+                    <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 'inherit' }} />
                     {/* Visual Battle Scene */}
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-2" style={{ position: 'relative' }}>
                       {/* Hero Side */}
-                      <div className="flex gap-1 items-end">
-                        {partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0)).slice(0, 3).map(hero => (
-                          <div key={hero.id} className="text-center" style={{
-                            animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 0 ? 'combat-pulse 0.5s ease' : 'none',
-                          }}>
-                            <ItemIcon itemId={hero.classId} itemType="hero" size={32} fallbackLabel={hero.name.charAt(0)} />
-                            <div className="text-[8px] truncate" style={{ color: 'var(--color-text-muted)', maxWidth: 40 }}>{hero.name.split(' ')[0]}</div>
-                          </div>
-                        ))}
+                      <div className="flex gap-2 items-end">
+                        {partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0)).slice(0, 3).map(hero => {
+                          const equippedGear = getEquippedGear(hero.id, heroEquipment, inventory);
+                          const derived = calculateDerivedStats(hero, equippedGear);
+                          const cls = CLASSES[hero.classId];
+                          const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
+                          const enemyStyle = target?.enemy ? (zone?.targets.find(t => t.id === dep.targetId)?.enemy as any)?.combatStyle : undefined;
+                          const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as any, enemyStyle);
+                          const abilityContrib = calculateAbilityContribution(hero, derived, fastestDuration);
+                          const estimatedDps = Math.round((heroAttack * triangleMult + abilityContrib.bonusDps) * (derived.accuracy / 100));
+                          return (
+                            <div key={hero.id} className="text-center" style={{
+                              animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 0 ? 'combat-pulse 0.5s ease' : 'none',
+                            }}>
+                              <ItemIcon itemId={hero.classId} itemType="hero" size={36} fallbackLabel={hero.name.charAt(0)} />
+                              <div className="text-[8px] truncate font-bold" style={{ color: 'var(--color-text-primary)', maxWidth: 56 }}>{hero.name.split(' ')[0]}</div>
+                              {/* HP Bar */}
+                              <div style={{ width: 56, height: 4, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 2, marginTop: 2 }}>
+                                <div style={{ width: '100%', height: '100%', backgroundColor: '#22c55e', borderRadius: 2 }} />
+                              </div>
+                              <div className="text-[7px]" style={{ color: '#22c55e' }}>{derived.maxHp} HP</div>
+                              {/* SP Bar */}
+                              <div style={{ width: 56, height: 3, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 2, marginTop: 1 }}>
+                                <div style={{ width: '100%', height: '100%', backgroundColor: '#3b82f6', borderRadius: 2 }} />
+                              </div>
+                              <div className="text-[7px]" style={{ color: '#3b82f6' }}>{derived.maxSp} SP</div>
+                              {/* DPS */}
+                              <div className="text-[8px] font-bold" style={{ color: 'var(--color-energy)' }}>{estimatedDps} DPS</div>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* Battle Indicator */}
                       <div className="flex flex-col items-center px-3">
                         <div className="text-lg font-bold combat-swords-icon">&#9876;</div>
                         <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{dep.fightProgress}s / {fastestDuration}s</div>
+                        {/* Party total DPS */}
+                        {(() => {
+                          const activeHeroes = partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0));
+                          const totalDps = activeHeroes.reduce((sum, hero) => {
+                            const equippedGear = getEquippedGear(hero.id, heroEquipment, inventory);
+                            const derived = calculateDerivedStats(hero, equippedGear);
+                            const cls = CLASSES[hero.classId];
+                            const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
+                            const abilityContrib = calculateAbilityContribution(hero, derived, fastestDuration);
+                            return sum + Math.round((heroAttack + abilityContrib.bonusDps) * (derived.accuracy / 100));
+                          }, 0);
+                          return activeHeroes.length > 1 ? (
+                            <div className="text-[9px] font-bold" style={{ color: 'var(--color-energy)' }}>
+                              {totalDps} Total DPS
+                            </div>
+                          ) : null;
+                        })()}
                       </div>
 
                       {/* Enemy Side */}
                       <div className="text-center" style={{
                         animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 1 ? 'combat-pulse 0.5s ease' : 'none',
                       }}>
-                        <ItemIcon itemId={target?.enemy.id || 'unknown'} itemType="resource" size={40} fallbackLabel="?" fallbackColor="#e74c3c" />
+                        <ItemIcon itemId={target?.enemy.id || 'unknown'} itemType="monster" size={44} fallbackLabel="?" fallbackColor="#e74c3c" />
                         <div className="text-[11px] font-bold" style={{ color: 'var(--color-danger)' }}>{target?.enemy.name || '...'}</div>
+                        {/* Enemy HP */}
+                        {target?.enemy && (
+                          <>
+                            <div style={{ width: 64, height: 4, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 2, marginTop: 2, margin: '2px auto 0' }}>
+                              <div style={{ width: '100%', height: '100%', backgroundColor: '#ef4444', borderRadius: 2 }} />
+                            </div>
+                            <div className="text-[8px]" style={{ color: '#ef4444' }}>
+                              {Math.round(target.enemy.hp * dep.waveMultiplier)} HP | {Math.round(target.enemy.damage * dep.waveMultiplier)} ATK
+                            </div>
+                          </>
+                        )}
                         {dep.waveMultiplier > 1 && (
-                          <div className="text-[8px]" style={{ color: 'var(--color-energy)' }}>+{Math.round((dep.waveMultiplier - 1) * 100)}%</div>
+                          <div className="text-[8px]" style={{ color: 'var(--color-energy)' }}>Wave +{Math.round((dep.waveMultiplier - 1) * 100)}%</div>
                         )}
                       </div>
                     </div>
 
+                    {/* Active Abilities Row */}
+                    {(() => {
+                      const activeHeroes = partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0));
+                      const allAbilities = activeHeroes.flatMap(hero =>
+                        (hero.equippedAbilities || []).filter((a): a is string => a != null).map(aId => {
+                          const ability = ABILITIES[aId];
+                          return ability ? { hero, ability } : null;
+                        }).filter(Boolean)
+                      ) as { hero: Hero; ability: typeof ABILITIES[string] }[];
+
+                      if (allAbilities.length === 0) return null;
+
+                      // Determine which ability is "casting" based on fight progress
+                      const castingIndex = dep.fightProgress > 0 ? dep.fightProgress % allAbilities.length : -1;
+
+                      return (
+                        <div className="flex flex-wrap gap-1 mt-2 mb-1" style={{ position: 'relative' }}>
+                          {allAbilities.map((entry, i) => {
+                            const isCasting = i === castingIndex;
+                            return (
+                              <div key={`${entry.hero.id}-${entry.ability.id}`}
+                                className="flex items-center gap-1 px-1.5 py-0.5 rounded"
+                                title={`${entry.hero.name.split(' ')[0]}: ${entry.ability.name} — ${entry.ability.effect}`}
+                                style={{
+                                  backgroundColor: isCasting ? ABILITY_COLOR_HEX[entry.ability.color] + '44' : 'rgba(0,0,0,0.4)',
+                                  border: `1px solid ${isCasting ? ABILITY_COLOR_HEX[entry.ability.color] : 'transparent'}`,
+                                  transition: 'all 0.3s ease',
+                                }}>
+                                <ItemIcon itemId={entry.ability.id} itemType="ability" size={14} fallbackColor={ABILITY_COLOR_HEX[entry.ability.color]} />
+                                <span className="text-[8px] font-bold" style={{ color: isCasting ? ABILITY_COLOR_HEX[entry.ability.color] : 'var(--color-text-muted)' }}>
+                                  {entry.ability.name}
+                                </span>
+                                {isCasting && (
+                                  <span className="text-[7px]" style={{ color: ABILITY_COLOR_HEX[entry.ability.color] }}>CAST</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+
                     {/* Fight Progress Bar */}
-                    <ProgressBar value={dep.fightProgress} max={fastestDuration} color="var(--color-energy)" height="5px" />
-                    {target?.isSweep && (
-                      <div className="text-[11px] text-center mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                        Fight {dep.fightCount}/50 to boss
-                      </div>
-                    )}
+                    <div style={{ position: 'relative' }}>
+                      <ProgressBar value={dep.fightProgress} max={fastestDuration} color="var(--color-energy)" height="5px" />
+                      {target?.isSweep && (
+                        <div className="text-[11px] text-center mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                          Fight {dep.fightCount}/50 to boss
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

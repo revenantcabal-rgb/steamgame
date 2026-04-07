@@ -1,55 +1,69 @@
 import type { GearSlotCategory } from '../types/equipment';
 
-/** Map class IDs to available hero PNG filenames where names don't match */
-const HERO_ICON_MAP: Record<string, string> = {
-  warden: 'vanguard',
-  trapper: 'scout',
-  bombardier: 'mad_bomber',
-  deadeye: 'sniper',
-  demolisher: 'demolitionist',
-  scavenger: 'gladiator',
-  ranger: 'gunslinger',
-  prospector: 'war_engineer',
-  artificer: 'pyromaniac',
+/** Map equipment IDs to PNG filenames where names don't match */
+const EQUIPMENT_ICON_MAP: Record<string, string> = {
+  rangers_hide: 'ranger_hide',
 };
+
+/** Map enemy IDs to monster PNG filenames where names don't match */
+const MONSTER_ICON_MAP: Record<string, string> = {
+  mosquito: 'mutated_mosquito',
+  frog: 'mutated_frog',
+  centipede: 'mutated_centipede',
+  outskirts_mix: 'wasteland_vermin',
+  feral_dog: 'feral_dog_pack',
+  rad_rats: 'rad_rat_swarm',
+  suburbs_mix: 'suburb_dweller',
+  industrial_mix: 'factory_mutant',
+  deadlands_mix: 'deadlands_dweller',
+  experiment: 'escaped_experiment',
+  military_mix: 'military_hazard',
+  rad_elemental: 'radiation_elemental',
+  abomination: 'mutant_abomination',
+  core_mix: 'core_abomination',
+  gz_mix: 'void_entity',
+};
+
+export type ItemIconType =
+  | 'weapon' | 'armor' | 'accessory' | 'resource' | 'consumable'
+  | 'tool' | 'hero' | 'equipment'
+  | 'monster' | 'building' | 'skill' | 'ability' | 'avatar';
 
 /**
  * Returns the icon path for a given item.
- * itemType: 'weapon' | 'armor' | 'accessory' | 'resource' | 'consumable' | 'tool' | 'hero'
- * gearSlot: for equipment, the GearSlotCategory to determine the correct asset folder
+ * gearSlot: for equipment, the GearSlotCategory (kept for API compat but all equipment is in one folder now)
  */
 export function getItemIconPath(
   itemId: string,
-  itemType: 'weapon' | 'armor' | 'accessory' | 'resource' | 'consumable' | 'tool' | 'hero' | 'equipment',
-  gearSlot?: GearSlotCategory
+  itemType: ItemIconType,
+  _gearSlot?: GearSlotCategory
 ): string {
-  // If itemType is 'equipment', use gearSlot to determine the folder
-  if (itemType === 'equipment' && gearSlot) {
-    if (gearSlot === 'weapon') return `/assets/weapons/${itemId}.png`;
-    if (gearSlot === 'ring' || gearSlot === 'earring' || gearSlot === 'necklace') {
-      return `/assets/accessories/${itemId}.png`;
-    }
-    // armor, legs, gloves, boots, shield
-    return `/assets/armor/${itemId}.png`;
-  }
-
   switch (itemType) {
+    case 'equipment':
     case 'weapon':
-      return `/assets/weapons/${itemId}.png`;
     case 'armor':
-      return `/assets/armor/${itemId}.png`;
     case 'accessory':
-      return `/assets/accessories/${itemId}.png`;
+      return `/assets/equipment-128/${EQUIPMENT_ICON_MAP[itemId] || itemId}.png`;
     case 'resource':
-      return `/assets/resources/${itemId}.png`;
+      return `/assets/resources-128/${itemId}.png`;
     case 'consumable':
-      return `/assets/consumables/${itemId}.png`;
+      return `/assets/consumables-128/${itemId}.png`;
     case 'tool':
-      return `/assets/tools/${itemId}.png`;
+      return `/assets/tools-128/${itemId}.png`;
     case 'hero':
-      return `/assets/heroes/${HERO_ICON_MAP[itemId] || itemId}.png`;
+      return `/assets/heroes-128/${itemId}.png`;
+    case 'monster':
+      return `/assets/monsters-128/${MONSTER_ICON_MAP[itemId] || itemId}.png`;
+    case 'building':
+      return `/assets/buildings-128/${itemId}.png`;
+    case 'skill':
+      return `/assets/skills-128/${itemId}.png`;
+    case 'ability':
+      return `/assets/abilities-128/${itemId}.png`;
+    case 'avatar':
+      return `/assets/avatars-128/${itemId}.png`;
     default:
-      return `/assets/resources/${itemId}.png`;
+      return `/assets/resources-128/${itemId}.png`;
   }
 }
 
@@ -62,7 +76,7 @@ export function getIconTypeFromSlot(slot: GearSlotCategory): 'weapon' | 'armor' 
 
 interface ItemIconProps {
   itemId: string;
-  itemType: 'weapon' | 'armor' | 'accessory' | 'resource' | 'consumable' | 'tool' | 'hero' | 'equipment';
+  itemType: ItemIconType;
   gearSlot?: GearSlotCategory;
   size?: number;
   fallbackColor?: string;
@@ -103,7 +117,7 @@ export function ItemIcon({
         alt={itemId}
         width={size}
         height={size}
-        style={{ display: 'block', imageRendering: 'pixelated' }}
+        style={{ display: 'block' }}
         onError={(e) => {
           // On error, hide the img and show fallback
           const target = e.currentTarget;
