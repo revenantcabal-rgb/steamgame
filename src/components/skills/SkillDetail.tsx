@@ -85,8 +85,8 @@ export function SkillDetail() {
         )}
       </div>
 
-      {/* Action Controls (Production skills only — gathering uses worker deployment) */}
-      {!isGathering && (
+      {/* Action Controls (manual training for all skills) */}
+      {(
         <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>Action Controls</h3>
 
@@ -172,8 +172,8 @@ export function SkillDetail() {
         </div>
       )}
 
-      {/* Action Progress (only when running, production only) */}
-      {!isGathering && isActionRunning && activeSubActivityId && (
+      {/* Action Progress (shown when running) */}
+      {isActionRunning && activeSubActivityId && (
         <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="flex justify-between items-center mb-2">
             <span className="font-bold text-sm">
@@ -205,8 +205,8 @@ export function SkillDetail() {
         </div>
       )}
 
-      {/* Action Queue (production only) */}
-      {!isGathering && actionQueue.length > 0 && (
+      {/* Action Queue */}
+      {actionQueue.length > 0 && (
         <div className="mb-4 p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>
             Action Queue ({actionQueue.length})
