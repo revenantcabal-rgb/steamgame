@@ -2,6 +2,8 @@ import { useState, useMemo, useCallback } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { SkillDetail } from './components/skills/SkillDetail';
 import { CraftingPanel } from './components/equipment/CraftingPanel';
+import { ProductionCraftingPanel } from './components/skills/ProductionCraftingPanel';
+import { GatheringPanel } from './components/skills/GatheringPanel';
 import { HeroPanel } from './components/heroes/HeroPanel';
 import { CombatZonePanel } from './components/combat/CombatZonePanel';
 import { MarketplacePanel } from './components/marketplace/MarketplacePanel';
@@ -14,6 +16,7 @@ import { StarlightPanel } from './components/starlight/StarlightPanel';
 import { LootTracker } from './components/loot/LootTracker';
 import { ShopPanel } from './components/shop/ShopPanel';
 import { PopulationPanel } from './components/population/PopulationPanel';
+import { EncampmentPanel } from './components/encampment/EncampmentPanel';
 import { useGameTick } from './hooks/useGameTick';
 import { NavigationContext } from './utils/NavigationContext';
 import { useGameStore } from './store/useGameStore';
@@ -22,23 +25,22 @@ import { useStoryStore } from './store/useStoryStore';
 // ──────────────────────────────────────────────
 // Top-level menu tabs (non-sidebar panels)
 // ──────────────────────────────────────────────
-type TopTab = 'story' | 'heroes' | 'population' | 'marketplace' | 'expedition' | 'starlight' | 'loot' | 'shop' | 'pvp' | 'guild' | 'settings';
+type TopTab = 'encampment' | 'story' | 'heroes' | 'population' | 'marketplace' | 'expedition' | 'starlight' | 'loot' | 'shop' | 'pvp' | 'guild' | 'settings';
 
 /** The center panel can show sidebar-driven views OR a top tab */
 type ActiveView = 'skill' | 'combat' | TopTab;
 
 /** Feature key required for each tab (null = always visible) */
 const ALL_TOP_TABS: { id: TopTab; label: string; featureKey: string | null }[] = [
+  { id: 'encampment', label: 'Encampment', featureKey: null },
+  { id: 'population', label: 'Population', featureKey: null },
   { id: 'story', label: 'Story', featureKey: null },
   { id: 'heroes', label: 'Heroes', featureKey: null },
-  { id: 'population', label: 'Population', featureKey: null },
   { id: 'marketplace', label: 'Marketplace', featureKey: 'marketplace' },
   { id: 'expedition', label: 'Expedition', featureKey: 'expedition' },
   { id: 'starlight', label: 'Starlight', featureKey: 'starlight' },
-  { id: 'loot', label: 'Loot Tracker', featureKey: null },
-  { id: 'shop', label: 'Shop', featureKey: null },
-  { id: 'pvp', label: 'PVP Zone', featureKey: 'pvp' },
   { id: 'guild', label: 'Guild', featureKey: 'guild' },
+  { id: 'pvp', label: 'PVP Zone', featureKey: 'pvp' },
   { id: 'settings', label: 'Settings', featureKey: null },
 ];
 
@@ -103,7 +105,7 @@ function App() {
 
   return (
     <NavigationContext.Provider value={navigationActions}>
-    <div className="flex h-screen overflow-hidden relative">
+    <div className="flex flex-1 w-full h-screen h-dvh overflow-hidden relative" style={{ backgroundColor: '#0c0a08' }}>
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -128,20 +130,21 @@ function App() {
       </div>
 
       {/* Center: Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
         {/* Top Tab Bar */}
         <div
           className="flex shrink-0 overflow-x-auto"
           style={{
-            borderBottom: '1px solid var(--color-border)',
-            backgroundColor: 'var(--color-bg-secondary)',
+            borderBottom: '1px solid rgba(62, 54, 40, 0.3)',
+            background: 'linear-gradient(180deg, #16130f 0%, #100e0a 100%)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
             scrollbarWidth: 'none',
           }}
         >
           {/* Sidebar toggle button */}
           <button
             onClick={toggleSidebar}
-            className="px-3 py-2 text-sm font-bold cursor-pointer shrink-0"
+            className="px-3 py-3 md:py-2.5 text-sm font-bold cursor-pointer shrink-0"
             style={{
               backgroundColor: 'transparent',
               color: 'var(--color-text-muted)',
@@ -156,14 +159,16 @@ function App() {
             <button
               key={tab.id}
               onClick={() => handleTabClick(tab.id)}
-              className="px-2 md:px-3 lg:px-4 xl:px-6 py-2 xl:py-3 text-xs md:text-xs lg:text-sm font-bold cursor-pointer transition-all shrink-0 whitespace-nowrap"
+              className="px-2 md:px-3 lg:px-4 xl:px-6 py-2.5 xl:py-3 text-xs md:text-xs lg:text-sm font-semibold cursor-pointer transition-all shrink-0 whitespace-nowrap"
               style={{
-                backgroundColor: activeTopTab === tab.id ? 'var(--color-bg-primary)' : 'transparent',
+                backgroundColor: activeTopTab === tab.id ? 'rgba(212, 168, 67, 0.06)' : 'transparent',
                 color: activeTopTab === tab.id ? 'var(--color-accent)' : 'var(--color-text-muted)',
                 border: 'none',
                 borderBottomWidth: '2px',
                 borderBottomStyle: 'solid',
                 borderBottomColor: activeTopTab === tab.id ? 'var(--color-accent)' : 'transparent',
+                boxShadow: activeTopTab === tab.id ? '0 2px 6px rgba(212, 168, 67, 0.15)' : 'none',
+                letterSpacing: '0.02em',
               }}
             >
               {tab.label}
@@ -172,7 +177,8 @@ function App() {
         </div>
 
         {/* View Content — bounded so child panels can scroll */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-fade-in" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+          {activeView === 'encampment' && <EncampmentPanel />}
           {activeView === 'story' && <StoryPanel />}
           {activeView === 'skill' && <SkillOrCraftRouter />}
           {activeView === 'combat' && <CombatZonePanel initialZoneId={activeCombatZoneId} />}
@@ -202,7 +208,7 @@ function App() {
       </div>
 
       {/* Right: Resource panel — hidden on small screens, togglable */}
-      <div className="hidden md:block">
+      <div className="hidden xl:block">
         <ResourcePanel />
       </div>
     </div>
@@ -216,7 +222,12 @@ function App() {
 function SkillOrCraftRouter() {
   const activeSkillId = useGameStore(s => s.activeSkillId);
   const isGearCraft = activeSkillId === 'weaponsmithing' || activeSkillId === 'armorcrafting';
-  return isGearCraft ? <CraftingPanel /> : <SkillDetail />;
+  const isProductionCraft = activeSkillId === 'cooking' || activeSkillId === 'tinkering' || activeSkillId === 'biochemistry';
+  const isGathering = activeSkillId === 'scavenging' || activeSkillId === 'foraging' || activeSkillId === 'salvage_hunting' || activeSkillId === 'water_reclamation' || activeSkillId === 'prospecting';
+  if (isGearCraft) return <CraftingPanel />;
+  if (isProductionCraft) return <ProductionCraftingPanel />;
+  if (isGathering) return <GatheringPanel />;
+  return <SkillDetail />;
 }
 
 // ──────────────────────────────────────────────

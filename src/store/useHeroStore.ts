@@ -75,8 +75,8 @@ export const useHeroStore = create<HeroState>((set, get) => ({
         return null;
       }
 
-      // Deduct WC cost
-      const cost = Math.max(100, Math.floor(500 * (1 + state.heroes.length * 0.5) * getPremiumBonuses().heroRecruitCostMultiplier));
+      // Deduct WC cost: 1st hero free, 2nd=1000, 3rd=3000, 4th=9000, etc. (x3 each)
+      const cost = Math.floor(1000 * Math.pow(3, Math.max(0, state.heroes.length - 1)) * getPremiumBonuses().heroRecruitCostMultiplier);
       const currentWC = gameStore.resources['wasteland_credits'] || 0;
       if (currentWC < cost) {
         gameStore.addLog(`Not enough WC to recruit. Need ${cost} WC.`, 'error');
@@ -112,13 +112,24 @@ export const useHeroStore = create<HeroState>((set, get) => ({
     const hero = get().heroes.find(h => h.id === heroId);
     if (!hero) return;
 
+    const gameStore = useGameStore.getState();
+    const dismissCost = 5000;
+    const currentWC = gameStore.resources['wasteland_credits'] || 0;
+    if (currentWC < dismissCost) {
+      gameStore.addLog(`Not enough WC to dismiss. Need ${dismissCost} WC to let them go.`, 'error');
+      return;
+    }
+
+    const newResources = { ...gameStore.resources };
+    newResources['wasteland_credits'] = currentWC - dismissCost;
+    useGameStore.setState({ resources: newResources });
+
     set(state => ({
       heroes: state.heroes.filter(h => h.id !== heroId),
       selectedHeroId: state.selectedHeroId === heroId ? null : state.selectedHeroId,
     }));
 
-    const gameStore = useGameStore.getState();
-    gameStore.addLog(`Dismissed ${hero.name}.`, 'system');
+    gameStore.addLog(`Dismissed ${hero.name} for ${dismissCost} WC. They weren't happy about it.`, 'system');
   },
 
   selectHero: (heroId) => {

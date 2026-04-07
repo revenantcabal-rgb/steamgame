@@ -2,6 +2,7 @@ import { SKILLS } from '../config/skills';
 import { levelFromXp, getGatheringSpeedMultiplier } from '../types/skills';
 import type { SubActivity } from '../types/skills';
 import { getPremiumBonuses } from './PremiumBonuses';
+import { getEncampmentBonuses, getGatheringSpeedBonus } from './EncampmentBonuses';
 
 export interface SkillTickResult {
   skillId: string;
@@ -52,7 +53,8 @@ export function processSkillTick(
   if (activity) {
     for (const drop of activity.resourceDrops) {
       const baseQty = Math.floor(Math.random() * (drop.maxQty - drop.minQty + 1)) + drop.minQty;
-      const scaledQty = Math.max(1, Math.floor(baseQty * scaling.qtyMultiplier * (1 + (heroBonuses?.gatheringYield || 0) / 100)));
+      const encampmentGatherBonus = getGatheringSpeedBonus(skillId);
+      const scaledQty = Math.max(1, Math.floor(baseQty * scaling.qtyMultiplier * (1 + (heroBonuses?.gatheringYield || 0) / 100) * (1 + encampmentGatherBonus / 100)));
       const existing = resourcesGained.find(r => r.resourceId === drop.resourceId);
       if (existing) {
         existing.quantity += scaledQty;
@@ -84,7 +86,9 @@ export function getActionTime(skillId: string, level: number): number {
     return getGatheringSpeedMultiplier(level).actionTime;
   }
 
-  // Non-gathering skills get a small speed boost with level
+  // Non-gathering skills get a small speed boost with level + encampment production speed
   const speedBonus = 1 - (level / 100) * 0.15;
-  return Math.max(1, Math.round(skillDef.baseActionTime * speedBonus * 10) / 10);
+  const encampment = getEncampmentBonuses();
+  const productionSpeedMult = 1 / (1 + (encampment.production_speed || 0) / 100);
+  return Math.max(1, Math.round(skillDef.baseActionTime * speedBonus * productionSpeedMult * 10) / 10);
 }

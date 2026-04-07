@@ -41,8 +41,8 @@ export function CharacterSelect() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen min-h-dvh w-full flex-1 flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
+      <div className="w-full max-w-lg mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>

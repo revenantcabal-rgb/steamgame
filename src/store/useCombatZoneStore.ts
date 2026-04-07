@@ -12,6 +12,7 @@ import { useAuthStore } from './useAuthStore';
 import { usePopulationStore } from './usePopulationStore';
 import { useLootTrackerStore } from './useLootTrackerStore';
 import { getPremiumBonuses } from '../engine/PremiumBonuses';
+import { getEncampmentBonuses } from '../engine/EncampmentBonuses';
 
 const BOSS_EVERY_N_FIGHTS = 50;
 const ENEMY_SCALE_EVERY_N = 10;
@@ -202,9 +203,38 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           let bossWon = false;
           for (const hero of activeHeroes) {
             const result = simulateBossFight(hero, dep.zoneId, dep.zoneTier, dep.waveMultiplier, difficultyMult);
+
+            // Consume used consumables (1 of each per fight)
+            if (result.consumablesUsed.length > 0) {
+              const res = { ...useGameStore.getState().resources };
+              for (const cId of result.consumablesUsed) {
+                res[cId] = Math.max(0, (res[cId] || 0) - 1);
+              }
+              useGameStore.setState({ resources: res });
+
+              const currentRes = useGameStore.getState().resources;
+              const heroState = useHeroStore.getState();
+              const h = heroState.heroes.find(hh => hh.id === hero.id);
+              if (h) {
+                const newConsumables = [...(h.equippedConsumables || [])];
+                let changed = false;
+                for (let i = 0; i < newConsumables.length; i++) {
+                  if (newConsumables[i] && (currentRes[newConsumables[i]!] || 0) <= 0) {
+                    newConsumables[i] = null;
+                    changed = true;
+                  }
+                }
+                if (changed) {
+                  useHeroStore.setState({
+                    heroes: heroState.heroes.map(hh => hh.id === hero.id ? { ...hh, equippedConsumables: newConsumables } : hh),
+                  });
+                }
+              }
+            }
+
             const eqStore = useEquipmentStore.getState();
             const focusRing = getHeroFocusRing(hero.id, eqStore.heroEquipment, eqStore.inventory);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier), focusRing);
+            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100)), focusRing);
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {
@@ -285,9 +315,39 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           for (const hero of activeHeroes) {
             const enemy = target?.enemy || zone.targets[0].enemy;
             const result = simulateFight(hero, enemy, dep.zoneTier, zone.minLevel, dep.waveMultiplier, difficultyMult);
+
+            // Consume used consumables (1 of each per fight)
+            if (result.consumablesUsed.length > 0) {
+              const res = { ...useGameStore.getState().resources };
+              for (const cId of result.consumablesUsed) {
+                res[cId] = Math.max(0, (res[cId] || 0) - 1);
+              }
+              useGameStore.setState({ resources: res });
+
+              // Auto-unequip consumables that ran out
+              const currentRes = useGameStore.getState().resources;
+              const heroState = useHeroStore.getState();
+              const h = heroState.heroes.find(hh => hh.id === hero.id);
+              if (h) {
+                const newConsumables = [...(h.equippedConsumables || [])];
+                let changed = false;
+                for (let i = 0; i < newConsumables.length; i++) {
+                  if (newConsumables[i] && (currentRes[newConsumables[i]!] || 0) <= 0) {
+                    newConsumables[i] = null;
+                    changed = true;
+                  }
+                }
+                if (changed) {
+                  useHeroStore.setState({
+                    heroes: heroState.heroes.map(hh => hh.id === hero.id ? { ...hh, equippedConsumables: newConsumables } : hh),
+                  });
+                }
+              }
+            }
+
             const eqStoreNorm = useEquipmentStore.getState();
             const focusRingNorm = getHeroFocusRing(hero.id, eqStoreNorm.heroEquipment, eqStoreNorm.inventory);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier), focusRingNorm);
+            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100)), focusRingNorm);
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {

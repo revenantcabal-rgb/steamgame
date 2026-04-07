@@ -72,7 +72,7 @@ export function StarterHeroSelect() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen min-h-dvh w-full flex-1 flex items-center justify-center p-4"
       style={{ backgroundColor: 'var(--color-bg-primary)' }}
     >
       <div className="text-center max-w-3xl px-6">

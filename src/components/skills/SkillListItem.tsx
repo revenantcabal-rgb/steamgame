@@ -48,11 +48,16 @@ export function SkillListItem({ skillId, onSelect }: SkillListItemProps) {
   return (
     <button
       onClick={handleClick}
-      className="w-full text-left p-3 rounded border transition-all cursor-pointer"
+      className="w-full text-left p-3 rounded-md border transition-all cursor-pointer"
       style={{
-        backgroundColor: isActive ? 'var(--color-bg-tertiary)' : 'var(--color-bg-secondary)',
+        background: isActive
+          ? `linear-gradient(180deg, var(--color-bg-tertiary) 0%, rgba(26, 22, 17, 0.95) 100%)`
+          : `linear-gradient(180deg, var(--color-bg-secondary) 0%, rgba(18, 15, 12, 0.95) 100%)`,
         borderColor: isActive ? CATEGORY_COLORS[skillDef.category] : 'var(--color-border)',
         borderWidth: isActive ? '2px' : '1px',
+        boxShadow: isActive
+          ? `0 0 0 1px ${CATEGORY_COLORS[skillDef.category]}30, 0 2px 8px rgba(0, 0, 0, 0.3)`
+          : '0 1px 4px rgba(0, 0, 0, 0.2)',
       }}
     >
       <div className="flex justify-between items-center mb-1">

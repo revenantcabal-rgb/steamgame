@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useHeroStore } from '../../store/useHeroStore';
 import { useEquipmentStore } from '../../store/useEquipmentStore';
 import { useStoryStore } from '../../store/useStoryStore';
@@ -80,7 +80,7 @@ export function HeroPanel() {
           </button>
         </div>
 
-        {showRecruit && <RecruitPanel onClose={() => setShowRecruit(false)} />}
+        {showRecruit && <RecruitModal onClose={() => setShowRecruit(false)} />}
 
         {heroes.length === 0 ? (
           <div className="text-xs text-center p-4" style={{ color: 'var(--color-text-muted)' }}>
@@ -281,18 +281,18 @@ function HeroDetail({ hero }: { hero: Hero }) {
       {dismissStep >= 1 && (
         <div className="p-3 rounded mb-3" style={{ backgroundColor: dismissStep === 2 ? '#e74c3c22' : '#e74c3c15', border: `${dismissStep === 2 ? 2 : 1}px solid var(--color-danger)` }}>
           <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-danger)' }}>
-            {dismissStep === 1 ? `Warning: Dismissing ${hero.name} will permanently remove this hero.` : 'FINAL CONFIRMATION'}
+            {dismissStep === 1 ? `Warning: Dismissing ${hero.name} costs 5,000 WC (no refund). They won't leave quietly.` : 'FINAL CONFIRMATION'}
           </div>
           {dismissStep === 2 && (
             <div className="text-xs mb-2" style={{ color: 'var(--color-text-primary)' }}>
-              Permanently dismiss <b>{hero.name}</b> (Lv.{hero.level} {classDef?.name})? All progress will be lost.
+              Pay <b style={{ color: 'var(--color-accent)' }}>5,000 WC</b> to dismiss <b>{hero.name}</b> (Lv.{hero.level} {classDef?.name})? All progress will be lost.
             </div>
           )}
           <div className="flex gap-2">
             <button onClick={() => dismissStep === 1 ? setDismissStep(2) : (() => { dismissHero(hero.id); setDismissStep(0); })()}
               className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
               style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
-              {dismissStep === 1 ? 'I understand, continue' : 'Yes, dismiss permanently'}
+              {dismissStep === 1 ? 'I understand, continue' : 'Yes, pay 5,000 WC & dismiss'}
             </button>
             <button onClick={() => setDismissStep(0)} className="px-3 py-1 rounded text-xs cursor-pointer"
               style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
@@ -1189,80 +1189,422 @@ function AdvancedStatsSection({ derived, hasExtended, hasUtility }: { derived: a
   );
 }
 
-function RecruitPanel({ onClose }: { onClose: () => void }) {
+function RecruitModal({ onClose }: { onClose: () => void }) {
   const recruit = useHeroStore(s => s.recruit);
   const heroes = useHeroStore(s => s.heroes);
   const isFeatureUnlocked = useStoryStore(s => s.isFeatureUnlocked);
   const playerWC = useGameStore(s => s.resources['wasteland_credits'] || 0);
   const [filter, setFilter] = useState<'all' | 'combat' | 'specialist'>('all');
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [justRecruited, setJustRecruited] = useState<string | null>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   const recruitmentUnlocked = isFeatureUnlocked('hero_recruitment');
-  const cost = Math.floor(500 * (1 + heroes.length * 0.5));
+  const isFree = heroes.length === 0;
+  const cost = isFree ? 0 : Math.floor(1000 * Math.pow(3, Math.max(0, heroes.length - 1)));
+  const canAfford = isFree || playerWC >= cost;
 
   const filtered = CLASS_LIST.filter(c =>
     filter === 'all' ? true : filter === 'combat' ? c.heroType === 'combat' : c.heroType === 'specialist'
   );
 
+  // Reset selection when filter changes
+  useEffect(() => { setSelectedIdx(0); }, [filter]);
+
+  // Scroll selected card into view
+  useEffect(() => {
+    if (carouselRef.current) {
+      const cards = carouselRef.current.children;
+      if (cards[selectedIdx]) {
+        (cards[selectedIdx] as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [selectedIdx]);
+
+  const navigate = useCallback((dir: -1 | 1) => {
+    setSelectedIdx(prev => {
+      const next = prev + dir;
+      if (next < 0) return filtered.length - 1;
+      if (next >= filtered.length) return 0;
+      return next;
+    });
+  }, [filtered.length]);
+
+  // Keyboard nav
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') navigate(-1);
+      else if (e.key === 'ArrowRight') navigate(1);
+      else if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navigate, onClose]);
+
   const handleRecruit = (classId: string) => {
     recruit(classId);
+    setJustRecruited(classId);
+    setTimeout(() => setJustRecruited(null), 1500);
   };
 
-  // If recruitment is locked (and they already have at least 1 hero)
-  if (!recruitmentUnlocked && heroes.length > 0) {
-    return (
-      <div className="p-3 rounded mb-3" style={{ backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-border)' }}>
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="font-bold text-xs" style={{ color: 'var(--color-text-muted)' }}>Recruitment Post</h4>
-          <button onClick={onClose} className="text-xs cursor-pointer" style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none' }}>Close</button>
-        </div>
-        <p className="text-xs text-center p-4" style={{ color: 'var(--color-text-muted)' }}>
-          Complete Story 3 to unlock hero recruitment.
-        </p>
-      </div>
-    );
-  }
+  const selectedClass = filtered[selectedIdx];
 
+  // Find relevant starting abilities for a class
+  const getClassAbilities = (classId: string) => {
+    const cls = CLASSES[classId];
+    if (!cls) return [];
+    const colorMap: Record<string, string[]> = {
+      melee: ['red'],
+      ranged: ['green'],
+      demolitions: ['blue'],
+    };
+    const relevantColors = colorMap[cls.primaryCombatStyle] || [];
+    if (cls.heroType === 'specialist') relevantColors.push('orange');
+    else relevantColors.push('white');
+    return Object.values(ABILITIES)
+      .filter(a => relevantColors.includes(a.color) && !a.isDecree)
+      .slice(0, 4);
+  };
+
+  // Full-screen overlay
   return (
-    <div className="p-3 rounded mb-3" style={{ backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-accent)' }}>
-      <div className="flex justify-between items-center mb-2">
-        <h4 className="font-bold text-xs" style={{ color: 'var(--color-accent)' }}>Recruitment Post</h4>
-        <button onClick={onClose} className="text-xs cursor-pointer" style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none' }}>Close</button>
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {/* Header */}
+      <div style={{ width: '100%', maxWidth: 1100, padding: '0 24px', marginBottom: 16 }}>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 style={{ color: 'var(--color-accent)', fontSize: 22, fontWeight: 'bold', margin: 0 }}>
+              &#9876; Recruitment Post
+            </h2>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: 12, marginTop: 4 }}>
+              {isFree
+                ? <span style={{ color: '#27ae60' }}>First recruit is FREE!</span>
+                : <>Cost: <span style={{ color: canAfford ? 'var(--color-accent)' : '#ef4444', fontWeight: 'bold' }}>{cost} WC</span>
+                  <span style={{ marginLeft: 8, opacity: 0.6 }}>({playerWC} available)</span></>
+              }
+              {' '}&middot; Use <span style={{ opacity: 0.7 }}>&larr; &rarr;</span> arrow keys to browse
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: '1px solid var(--color-border)', borderRadius: 6,
+              color: 'var(--color-text-muted)', padding: '6px 16px', cursor: 'pointer', fontSize: 13,
+            }}
+          >
+            Close &times;
+          </button>
+        </div>
+
+        {/* Locked message */}
+        {!recruitmentUnlocked && heroes.length > 0 && (
+          <div style={{
+            marginTop: 12, padding: 16, borderRadius: 8,
+            backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-border)',
+            color: 'var(--color-text-muted)', textAlign: 'center', fontSize: 13,
+          }}>
+            &#128274; Complete Story 3 to unlock hero recruitment.
+          </div>
+        )}
+
+        {/* Filter tabs */}
+        {(recruitmentUnlocked || heroes.length === 0) && (
+          <div className="flex gap-2" style={{ marginTop: 12 }}>
+            {(['all', 'combat', 'specialist'] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                style={{
+                  padding: '6px 18px', borderRadius: 6, fontSize: 12, fontWeight: 'bold',
+                  cursor: 'pointer', border: 'none', transition: 'all 0.15s',
+                  backgroundColor: filter === f ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
+                  color: filter === f ? '#000' : 'var(--color-text-muted)',
+                }}
+              >{f === 'all' ? 'All Classes' : f === 'combat' ? 'Combat' : 'Specialist'} ({
+                CLASS_LIST.filter(c => f === 'all' ? true : f === 'combat' ? c.heroType === 'combat' : c.heroType === 'specialist').length
+              })</button>
+            ))}
+          </div>
+        )}
       </div>
-      {heroes.length > 0 && (
-        <div className="text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>
-          Recruitment cost: <span style={{ color: playerWC >= cost ? 'var(--color-accent)' : '#ef4444' }}>{cost} WC</span>
+
+      {/* Carousel + Detail */}
+      {(recruitmentUnlocked || heroes.length === 0) && filtered.length > 0 && (
+        <div style={{ display: 'flex', gap: 20, width: '100%', maxWidth: 1100, padding: '0 24px', flex: '1 1 auto', minHeight: 0, maxHeight: 'calc(100vh - 180px)' }}>
+          {/* Left: Card carousel */}
+          <div style={{ width: 320, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            {/* Navigation */}
+            <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+              <button onClick={() => navigate(-1)} style={{
+                background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)',
+                borderRadius: 6, color: 'var(--color-text-primary)', padding: '4px 12px', cursor: 'pointer', fontSize: 16,
+              }}>&larr;</button>
+              <span style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>
+                {selectedIdx + 1} / {filtered.length}
+              </span>
+              <button onClick={() => navigate(1)} style={{
+                background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)',
+                borderRadius: 6, color: 'var(--color-text-primary)', padding: '4px 12px', cursor: 'pointer', fontSize: 16,
+              }}>&rarr;</button>
+            </div>
+
+            {/* Scrollable card list */}
+            <div ref={carouselRef} style={{
+              flex: '1 1 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6,
+              paddingRight: 4,
+            }}>
+              {filtered.map((cls, idx) => {
+                const catColor = CATEGORY_COLORS[cls.categoryId] || '#888';
+                const isActive = idx === selectedIdx;
+                return (
+                  <button
+                    key={cls.id}
+                    onClick={() => setSelectedIdx(idx)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
+                      borderRadius: 8, cursor: 'pointer', border: 'none', textAlign: 'left',
+                      transition: 'all 0.15s',
+                      backgroundColor: isActive ? catColor + '22' : 'var(--color-bg-secondary)',
+                      outline: isActive ? `2px solid ${catColor}` : '2px solid transparent',
+                    }}
+                  >
+                    <ItemIcon itemId={cls.id} itemType="hero" size={36} fallbackLabel={cls.name.charAt(0)} fallbackColor={catColor} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: catColor, fontWeight: 'bold', fontSize: 13 }}>{cls.name}</div>
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
+                        {CATEGORIES[cls.categoryId]?.name} &middot; {cls.primaryCombatStyle}
+                      </div>
+                    </div>
+                    {justRecruited === cls.id && (
+                      <span style={{ color: '#27ae60', fontSize: 11, fontWeight: 'bold' }}>Recruited!</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: Detail card */}
+          {selectedClass && (
+            <RecruitDetailCard
+              cls={selectedClass}
+              abilities={getClassAbilities(selectedClass.id)}
+              cost={cost}
+              isFree={isFree}
+              canAfford={canAfford}
+              justRecruited={justRecruited === selectedClass.id}
+              onRecruit={() => handleRecruit(selectedClass.id)}
+            />
+          )}
         </div>
       )}
-      <div className="flex gap-1 mb-2">
-        {(['all', 'combat', 'specialist'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className="px-2 py-1 rounded text-xs cursor-pointer"
-            style={{
-              backgroundColor: filter === f ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
-              color: filter === f ? '#000' : 'var(--color-text-muted)',
-              border: 'none',
-            }}>{f.charAt(0).toUpperCase() + f.slice(1)}</button>
-        ))}
-      </div>
-      <div className="space-y-1 max-h-60 overflow-y-auto">
-        {filtered.map(cls => {
-          const catColor = CATEGORY_COLORS[cls.categoryId] || '#888';
-          return (
-            <div key={cls.id} className="flex justify-between items-center p-2 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
-              <div>
-                <span className="text-xs font-bold" style={{ color: catColor }}>{cls.name}</span>
-                <span className="text-xs ml-1" style={{ color: 'var(--color-text-muted)' }}>
-                  ({CATEGORIES[cls.categoryId]?.name} / {cls.primaryCombatStyle})
-                </span>
-              </div>
-              <button onClick={() => handleRecruit(cls.id)}
-                className="px-2 py-1 rounded text-xs font-bold cursor-pointer"
-                style={{ backgroundColor: catColor, color: '#000', border: 'none' }}>
-                Recruit
-              </button>
+    </div>
+  );
+}
+
+function RecruitDetailCard({ cls, abilities, cost, isFree, canAfford, justRecruited, onRecruit }: {
+  cls: (typeof CLASS_LIST)[number];
+  abilities: AbilityTome[];
+  cost: number;
+  isFree: boolean;
+  canAfford: boolean;
+  justRecruited: boolean;
+  onRecruit: () => void;
+}) {
+  const catColor = CATEGORY_COLORS[cls.categoryId] || '#888';
+  const category = CATEGORIES[cls.categoryId];
+  const primaryStatKeys = [...new Set(cls.primaryStats || [])];
+
+  // Compute base stats for display
+  const baseStats = Object.entries(cls.baseStatRanges).map(([stat, [val]]) => ({
+    stat, val, label: STAT_LABELS[stat] || stat.toUpperCase(), color: STAT_COLORS[stat] || '#888',
+  }));
+
+  const combatStyleIcon: Record<string, string> = { melee: '&#9876;', ranged: '&#127993;', demolitions: '&#128163;' };
+
+  return (
+    <div style={{
+      flex: 1, borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+      border: `2px solid ${catColor}40`,
+      backgroundColor: 'var(--color-bg-primary)',
+    }}>
+      {/* Card header with category color strip */}
+      <div style={{
+        background: `linear-gradient(135deg, ${catColor}33, ${catColor}11)`,
+        padding: '20px 24px', borderBottom: `1px solid ${catColor}30`,
+      }}>
+        <div className="flex items-start gap-4">
+          <div style={{
+            width: 64, height: 64, borderRadius: 12,
+            backgroundColor: catColor + '22', border: `2px solid ${catColor}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <ItemIcon itemId={cls.id} itemType="hero" size={48} fallbackLabel={cls.name.charAt(0)} fallbackColor={catColor} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ color: catColor, fontSize: 20, fontWeight: 'bold', margin: 0 }}>{cls.name}</h3>
+            <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+              <span style={{
+                padding: '2px 10px', borderRadius: 4, fontSize: 11, fontWeight: 'bold',
+                backgroundColor: catColor + '22', color: catColor,
+              }}>{category?.name}</span>
+              <span style={{
+                padding: '2px 10px', borderRadius: 4, fontSize: 11,
+                backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-muted)',
+              }} dangerouslySetInnerHTML={{ __html: `${combatStyleIcon[cls.primaryCombatStyle] || ''} ${cls.primaryCombatStyle}` }} />
+              <span style={{
+                padding: '2px 10px', borderRadius: 4, fontSize: 11,
+                backgroundColor: cls.heroType === 'combat' ? '#e74c3c22' : '#f39c1222',
+                color: cls.heroType === 'combat' ? '#e74c3c' : '#f39c12',
+              }}>{cls.heroType === 'combat' ? 'Combat' : 'Specialist'}</span>
             </div>
-          );
-        })}
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 12, margin: '8px 0 0', lineHeight: 1.4 }}>
+              {cls.description}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Card body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+        {/* Base Stats */}
+        <div style={{ marginBottom: 16 }}>
+          <h4 style={{ color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Base Stats
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+            {baseStats.map(({ stat, val, label, color }) => {
+              const isPrimary = primaryStatKeys.includes(stat as keyof PrimaryStats);
+              return (
+                <div key={stat} style={{
+                  padding: '8px 6px', borderRadius: 6, textAlign: 'center',
+                  backgroundColor: isPrimary ? color + '18' : 'var(--color-bg-secondary)',
+                  border: isPrimary ? `1px solid ${color}44` : '1px solid transparent',
+                }}>
+                  <div style={{ color, fontWeight: 'bold', fontSize: 16 }}>{val}</div>
+                  <div style={{
+                    color: isPrimary ? color : 'var(--color-text-muted)',
+                    fontSize: 10, fontWeight: isPrimary ? 'bold' : 'normal',
+                  }}>
+                    {label}{isPrimary ? ' ★' : ''}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: 10, marginTop: 4, fontStyle: 'italic' }}>
+            ★ Primary stats &mdash; these define the hero's combat scaling
+          </div>
+        </div>
+
+        {/* Category Bonus */}
+        <div style={{ marginBottom: 16 }}>
+          <h4 style={{ color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Category Bonuses
+          </h4>
+          <div style={{
+            padding: 10, borderRadius: 6, backgroundColor: catColor + '0D',
+            border: `1px solid ${catColor}22`, fontSize: 12,
+          }}>
+            <div style={{ color: catColor, marginBottom: 4, fontWeight: 'bold' }}>
+              {category?.name}: {category?.description}
+            </div>
+            <div style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
+              <div>Squad: {category?.decreeDescription}</div>
+              <div>Skirmish: {category?.skirmishDescription}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Relevant Abilities */}
+        {abilities.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <h4 style={{ color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+              Learnable Abilities
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              {abilities.map(ab => (
+                <div key={ab.id} style={{
+                  padding: '8px 10px', borderRadius: 6,
+                  backgroundColor: 'var(--color-bg-secondary)',
+                  border: `1px solid ${ABILITY_COLOR_HEX[ab.color]}33`,
+                }}>
+                  <div style={{
+                    color: ABILITY_COLOR_HEX[ab.color], fontSize: 11, fontWeight: 'bold',
+                    marginBottom: 2,
+                  }}>
+                    {ab.name}
+                    {ab.isPassive && <span style={{ opacity: 0.6, fontWeight: 'normal' }}> (passive)</span>}
+                  </div>
+                  <div style={{ color: 'var(--color-text-muted)', fontSize: 10, lineHeight: 1.3 }}>
+                    {ab.effect}
+                  </div>
+                  {ab.spCost > 0 && (
+                    <div style={{ color: '#3498db', fontSize: 10, marginTop: 2 }}>
+                      {ab.spCost} SP &middot; {ab.cooldown}t cooldown
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stat Descriptions */}
+        <div>
+          <h4 style={{ color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
+            Primary Stat Scaling
+          </h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {primaryStatKeys.map(statKey => {
+              const color = STAT_COLORS[statKey] || '#888';
+              return (
+                <div key={statKey} style={{
+                  padding: '6px 10px', borderRadius: 6,
+                  backgroundColor: color + '0D', fontSize: 11,
+                }}>
+                  <span style={{ color, fontWeight: 'bold' }}>{STAT_FULL_NAMES[statKey]}</span>
+                  <span style={{ color: 'var(--color-text-muted)', marginLeft: 6 }}>
+                    {STAT_DESCRIPTIONS[statKey]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Recruit button footer */}
+      <div style={{
+        padding: '16px 24px', borderTop: '1px solid var(--color-border)',
+        backgroundColor: 'var(--color-bg-secondary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+          {isFree
+            ? <span style={{ color: '#27ae60', fontWeight: 'bold' }}>FREE first recruitment!</span>
+            : <>Hire for <span style={{ color: canAfford ? 'var(--color-accent)' : '#ef4444', fontWeight: 'bold' }}>{cost} WC</span></>
+          }
+        </div>
+        <button
+          onClick={onRecruit}
+          disabled={!canAfford || justRecruited}
+          style={{
+            padding: '10px 32px', borderRadius: 8, fontSize: 14, fontWeight: 'bold',
+            cursor: canAfford && !justRecruited ? 'pointer' : 'not-allowed',
+            border: 'none', transition: 'all 0.2s',
+            backgroundColor: justRecruited ? '#27ae60' : canAfford ? catColor : '#444',
+            color: justRecruited || canAfford ? '#000' : '#888',
+            opacity: justRecruited ? 0.9 : 1,
+          }}
+        >
+          {justRecruited ? '✓ Recruited!' : canAfford ? `Recruit ${cls.name}` : 'Not Enough WC'}
+        </button>
       </div>
     </div>
   );

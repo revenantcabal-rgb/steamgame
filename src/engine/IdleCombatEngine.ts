@@ -9,7 +9,9 @@ import type { Hero } from '../types/hero';
 import type { DerivedStats } from '../types/hero';
 import type { GearInstance } from '../types/equipment';
 import { getPremiumBonuses } from './PremiumBonuses';
+import { getEncampmentBonuses, getCombatDamageBonus } from './EncampmentBonuses';
 import { useEquipmentStore } from '../store/useEquipmentStore';
+import { useGameStore } from '../store/useGameStore';
 import { CLASSES } from '../config/classes';
 import type { Enemy, CombatStyle } from '../config/combatZones';
 
@@ -37,6 +39,8 @@ export interface FightResult {
   resourceDrops: { resourceId: string; quantity: number }[];
   heroDied: boolean;
   recoveryCooldown: number;
+  /** Consumable IDs that were used this fight (1 of each equipped consumable) */
+  consumablesUsed: string[];
 }
 
 export interface BossFightResult extends FightResult {
@@ -167,14 +171,20 @@ export function simulateFight(
   const tierMult = ZONE_TIER_MULTIPLIERS[zoneTier - 1] || ZONE_TIER_MULTIPLIERS[0];
 
   // ── Apply consumable effects (work on a copy) ──
+  // Only apply if the player actually owns the consumable; track what was used
   const derived: DerivedStats = { ...baseDerived };
   let consumableHealHp = 0;
   let consumableHealSp = 0;
+  const consumablesUsed: string[] = [];
+  const gameResources = useGameStore.getState().resources;
   const equippedConsumables = hero.equippedConsumables || [null];
   for (const consumableId of equippedConsumables) {
     if (!consumableId) continue;
     const consumable = CONSUMABLES[consumableId];
     if (!consumable || !consumable.mechanicalEffect) continue;
+    // Check the player actually has this consumable in stock
+    if ((gameResources[consumableId] || 0) <= 0) continue;
+    consumablesUsed.push(consumableId);
     const me = consumable.mechanicalEffect;
 
     if (me.type === 'buff' && me.stats) {
@@ -228,8 +238,14 @@ export function simulateFight(
   const enemyBaseDefense = 0.10;
   const effectiveEnemyDefense = enemyBaseDefense * Math.max(0, 1 - derived.armorPen / 100);
 
-  // DPS with accuracy, crits, armor pen, and combat triangle
-  let heroDps = heroTotalAttack * hitRate * critMult * (1 - effectiveEnemyDefense) * triangleMult;
+  // Encampment combat bonuses
+  const encampmentBonuses = getEncampmentBonuses();
+  const encampmentDamageMult = 1 + getCombatDamageBonus() / 100;
+  const encampmentDefenseMult = 1 + (encampmentBonuses.combat_defense || 0) / 100;
+  const encampmentHpMult = 1 + (encampmentBonuses.combat_hp || 0) / 100;
+
+  // DPS with accuracy, crits, armor pen, combat triangle, and encampment damage
+  let heroDps = heroTotalAttack * hitRate * critMult * (1 - effectiveEnemyDefense) * triangleMult * encampmentDamageMult;
 
   // DoT bonus: burn, poison, radiation, and bleed add % of attack as extra DPS
   heroDps += heroTotalAttack * (derived.burnDot / 100 + derived.poisonDot / 100 + derived.radiationDot / 100 + derived.bleedDot / 100);
@@ -249,8 +265,9 @@ export function simulateFight(
 
   const turnsToKillEnemy = Math.max(1, Math.ceil(scaledEnemyHp / Math.max(1, heroDps)));
 
-  // Defense curve (diminishing returns)
-  const defenseReduction = Math.max(0.2, 1 - derived.defense / (derived.defense + 200));
+  // Defense curve (diminishing returns) — with encampment defense bonus
+  const effectiveDefense = derived.defense * encampmentDefenseMult;
+  const defenseReduction = Math.max(0.2, 1 - effectiveDefense / (effectiveDefense + 200));
   const evasionReduction = 1 - Math.min(0.5, derived.evasion / 100);
   const blockReduction = 1 - (derived.blockChance / 100) * 0.5;
   const drReduction = 1 - derived.damageReduction / 100;
@@ -266,10 +283,10 @@ export function simulateFight(
   const adjustedEnemyTurns = Math.max(1, Math.ceil(adjustedTurns / speedRatio));
   const finalDamageTaken = scaledEnemyDmg * adjustedEnemyTurns * defenseReduction * evasionReduction * blockReduction * drReduction;
 
-  // Lifesteal + HP regen healing + consumable instant heals
+  // Lifesteal + HP regen healing + consumable instant heals — with encampment HP bonus
   const lifestealHealing = heroDps * adjustedTurns * (derived.lifesteal / 100);
   const regenHealing = derived.hpRegen * adjustedTurns;
-  const effectiveHp = derived.maxHp + lifestealHealing + regenHealing + consumableHealHp;
+  const effectiveHp = derived.maxHp * encampmentHpMult + lifestealHealing + regenHealing + consumableHealHp;
 
   const won = finalDamageTaken < effectiveHp;
   const heroDied = !won;
@@ -277,7 +294,7 @@ export function simulateFight(
   const resourceDrops: { resourceId: string; quantity: number }[] = [];
   if (won) {
     for (const drop of enemy.resourceDrops) {
-      const adjustedChance = Math.min(1, drop.chance * (1 + (derived.dropChance + getPremiumBonuses().dropChanceBonus) / 100));
+      const adjustedChance = Math.min(1, drop.chance * (1 + (derived.dropChance + getPremiumBonuses().dropChanceBonus + (encampmentBonuses.rare_drop_chance || 0)) / 100));
       if (Math.random() < adjustedChance) {
         const qty = Math.floor(Math.random() * (drop.maxQty - drop.minQty + 1)) + drop.minQty;
         resourceDrops.push({ resourceId: drop.resourceId, quantity: qty });
@@ -292,6 +309,7 @@ export function simulateFight(
     resourceDrops,
     heroDied,
     recoveryCooldown: heroDied ? Math.floor((scaledEnemyHp > 1000 ? 30 : scaledEnemyHp > 300 ? 15 : 5) * 60 * Math.max(0.3, 1 - derived.statusResist / 200)) : 0,
+    consumablesUsed,
   };
 }
 
@@ -307,7 +325,7 @@ export function simulateBossFight(
 ): BossFightResult {
   const zone = COMBAT_ZONES[zoneId];
   if (!zone) {
-    return { isBoss: true, enemyName: 'Unknown', won: false, xpGained: 0, resourceDrops: [], heroDied: false, recoveryCooldown: 0, gearDrop: null };
+    return { isBoss: true, enemyName: 'Unknown', won: false, xpGained: 0, resourceDrops: [], heroDied: false, recoveryCooldown: 0, gearDrop: null, consumablesUsed: [] };
   }
 
   // Boss gets extra wave multiplier on top

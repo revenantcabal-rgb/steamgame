@@ -33,15 +33,16 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
 
   return (
     <div
-      className="w-56 md:w-48 lg:w-52 xl:w-64 min-w-44 h-screen overflow-y-auto flex flex-col shrink-0"
+      className="w-64 md:w-48 lg:w-52 xl:w-60 h-screen h-dvh overflow-y-auto flex flex-col shrink-0"
       style={{
-        backgroundColor: 'var(--color-bg-secondary)',
-        borderRight: '1px solid var(--color-border)',
+        background: 'linear-gradient(180deg, #16130f 0%, #100e0a 100%)',
+        borderRight: '1px solid rgba(62, 54, 40, 0.3)',
+        boxShadow: '2px 0 12px rgba(0, 0, 0, 0.3)',
       }}
     >
       {/* Game Title */}
-      <div className="p-4 text-center" style={{ borderBottom: '1px solid var(--color-border)' }}>
-        <h1 className="text-lg font-bold" style={{ color: 'var(--color-accent)' }}>
+      <div className="p-4 text-center" style={{ borderBottom: '1px solid rgba(212, 168, 67, 0.15)', background: 'linear-gradient(180deg, rgba(212, 168, 67, 0.06) 0%, transparent 100%)' }}>
+        <h1 className="text-lg font-bold" style={{ color: 'var(--color-accent)', textShadow: '0 0 20px rgba(212, 168, 67, 0.3)', letterSpacing: '0.1em' }}>
           &#9760; WASTELAND GRIND
         </h1>
         <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
@@ -61,7 +62,7 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
       </div>
 
       {/* Idle Cap */}
-      <div className="p-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+      <div className="p-3.5" style={{ borderBottom: '1px solid var(--color-border)' }}>
         <div className="flex justify-between text-xs mb-1">
           <span style={{ color: 'var(--color-info)' }}>Idle Time</span>
           <span style={{ color: 'var(--color-text-muted)' }}>
@@ -80,7 +81,7 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
       <StoryIndicator objective={currentObjective()} onClick={onNavigateToStory} />
 
       {/* Skill + Zone Lists */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3.5 space-y-5">
         <SkillSection title="Gathering" skills={GATHERING_SKILLS} onSelectSkill={onSelectSkill} />
         <SkillSection title="Production" skills={PRODUCTION_SKILLS} onSelectSkill={onSelectSkill} />
         <CombatZoneSection
@@ -98,7 +99,7 @@ function SkillSection({ title, skills, onSelectSkill }: { title: string; skills:
     <div>
       <div
         className="text-xs uppercase font-bold tracking-wider mb-2 px-1"
-        style={{ color: 'var(--color-text-muted)' }}
+        style={{ color: 'var(--color-text-muted)', letterSpacing: '0.08em', paddingBottom: '6px', borderBottom: '1px solid rgba(62, 54, 40, 0.3)' }}
       >
         {title}
       </div>
@@ -122,7 +123,7 @@ function StoryIndicator({
     return (
       <button
         onClick={onClick}
-        className="w-full p-3 text-left cursor-pointer"
+        className="w-full p-3.5 text-left cursor-pointer"
         style={{
           borderBottom: '1px solid var(--color-border)',
           backgroundColor: 'transparent',
@@ -148,7 +149,7 @@ function StoryIndicator({
   return (
     <button
       onClick={onClick}
-      className="w-full p-3 text-left cursor-pointer"
+      className="w-full p-3.5 text-left cursor-pointer"
       style={{
         borderBottom: '1px solid var(--color-border)',
         backgroundColor: 'transparent',
@@ -199,7 +200,7 @@ function CombatZoneSection({
     <div>
       <div
         className="text-xs uppercase font-bold tracking-wider mb-2 px-1"
-        style={{ color: 'var(--color-text-muted)' }}
+        style={{ color: 'var(--color-text-muted)', letterSpacing: '0.08em', paddingBottom: '6px', borderBottom: '1px solid rgba(62, 54, 40, 0.3)' }}
       >
         Combat Zones
       </div>

@@ -47,6 +47,7 @@ export function CraftingPanel() {
 
   const [filterSlot, setFilterSlot] = useState<string>('all');
   const [filterTier, setFilterTier] = useState<number>(0); // 0 = all
+  const [filterWeaponType, setFilterWeaponType] = useState<string>('all');
   const [craftableOnly, setCraftableOnly] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -83,6 +84,10 @@ export function CraftingPanel() {
     if (!skill || skill.level < t.craftSkillLevel) return false;
     if (filterSlot !== 'all' && t.slot !== filterSlot) return false;
     if (filterTier > 0 && t.tier !== filterTier) return false;
+    if (filterWeaponType !== 'all') {
+      if (!t.weaponType) return false;
+      if (t.weaponType !== filterWeaponType) return false;
+    }
     if (searchText && !t.name.toLowerCase().includes(searchText.toLowerCase())) return false;
     if (craftableOnly && !canAfford(t.id)) return false;
     return true;
@@ -179,6 +184,24 @@ export function CraftingPanel() {
             ))}
           </div>
 
+          {/* Weapon type filter */}
+          <div className="flex gap-1 items-center mb-2 flex-wrap">
+            <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Type:</span>
+            {(['all', 'melee', 'ranged', 'demolitions'] as const).map(wt => (
+              <button key={wt} onClick={() => setFilterWeaponType(wt)}
+                className="px-2 py-0.5 rounded text-[11px] cursor-pointer"
+                style={{
+                  backgroundColor: filterWeaponType === wt
+                    ? wt === 'melee' ? '#e74c3c' : wt === 'ranged' ? '#27ae60' : wt === 'demolitions' ? '#3498db' : 'var(--color-accent)'
+                    : 'var(--color-bg-tertiary)',
+                  color: filterWeaponType === wt ? '#fff' : 'var(--color-text-muted)',
+                  border: 'none',
+                }}>
+                {wt === 'all' ? 'All' : wt.charAt(0).toUpperCase() + wt.slice(1)}
+              </button>
+            ))}
+          </div>
+
           {/* Tier filter + craftable toggle */}
           <div className="flex gap-1 items-center mb-2 flex-wrap">
             <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Tier:</span>
@@ -254,6 +277,13 @@ export function CraftingPanel() {
                                   <div className="flex gap-1 mt-0.5 flex-wrap">
                                     <span className="px-1 py-0 rounded" style={{ backgroundColor: SKILL_COLORS[t.craftSkillId] + '33', color: SKILL_COLORS[t.craftSkillId], fontSize: 11 }}>T{t.tier}</span>
                                     <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)', fontSize: 11 }}>{SLOT_LABELS[t.slot] || t.slot}</span>
+                                    {t.weaponType && (
+                                      <span className="px-1 py-0 rounded" style={{
+                                        backgroundColor: t.weaponType === 'melee' ? '#e74c3c22' : t.weaponType === 'ranged' ? '#27ae6022' : '#3498db22',
+                                        color: t.weaponType === 'melee' ? '#e74c3c' : t.weaponType === 'ranged' ? '#27ae60' : '#3498db',
+                                        fontSize: 11,
+                                      }}>{t.weaponType}{t.isTwoHanded ? ' 2H' : ''}</span>
+                                    )}
                                     <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-xp)22', color: 'var(--color-xp)', fontSize: 11 }}>{t.craftXp}xp</span>
                                     <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)', fontSize: 11 }}>{getCraftTime(t)}s</span>
                                   </div>

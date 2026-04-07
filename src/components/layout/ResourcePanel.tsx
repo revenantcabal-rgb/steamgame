@@ -58,17 +58,18 @@ export function ResourcePanel() {
 
   return (
     <div
-      className="w-44 lg:w-48 xl:w-56 min-w-40 h-screen overflow-y-auto flex flex-col shrink-0"
+      className="w-44 lg:w-48 xl:w-56 min-w-40 h-screen h-dvh overflow-y-auto flex flex-col shrink-0"
       style={{
-        backgroundColor: 'var(--color-bg-secondary)',
-        borderLeft: '1px solid var(--color-border)',
+        background: 'linear-gradient(180deg, #16130f 0%, #100e0a 100%)',
+        borderLeft: '1px solid rgba(62, 54, 40, 0.3)',
+        boxShadow: '-2px 0 12px rgba(0, 0, 0, 0.3)',
       }}
     >
       {/* Currency */}
       <div className="p-2" style={{ borderBottom: '1px solid var(--color-border)' }}>
-        <div className="flex justify-between items-center p-1.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+        <div className="flex justify-between items-center p-1.5 rounded" style={{ background: 'linear-gradient(135deg, rgba(212, 168, 67, 0.08) 0%, rgba(212, 168, 67, 0.03) 100%)', border: '1px solid rgba(212, 168, 67, 0.2)', borderRadius: '6px' }}>
           <span className="text-xs font-bold" style={{ color: 'var(--color-accent)' }}>WC</span>
-          <span className="text-xs font-mono font-bold" style={{ color: 'var(--color-accent)' }}>{wcAmount.toLocaleString()}</span>
+          <span className="text-xs font-mono font-bold" style={{ color: 'var(--color-accent)', textShadow: '0 0 8px rgba(212, 168, 67, 0.3)' }}>{wcAmount.toLocaleString()}</span>
         </div>
       </div>
 
@@ -88,6 +89,8 @@ export function ResourcePanel() {
               color: activeTab === tab.id ? 'var(--color-accent)' : 'var(--color-text-muted)',
               border: 'none',
               borderBottom: activeTab === tab.id ? '2px solid var(--color-accent)' : '2px solid transparent',
+              boxShadow: activeTab === tab.id ? '0 2px 4px rgba(212, 168, 67, 0.15)' : 'none',
+              letterSpacing: '0.02em',
             }}
           >
             {tab.label} ({tabCounts[tab.id]})
@@ -128,18 +131,18 @@ function ResourcesTab({ resources }: { resources: { id: string; name: string; de
     <div className="space-y-2">
       {Object.entries(grouped).map(([skillId, items]) => (
         <div key={skillId}>
-          <div className="text-[11px] font-bold uppercase px-1 mb-1" style={{ color: SOURCE_COLORS[skillId] || 'var(--color-text-muted)' }}>
+          <div className="text-[11px] font-bold uppercase px-1 mb-1" style={{ color: SOURCE_COLORS[skillId] || 'var(--color-text-muted)', letterSpacing: '0.06em' }}>
             {SOURCE_SKILL_LABELS[skillId] || skillId}
           </div>
           <div className="space-y-0.5">
             {items.map(r => (
-              <div key={r.id} className="flex items-center gap-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+              <div key={r.id} className="flex items-center gap-1.5 p-2 rounded" style={{ background: 'linear-gradient(135deg, rgba(32, 28, 22, 0.7) 0%, rgba(26, 22, 17, 0.8) 100%)', borderRadius: '6px', border: '1px solid rgba(62, 54, 40, 0.2)' }}>
                 <ItemIcon itemId={r.id} itemType="resource" size={16} fallbackLabel={r.name.charAt(0)} />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{r.name}</div>
                   <div className="text-[11px] truncate" style={{ color: 'var(--color-text-muted)' }}>{r.description}</div>
                 </div>
-                <span className="text-xs font-mono font-bold shrink-0" style={{ color: SOURCE_COLORS[r.sourceSkillId] || 'var(--color-text-secondary)' }}>
+                <span className="text-xs font-mono font-bold font-data shrink-0" style={{ color: SOURCE_COLORS[r.sourceSkillId] || 'var(--color-text-secondary)' }}>
                   {r.quantity.toLocaleString()}
                 </span>
               </div>
@@ -169,18 +172,18 @@ function ConsumablesTab({ consumables }: { consumables: { id: string; name: stri
     <div className="space-y-2">
       {Object.entries(grouped).map(([type, items]) => (
         <div key={type}>
-          <div className="text-[11px] font-bold uppercase px-1 mb-1" style={{ color: TYPE_COLORS[type] || 'var(--color-text-muted)' }}>
+          <div className="text-[11px] font-bold uppercase px-1 mb-1" style={{ color: TYPE_COLORS[type] || 'var(--color-text-muted)', letterSpacing: '0.06em' }}>
             {TYPE_LABELS[type] || type}
           </div>
           <div className="space-y-0.5">
             {items.map(c => (
-              <div key={c.id} className="flex items-center gap-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+              <div key={c.id} className="flex items-center gap-1.5 p-2 rounded" style={{ background: 'linear-gradient(135deg, rgba(32, 28, 22, 0.7) 0%, rgba(26, 22, 17, 0.8) 100%)', borderRadius: '6px', border: '1px solid rgba(62, 54, 40, 0.2)' }}>
                 <ItemIcon itemId={c.id} itemType="consumable" size={16} fallbackLabel={c.name.charAt(0)} />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{c.name}</div>
                   <div className="text-[11px] truncate" style={{ color: TYPE_COLORS[c.type] || 'var(--color-text-muted)' }}>{c.effect}</div>
                 </div>
-                <span className="text-xs font-mono font-bold shrink-0" style={{ color: TYPE_COLORS[c.type] || 'var(--color-text-secondary)' }}>
+                <span className="text-xs font-mono font-bold font-data shrink-0" style={{ color: TYPE_COLORS[c.type] || 'var(--color-text-secondary)' }}>
                   x{c.quantity}
                 </span>
               </div>
@@ -205,7 +208,7 @@ function EquipmentTab({ items }: { items: { instanceId: string; rarity: string; 
       {sorted.map(item => {
         const rarityColor = RARITY_COLORS[item.rarity as keyof typeof RARITY_COLORS] || '#9ca3af';
         return (
-          <div key={item.instanceId} className="p-1.5 rounded" style={{ backgroundColor: 'var(--color-bg-tertiary)', borderLeft: `2px solid ${rarityColor}` }}>
+          <div key={item.instanceId} className="p-2 rounded" style={{ background: 'linear-gradient(135deg, rgba(32, 28, 22, 0.7) 0%, rgba(26, 22, 17, 0.8) 100%)', borderRadius: '6px', border: '1px solid rgba(62, 54, 40, 0.2)', borderLeft: `2px solid ${rarityColor}` }}>
             <div className="flex items-center gap-1.5">
               <ItemIcon itemId={item.template.id} itemType="equipment" gearSlot={item.template.slot as any} size={16} fallbackLabel={item.template.name.charAt(0)} />
               <div className="flex-1 min-w-0">
