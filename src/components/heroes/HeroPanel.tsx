@@ -551,7 +551,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
         </button>
 
         {isExpanded && (
-                <div className="mt-1 p-2 rounded space-y-1" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)' }}>
+                <div className="mt-1 p-2 rounded space-y-1 overflow-y-auto" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', maxHeight: '240px' }}>
                   {equippedGear && (
                     <button onClick={() => { unequipItem(heroId, slot); setExpandedSlot(null); }}
                       className="w-full text-left p-1.5 rounded text-xs cursor-pointer"
@@ -744,7 +744,7 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
               </button>
 
               {isExpanded && unlocked && (
-                <div className="mt-1 p-2 rounded space-y-1" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)' }}>
+                <div className="mt-1 p-2 rounded space-y-1 overflow-y-auto" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', maxHeight: '240px' }}>
                   {equippedAbility && (
                     <button
                       onClick={() => { unequipAbility(hero.id, slotIndex); setExpandedSlot(null); }}
@@ -829,7 +829,7 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
               </button>
 
               {isExpanded && derived.canEquipAura && (
-                <div className="mt-1 p-2 rounded space-y-1" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)' }}>
+                <div className="mt-1 p-2 rounded space-y-1 overflow-y-auto" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', maxHeight: '240px' }}>
                   {decreeAbility && (
                     <button
                       onClick={() => { unequipDecree(hero.id); setExpandedSlot(null); }}
