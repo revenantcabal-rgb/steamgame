@@ -4,6 +4,7 @@ import { useEquipmentStore } from '../../store/useEquipmentStore';
 import { useStoryStore } from '../../store/useStoryStore';
 import { useGameStore } from '../../store/useGameStore';
 import { useCombatZoneStore } from '../../store/useCombatZoneStore';
+import { COMBAT_ZONES } from '../../config/combatZones';
 import { CLASS_LIST, CLASSES } from '../../config/classes';
 import { CATEGORIES } from '../../config/categories';
 import { GEAR_TEMPLATES } from '../../config/gear';
@@ -160,7 +161,9 @@ function HeroDetail({ hero }: { hero: Hero }) {
   const allocateStat = useHeroStore(s => s.allocateStat);
   const allocateMultiple = useHeroStore(s => s.allocateMultiple);
   const dismissHero = useHeroStore(s => s.dismissHero);
-  const [pendingAllocation, setPendingAllocation] = useState<{ stat: keyof PrimaryStats; count: number } | null>(null);
+  const deployments = useCombatZoneStore(s => s.deployments);
+  const recallHero = useCombatZoneStore(s => s.recallHero);
+  const [dismissStep, setDismissStep] = useState(0); // 0=none, 1=first warning, 2=final confirm
   const classDef = CLASSES[hero.classId];
   const category = CATEGORIES[classDef?.categoryId || ''];
   const heroEquipment = useEquipmentStore(s => s.heroEquipment);
@@ -206,14 +209,111 @@ function HeroDetail({ hero }: { hero: Hero }) {
           <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>{classDef?.description}</p>
           </div>
         </div>
-        <button
-          onClick={() => { if (confirm(`Dismiss ${hero.name}? This is permanent.`)) dismissHero(hero.id); }}
-          className="px-3 py-1 rounded text-xs cursor-pointer"
-          style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}
-        >
-          Dismiss
-        </button>
+        {dismissStep === 0 && (
+          <button
+            onClick={() => setDismissStep(1)}
+            className="px-3 py-1 rounded text-xs cursor-pointer"
+            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}
+          >
+            Dismiss
+          </button>
+        )}
       </div>
+
+      {/* Two-step dismiss confirmation */}
+      {dismissStep === 1 && (
+        <div className="p-3 rounded mb-4" style={{ backgroundColor: '#e74c3c15', border: '1px solid var(--color-danger)' }}>
+          <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-danger)' }}>
+            Warning: Dismissing {hero.name} will permanently remove this hero from your roster.
+          </div>
+          <div className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
+            All equipment will be unequipped and returned to inventory. This action cannot be undone.
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setDismissStep(2)}
+              className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
+              style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
+              I understand, continue
+            </button>
+            <button onClick={() => setDismissStep(0)}
+              className="px-3 py-1 rounded text-xs cursor-pointer"
+              style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      {dismissStep === 2 && (
+        <div className="p-3 rounded mb-4" style={{ backgroundColor: '#e74c3c22', border: '2px solid var(--color-danger)' }}>
+          <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-danger)' }}>
+            FINAL CONFIRMATION
+          </div>
+          <div className="text-xs mb-3" style={{ color: 'var(--color-text-primary)' }}>
+            Are you absolutely sure you want to permanently dismiss <b>{hero.name}</b> (Lv.{hero.level} {classDef?.name})?
+            This hero and all progress will be lost forever.
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => { dismissHero(hero.id); setDismissStep(0); }}
+              className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
+              style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
+              Yes, dismiss permanently
+            </button>
+            <button onClick={() => setDismissStep(0)}
+              className="px-3 py-1 rounded text-xs cursor-pointer"
+              style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Combat Deployment Status & Recall */}
+      {(() => {
+        const heroDeployments = deployments.filter(d => d.heroIds.includes(hero.id));
+        if (heroDeployments.length === 0) return null;
+        return (
+          <div className="p-3 rounded mb-4" style={{ backgroundColor: '#e74c3c11', border: '1px solid var(--color-danger)' }}>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-bold text-sm" style={{ color: 'var(--color-danger)' }}>
+                <span className="combat-swords-icon" style={{ fontSize: '12px' }}>&#9876;</span> In Combat
+              </h3>
+            </div>
+            {heroDeployments.map(dep => {
+              const zone = COMBAT_ZONES[dep.zoneId];
+              const target = zone?.targets?.find((t: any) => t.id === dep.targetId);
+              const cooldown = dep.recoveryCooldowns[hero.id];
+              return (
+                <div key={dep.partyId} className="flex justify-between items-center text-xs mb-1">
+                  <div>
+                    <span style={{ color: 'var(--color-text-primary)' }}>{zone?.name || dep.zoneId}</span>
+                    {target && <span style={{ color: 'var(--color-text-muted)' }}> — {target.name}</span>}
+                    <span style={{ color: 'var(--color-text-muted)' }}> | {dep.totalKills} kills</span>
+                    {cooldown > 0 && (
+                      <span style={{ color: 'var(--color-energy)' }}> | Recovering: {Math.ceil(cooldown)}s</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => recallHero(dep.partyId, hero.id)}
+                    className="px-2 py-1 rounded text-xs cursor-pointer ml-2"
+                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>
+                    Recall
+                  </button>
+                </div>
+              );
+            })}
+            <style>{`
+              @keyframes combat-pulse {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.6; transform: scale(1.2); }
+              }
+              .combat-swords-icon {
+                animation: combat-pulse 1.5s ease-in-out infinite;
+                display: inline-block;
+              }
+            `}</style>
+          </div>
+        );
+      })()}
 
       {/* Level & XP */}
       <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
@@ -257,21 +357,21 @@ function HeroDetail({ hero }: { hero: Hero }) {
                 </div>
                 {hero.unspentPoints > 0 && (
                   <div className="flex gap-0.5">
-                    <button onClick={() => setPendingAllocation({ stat, count: 1 })}
+                    <button onClick={() => allocateStat(hero.id, stat)}
                       className="w-6 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
-                      style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+1</button>
+                      style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+</button>
                     {hero.unspentPoints >= 5 && (
-                      <button onClick={() => setPendingAllocation({ stat, count: 5 })}
+                      <button onClick={() => allocateMultiple(hero.id, stat, 5)}
                         className="w-7 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
                         style={{ backgroundColor: STAT_COLORS[stat] + 'bb', color: '#000', border: 'none' }}>+5</button>
                     )}
                     {hero.unspentPoints >= 10 && (
-                      <button onClick={() => setPendingAllocation({ stat, count: 10 })}
+                      <button onClick={() => allocateMultiple(hero.id, stat, 10)}
                         className="w-8 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
                         style={{ backgroundColor: STAT_COLORS[stat] + '99', color: '#000', border: 'none' }}>+10</button>
                     )}
                     {hero.unspentPoints > 1 && (
-                      <button onClick={() => setPendingAllocation({ stat, count: hero.unspentPoints })}
+                      <button onClick={() => allocateMultiple(hero.id, stat, hero.unspentPoints)}
                         className="px-1.5 h-6 rounded text-xs font-bold cursor-pointer flex items-center justify-center"
                         style={{ backgroundColor: STAT_COLORS[stat] + '66', color: '#000', border: 'none' }}>Max</button>
                     )}
@@ -289,39 +389,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
           Base stat total: {getBaseStatTotal(hero)} | Combat style: {classDef?.primaryCombatStyle}
         </div>
 
-        {/* Stat Allocation Confirmation */}
-        {pendingAllocation && (
-          <div className="mt-3 p-2 rounded flex items-center justify-between" style={{
-            backgroundColor: STAT_COLORS[pendingAllocation.stat] + '15',
-            border: `1px solid ${STAT_COLORS[pendingAllocation.stat]}66`,
-          }}>
-            <span className="text-xs" style={{ color: 'var(--color-text-primary)' }}>
-              Allocate <b style={{ color: STAT_COLORS[pendingAllocation.stat] }}>{pendingAllocation.count}</b> point{pendingAllocation.count > 1 ? 's' : ''} to{' '}
-              <b style={{ color: STAT_COLORS[pendingAllocation.stat] }}>{STAT_FULL_NAMES[pendingAllocation.stat]}</b>?
-              <span style={{ color: 'var(--color-text-muted)' }}> (Cannot be undone)</span>
-            </span>
-            <div className="flex gap-1 ml-2 shrink-0">
-              <button
-                onClick={() => {
-                  if (pendingAllocation.count === 1) allocateStat(hero.id, pendingAllocation.stat);
-                  else allocateMultiple(hero.id, pendingAllocation.stat, pendingAllocation.count);
-                  setPendingAllocation(null);
-                }}
-                className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
-                style={{ backgroundColor: STAT_COLORS[pendingAllocation.stat], color: '#000', border: 'none' }}
-              >
-                Confirm
-              </button>
-              <button
-                onClick={() => setPendingAllocation(null)}
-                className="px-3 py-1 rounded text-xs font-bold cursor-pointer"
-                style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Stat allocation is direct-click — no confirmation needed */}
       </div>
 
       {/* Combat Stats — grouped with visual hierarchy */}
@@ -435,7 +503,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
 
   return (
     <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex justify-between items-center mb-3">
         <h3 className="font-bold text-sm">Equipment</h3>
         {isDeployed && (
           <span className="text-xs font-bold px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--color-danger)', color: '#fff' }}>
@@ -443,132 +511,90 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
           </span>
         )}
       </div>
-      {/* Combat Gear (left) + Accessories (right) */}
-      <div className="flex gap-2 mb-2">
-        {/* Left: Combat Gear Grid (3x2) */}
-        <div className="flex-1">
-          <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Combat Gear</div>
-          <div className="grid grid-cols-2 gap-1">
-            {ALL_EQUIPMENT_SLOTS.filter(s => ['weapon', 'shield', 'armor', 'legs', 'gloves', 'boots'].includes(s.category)).map(({ slot, label, category }) => renderSlot(slot, label, category))}
-          </div>
-        </div>
-        {/* Right: Accessories Column */}
-        <div style={{ width: '45%' }}>
-          <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Accessories</div>
-          <div className="space-y-1">
-            {ALL_EQUIPMENT_SLOTS.filter(s => ['ring', 'earring', 'necklace'].includes(s.category)).map(({ slot, label, category }) => renderSlot(slot, label, category))}
-          </div>
-        </div>
+
+      {/* Weapons Row */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        {renderSlot('main_hand', 'Main Hand', 'weapon')}
+        {renderSlot('off_hand', 'Off Hand', 'shield')}
       </div>
 
-      {/* Bottom: Tool Bar (placeholder) */}
-      <div className="mb-1">
-        <div className="text-xs font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>Profession Tools</div>
-        <div className="grid grid-cols-6 gap-1">
-          {['Scavenging', 'Foraging', 'Water Rec.', 'Prospecting', 'Tinkering', 'Cooking'].map(tool => (
-            <div key={tool} className="p-1.5 rounded text-center" style={{
-              backgroundColor: 'var(--color-bg-tertiary)',
-              border: '1px dashed var(--color-border)',
-              opacity: 0.5,
-            }}>
-              <div className="text-xs" style={{ color: 'var(--color-text-muted)', fontSize: 8 }}>{tool}</div>
-              <div className="text-xs" style={{ color: 'var(--color-text-muted)', fontSize: 7, fontStyle: 'italic' }}>Soon</div>
-            </div>
-          ))}
-        </div>
+      {/* Armor Row */}
+      <div className="grid grid-cols-4 gap-2 mb-2">
+        {renderSlot('armor', 'Armor', 'armor')}
+        {renderSlot('legs', 'Legs', 'legs')}
+        {renderSlot('gloves', 'Gloves', 'gloves')}
+        {renderSlot('boots', 'Boots', 'boots')}
+      </div>
+
+      {/* Accessories Row */}
+      <div className="text-xs font-bold mb-1 mt-3" style={{ color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>Accessories</div>
+      <div className="grid grid-cols-3 gap-2 mb-2">
+        {renderSlot('ring1', 'Ring 1', 'ring')}
+        {renderSlot('ring2', 'Ring 2', 'ring')}
+        {renderSlot('ring3', 'Focus Ring', 'ring')}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {renderSlot('earring1', 'Earring 1', 'earring')}
+        {renderSlot('earring2', 'Earring 2', 'earring')}
+        {renderSlot('necklace', 'Necklace', 'necklace')}
       </div>
     </div>
   );
 
   function renderSlot(slot: EquipmentSlot, label: string, category: string) {
-          const equippedId = (equipped as Record<string, string | null>)[slot] || null;
-          const equippedGear = equippedId ? inventory.find(g => g.instanceId === equippedId) : null;
-          const equippedTemplate = equippedGear ? GEAR_TEMPLATES[equippedGear.templateId] : null;
-          const isExpanded = expandedSlot === slot;
+    const equippedId = (equipped as Record<string, string | null>)[slot] || null;
+    const equippedGear = equippedId ? inventory.find(g => g.instanceId === equippedId) : null;
+    const equippedTemplate = equippedGear ? GEAR_TEMPLATES[equippedGear.templateId] : null;
+    const isExpanded = expandedSlot === slot;
 
-          // Filter available gear for this slot category
-          const available = inventory.filter(g => {
-            if (equippedId && g.instanceId === equippedId) return false; // already in this slot
-            if (allEquippedIds.has(g.instanceId)) return false; // equipped elsewhere
-            const tmpl = GEAR_TEMPLATES[g.templateId];
-            if (!tmpl) return false;
-            // Match slot category (rings go in ring1/ring2/ring3, etc.)
-            if (tmpl.slot !== category) return false;
-            // ring3 is special: only stat focus rings
-            if (slot === 'ring3' && !tmpl.statFocusRing) return false;
-            if ((slot === 'ring1' || slot === 'ring2') && tmpl.statFocusRing) return false;
-            return true;
-          });
+    const available = inventory.filter(g => {
+      if (equippedId && g.instanceId === equippedId) return false;
+      if (allEquippedIds.has(g.instanceId)) return false;
+      const tmpl = GEAR_TEMPLATES[g.templateId];
+      if (!tmpl) return false;
+      if (tmpl.slot !== category) return false;
+      if (slot === 'ring3' && !tmpl.statFocusRing) return false;
+      if ((slot === 'ring1' || slot === 'ring2') && tmpl.statFocusRing) return false;
+      return true;
+    });
 
-          return (
-            <div key={slot}>
-              <button
-                onClick={() => !isDeployed && setExpandedSlot(isExpanded ? null : slot)}
-                className="w-full text-left p-2 rounded text-xs cursor-pointer"
-                style={{
-                  backgroundColor: 'var(--color-bg-tertiary)',
-                  border: `1px solid ${isExpanded ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                  opacity: isDeployed ? 0.6 : 1,
-                  cursor: isDeployed ? 'not-allowed' : 'pointer',
-                }}
-              >
-                <div className="flex justify-between items-center">
-                  <span style={{ color: 'var(--color-text-muted)' }}>{label}</span>
-                  {equippedGear && equippedTemplate ? (
-                    <span className="font-bold flex items-center gap-1" style={{ color: RARITY_COLORS[equippedGear.rarity] }}>
-                      <ItemIcon itemId={equippedTemplate.id} itemType="equipment" gearSlot={equippedTemplate.slot} size={18} fallbackLabel={equippedTemplate.name.charAt(0)} />
-                      {equippedGear.facet ? `${equippedGear.facet.name} ` : ''}{equippedTemplate.name}
-                    </span>
-                  ) : (
-                    <span style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Empty</span>
-                  )}
-                </div>
-                {equippedGear && equippedTemplate && (
-                  <>
-                    {equippedTemplate.description && (
-                      <div style={{ color: 'var(--color-text-muted)', fontSize: 9, fontStyle: 'italic', marginTop: '2px' }}>
-                        {equippedTemplate.description}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {equippedTemplate.baseStats.map((s, i) => (
-                        <span key={i} style={{ color: 'var(--color-success)', fontSize: 9 }}>
-                          +{Math.round(s.value * equippedGear.sourcePowerMultiplier)} {s.stat}{s.isPercentage ? '%' : ''}
-                        </span>
-                      ))}
-                      {equippedTemplate.inherentDownside && (
-                        <span style={{ color: 'var(--color-danger)', fontSize: 9 }}>
-                          {equippedTemplate.inherentDownside.value} {equippedTemplate.inherentDownside.stat}{equippedTemplate.inherentDownside.isPercentage ? '%' : ''}
-                        </span>
-                      )}
-                    </div>
-                    {equippedGear.facet && equippedGear.facet.upside.stat !== 'none' && (
-                      <div style={{ color: 'var(--color-energy)', fontSize: 9, marginTop: '2px' }}>
-                        [{equippedGear.facet.name}] +{equippedGear.facet.upside.value}{equippedGear.facet.upside.isPercentage ? '%' : ''} {equippedGear.facet.upside.stat} / {equippedGear.facet.downside.value}{equippedGear.facet.downside.isPercentage ? '%' : ''} {equippedGear.facet.downside.stat}
-                      </div>
-                    )}
-                    {equippedGear.rarityBonuses.length > 0 && (
-                      <div className="flex flex-wrap gap-1" style={{ marginTop: '2px' }}>
-                        {equippedGear.rarityBonuses.map((b, i) => (
-                          <span key={i} style={{ color: RARITY_COLORS[equippedGear.rarity], fontSize: 9 }}>+{b.value}{b.isPercentage ? '%' : ''} {b.stat}</span>
-                        ))}
-                      </div>
-                    )}
-                    {equippedGear.enchantments.length > 0 && (
-                      <div style={{ marginTop: '2px' }}>
-                        {equippedGear.enchantments.map((e, i) => (
-                          <div key={i} style={{ color: e.isLegendary ? '#f97316' : '#60a5fa', fontSize: 9 }}>
-                            [{e.group}] {e.name}: +{e.effect.value}{e.effect.isPercentage ? '%' : ''} {e.effect.stat}
-                            {e.isLegendary && e.legendaryBonus && <span> ★ {e.legendaryBonus}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
+    return (
+      <div key={slot}>
+        <button
+          onClick={() => !isDeployed && setExpandedSlot(isExpanded ? null : slot)}
+          className="w-full text-left p-2 rounded text-xs"
+          style={{
+            backgroundColor: equippedGear ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
+            border: isExpanded ? '2px solid var(--color-accent)' : equippedGear ? `1px solid ${RARITY_COLORS[equippedGear.rarity]}44` : '1px dashed var(--color-border)',
+            opacity: isDeployed ? 0.6 : 1,
+            cursor: isDeployed ? 'not-allowed' : 'pointer',
+            minHeight: '44px',
+          }}
+        >
+          <div className="text-[10px] mb-0.5" style={{ color: 'var(--color-text-muted)' }}>{label}</div>
+          {equippedGear && equippedTemplate ? (
+            <>
+              <div className="font-bold flex items-center gap-1" style={{ color: RARITY_COLORS[equippedGear.rarity], fontSize: 11 }}>
+                <ItemIcon itemId={equippedTemplate.id} itemType="equipment" gearSlot={equippedTemplate.slot} size={16} fallbackLabel={equippedTemplate.name.charAt(0)} />
+                {equippedGear.facet ? `${equippedGear.facet.name} ` : ''}{equippedTemplate.name}
+              </div>
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {equippedTemplate.baseStats.slice(0, 2).map((s, i) => (
+                  <span key={i} style={{ color: 'var(--color-success)', fontSize: 9 }}>
+                    +{Math.round(s.value * equippedGear.sourcePowerMultiplier)} {s.stat}{s.isPercentage ? '%' : ''}
+                  </span>
+                ))}
+                {equippedTemplate.baseStats.length > 2 && (
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: 9 }}>+{equippedTemplate.baseStats.length - 2} more</span>
                 )}
-              </button>
+              </div>
+            </>
+          ) : (
+            <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: 10 }}>Empty</div>
+          )}
+        </button>
 
-              {isExpanded && (
+        {isExpanded && (
                 <div className="mt-1 p-2 rounded space-y-1" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)' }}>
                   {equippedGear && (
                     <button onClick={() => { unequipItem(heroId, slot); setExpandedSlot(null); }}

@@ -44,6 +44,7 @@ function App() {
   const [activeView, setActiveView] = useState<ActiveView>('story');
   const [activeCombatZoneId, setActiveCombatZoneId] = useState<string | null>(null);
   const isFeatureUnlocked = useStoryStore(s => s.isFeatureUnlocked);
+  const unlockedFeatures = useStoryStore(s => s.unlockedFeatures);
 
   // Filter tabs based on unlocked features
   const TOP_TABS = useMemo(() => {
@@ -51,7 +52,7 @@ function App() {
       if (!tab.featureKey) return true;
       return isFeatureUnlocked(tab.featureKey);
     });
-  }, [isFeatureUnlocked]);
+  }, [isFeatureUnlocked, unlockedFeatures]);
 
   // Sidebar: skill clicked → show SkillDetail
   const handleSelectSkill = () => {

@@ -3,6 +3,7 @@ import { COMBAT_ZONE_LIST } from '../../config/combatZones';
 import { SkillListItem } from '../skills/SkillListItem';
 import { useGameStore } from '../../store/useGameStore';
 import { useStoryStore } from '../../store/useStoryStore';
+import { useCombatZoneStore } from '../../store/useCombatZoneStore';
 import { ProgressBar } from '../common/ProgressBar';
 
 interface SidebarProps {
@@ -175,6 +176,9 @@ function CombatZoneSection({
   activeZoneId?: string | null;
   activeSkillId: string | null;
 }) {
+  const deployments = useCombatZoneStore(s => s.deployments);
+  const activeZoneIds = new Set(deployments.map(d => d.zoneId));
+
   return (
     <div>
       <div
@@ -186,31 +190,51 @@ function CombatZoneSection({
       <div className="space-y-1">
         {COMBAT_ZONE_LIST.map(zone => {
           const isSelected = activeZoneId === zone.id && !activeSkillId;
+          const hasDeployment = activeZoneIds.has(zone.id);
+          const heroCount = deployments.filter(d => d.zoneId === zone.id).reduce((sum, d) => sum + d.heroIds.length, 0);
           return (
             <button
               key={zone.id}
               onClick={() => onSelectZone?.(zone.id)}
               className="w-full text-left p-2 rounded text-xs transition-all cursor-pointer"
               style={{
-                backgroundColor: isSelected ? 'var(--color-bg-tertiary)' : 'transparent',
-                borderLeft: isSelected ? '3px solid var(--color-danger)' : '3px solid transparent',
-                color: isSelected ? 'var(--color-text-primary)' : 'var(--color-text-muted)',
+                backgroundColor: isSelected ? 'var(--color-bg-tertiary)' : hasDeployment ? 'var(--color-danger)11' : 'transparent',
                 border: 'none',
                 borderLeftWidth: '3px',
                 borderLeftStyle: 'solid',
-                borderLeftColor: isSelected ? 'var(--color-danger)' : 'transparent',
+                borderLeftColor: isSelected ? 'var(--color-danger)' : hasDeployment ? 'var(--color-danger)' : 'transparent',
               }}
             >
-              <div className="font-bold" style={{ color: isSelected ? 'var(--color-danger)' : 'var(--color-text-primary)' }}>
-                {zone.name}
+              <div className="flex items-center gap-1.5">
+                {hasDeployment && (
+                  <span className="combat-swords-icon" style={{ fontSize: '12px', lineHeight: 1 }}>&#9876;</span>
+                )}
+                <span className="font-bold" style={{ color: isSelected ? 'var(--color-danger)' : hasDeployment ? 'var(--color-danger)' : 'var(--color-text-primary)' }}>
+                  {zone.name}
+                </span>
               </div>
               <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
                 Lv.{zone.minLevel}+ | T{zone.baseGearTier} Drops
+                {hasDeployment && (
+                  <span style={{ color: 'var(--color-danger)' }}> | {heroCount} hero{heroCount !== 1 ? 'es' : ''} fighting</span>
+                )}
               </div>
             </button>
           );
         })}
       </div>
+
+      <style>{`
+        @keyframes combat-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.2); }
+        }
+        .combat-swords-icon {
+          animation: combat-pulse 1.5s ease-in-out infinite;
+          display: inline-block;
+          color: var(--color-danger);
+        }
+      `}</style>
     </div>
   );
 }
