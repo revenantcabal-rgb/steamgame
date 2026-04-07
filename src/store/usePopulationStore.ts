@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { getTripDuration, processTrip, POPULATION_MILESTONES } from '../engine/PopulationEngine';
 import { SKILLS, GATHERING_SKILLS } from '../config/skills';
+import { levelFromXp } from '../types/skills';
 import type { WorkerAssignment, PopulationState, RespawningWorker } from '../types/population';
 import { WORKER_RESPAWN_MS, POPULATION_CAP } from '../types/population';
 import { useGameStore } from './useGameStore';
@@ -200,8 +201,24 @@ export const usePopulationStore = create<PopulationState & PopulationActions>((s
         }
         useGameStore.setState({ resources });
 
-        // Add worker XP
+        // Add worker XP (worker-specific progression)
         newWorkerSkillXp[assignment.skillId] = (newWorkerSkillXp[assignment.skillId] || 0) + result.xpGained;
+
+        // Also grant a portion of XP to the player's skill (25% of worker XP)
+        const playerXpShare = Math.max(1, Math.floor(result.xpGained * 0.25));
+        const playerSkills = { ...gameStore.skills };
+        const currentSkill = playerSkills[assignment.skillId];
+        if (currentSkill) {
+          const newTotalXp = currentSkill.xp + playerXpShare;
+          const newLevel = Math.min(100, levelFromXp(newTotalXp));
+          playerSkills[assignment.skillId] = { level: newLevel, xp: newTotalXp };
+          useGameStore.setState({ skills: playerSkills });
+
+          if (newLevel > currentSkill.level) {
+            gameStore.addLog(`LEVEL UP! ${skillDef?.name || assignment.skillId} is now level ${newLevel}! (worker training)`, 'levelup');
+            useStoryStore.getState().checkObjective('reach_skill_level', assignment.skillId, newLevel);
+          }
+        }
 
         // Update assignment totals
         const updatedTotals = { ...assignment.totalResourcesGathered };
