@@ -176,7 +176,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         flavor: 'Bandages, stews, tonics — a well-stocked pack keeps you alive.',
         objective: { type: 'craft', target: 'consumable', count: 3, description: 'Craft 3 consumables' },
         rewards: [{ type: 'wc', quantity: 200 }],
-        hint: 'Use Cooking or Toolmaking to craft consumable items.',
+        hint: 'Use Cooking or Tinkering to craft consumable items.',
       },
       {
         id: 's2_p5',
