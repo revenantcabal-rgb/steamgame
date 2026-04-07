@@ -21,6 +21,7 @@ export function processSkillTick(
   currentXp: number,
   currentLevel: number,
   xpMultiplier: number = 1,
+  heroBonuses?: { gatheringSpeed: number; gatheringYield: number; xpBonus: number; rareResourceChance: number },
 ): SkillTickResult | null {
   const skillDef = SKILLS[skillId];
   if (!skillDef) return null;
@@ -38,7 +39,7 @@ export function processSkillTick(
     }
   }
 
-  const xpGained = Math.floor(baseXp * scaling.xpMultiplier * xpMultiplier);
+  const xpGained = Math.floor(baseXp * scaling.xpMultiplier * xpMultiplier * (1 + (heroBonuses?.xpBonus || 0) / 100));
   const newTotalXp = currentXp + xpGained;
   const newLevel = Math.min(100, levelFromXp(newTotalXp));
   const leveledUp = newLevel > currentLevel;
@@ -49,7 +50,7 @@ export function processSkillTick(
   if (activity) {
     for (const drop of activity.resourceDrops) {
       const baseQty = Math.floor(Math.random() * (drop.maxQty - drop.minQty + 1)) + drop.minQty;
-      const scaledQty = Math.max(1, Math.floor(baseQty * scaling.qtyMultiplier));
+      const scaledQty = Math.max(1, Math.floor(baseQty * scaling.qtyMultiplier * (1 + (heroBonuses?.gatheringYield || 0) / 100)));
       const existing = resourcesGained.find(r => r.resourceId === drop.resourceId);
       if (existing) {
         existing.quantity += scaledQty;

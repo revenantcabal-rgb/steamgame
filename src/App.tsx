@@ -1,27 +1,38 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { SkillDetail } from './components/skills/SkillDetail';
 import { HeroPanel } from './components/heroes/HeroPanel';
 import { CombatZonePanel } from './components/combat/CombatZonePanel';
 import { MarketplacePanel } from './components/marketplace/MarketplacePanel';
 import { ResourcePanel } from './components/layout/ResourcePanel';
-import { GameLog } from './components/layout/GameLog';
+import { BottomPanel } from './components/layout/BottomPanel';
+import { ExpeditionPanel } from './components/expedition/ExpeditionPanel';
+import { SettingsPanel } from './components/settings/SettingsPanel';
+import { StoryPanel } from './components/story/StoryPanel';
+import { StarlightPanel } from './components/starlight/StarlightPanel';
 import { useGameTick } from './hooks/useGameTick';
+import { NavigationContext } from './utils/NavigationContext';
+import { useGameStore } from './store/useGameStore';
+import { useStoryStore } from './store/useStoryStore';
 
 // ──────────────────────────────────────────────
 // Top-level menu tabs (non-sidebar panels)
 // ──────────────────────────────────────────────
-type TopTab = 'heroes' | 'marketplace' | 'pvp' | 'guild' | 'settings';
+type TopTab = 'story' | 'heroes' | 'marketplace' | 'expedition' | 'starlight' | 'pvp' | 'guild' | 'settings';
 
 /** The center panel can show sidebar-driven views OR a top tab */
 type ActiveView = 'skill' | 'combat' | TopTab;
 
-const TOP_TABS: { id: TopTab; label: string }[] = [
-  { id: 'heroes', label: 'Heroes' },
-  { id: 'marketplace', label: 'Marketplace' },
-  { id: 'pvp', label: 'PVP Zone' },
-  { id: 'guild', label: 'Guild' },
-  { id: 'settings', label: 'Settings' },
+/** Feature key required for each tab (null = always visible) */
+const ALL_TOP_TABS: { id: TopTab; label: string; featureKey: string | null }[] = [
+  { id: 'story', label: 'Story', featureKey: null },
+  { id: 'heroes', label: 'Heroes', featureKey: null },
+  { id: 'marketplace', label: 'Marketplace', featureKey: 'marketplace' },
+  { id: 'expedition', label: 'Expedition', featureKey: null },
+  { id: 'starlight', label: 'Starlight', featureKey: null },
+  { id: 'pvp', label: 'PVP Zone', featureKey: 'pvp' },
+  { id: 'guild', label: 'Guild', featureKey: 'guild' },
+  { id: 'settings', label: 'Settings', featureKey: null },
 ];
 
 // ──────────────────────────────────────────────
@@ -30,8 +41,17 @@ const TOP_TABS: { id: TopTab; label: string }[] = [
 function App() {
   useGameTick();
 
-  const [activeView, setActiveView] = useState<ActiveView>('skill');
+  const [activeView, setActiveView] = useState<ActiveView>('story');
   const [activeCombatZoneId, setActiveCombatZoneId] = useState<string | null>(null);
+  const isFeatureUnlocked = useStoryStore(s => s.isFeatureUnlocked);
+
+  // Filter tabs based on unlocked features
+  const TOP_TABS = useMemo(() => {
+    return ALL_TOP_TABS.filter(tab => {
+      if (!tab.featureKey) return true;
+      return isFeatureUnlocked(tab.featureKey);
+    });
+  }, [isFeatureUnlocked]);
 
   // Sidebar: skill clicked → show SkillDetail
   const handleSelectSkill = () => {
@@ -51,19 +71,34 @@ function App() {
     setActiveCombatZoneId(null);
   };
 
+  // Navigation context for deep components (e.g. CraftingPanel resource links)
+  const navigationActions = useMemo(() => ({
+    navigateToSkill: (skillId: string) => {
+      useGameStore.getState().setActiveSkill(skillId);
+      setActiveView('skill');
+      setActiveCombatZoneId(null);
+    },
+    navigateToCombatZone: (zoneId: string) => {
+      setActiveView('combat');
+      setActiveCombatZoneId(zoneId);
+    },
+  }), []);
+
   // Is a top tab currently active? (for highlighting)
   const activeTopTab: TopTab | null =
-    (['heroes', 'marketplace', 'pvp', 'guild', 'settings'] as TopTab[]).includes(activeView as TopTab)
+    (['story', 'heroes', 'marketplace', 'expedition', 'starlight', 'pvp', 'guild', 'settings'] as TopTab[]).includes(activeView as TopTab)
       ? (activeView as TopTab)
       : null;
 
   return (
+    <NavigationContext.Provider value={navigationActions}>
     <div className="flex h-screen overflow-hidden">
       {/* Left: Sidebar (Gathering / Production / Combat Zones) */}
       <Sidebar
         onSelectSkill={handleSelectSkill}
         onSelectCombatZone={handleSelectCombatZone}
         activeCombatZoneId={activeCombatZoneId}
+        onNavigateToStory={() => handleTabClick('story')}
       />
 
       {/* Center: Main content area */}
@@ -96,10 +131,13 @@ function App() {
         </div>
 
         {/* View Content */}
+        {activeView === 'story' && <StoryPanel />}
         {activeView === 'skill' && <SkillDetail />}
         {activeView === 'combat' && <CombatZonePanel initialZoneId={activeCombatZoneId} />}
         {activeView === 'heroes' && <HeroPanel />}
         {activeView === 'marketplace' && <MarketplacePanel />}
+        {activeView === 'expedition' && <ExpeditionPanel />}
+        {activeView === 'starlight' && <StarlightPanel />}
         {activeView === 'pvp' && (
           <PlaceholderPanel
             title="PVP Zone"
@@ -112,19 +150,15 @@ function App() {
             description="Guild management, clan wars, territory control, and shared resources. Coming soon."
           />
         )}
-        {activeView === 'settings' && (
-          <PlaceholderPanel
-            title="Settings"
-            description="Audio, display, save/load, keybindings, and account management. Coming soon."
-          />
-        )}
+        {activeView === 'settings' && <SettingsPanel />}
 
-        <GameLog />
+        <BottomPanel />
       </div>
 
       {/* Right: Resource panel */}
       <ResourcePanel />
     </div>
+    </NavigationContext.Provider>
   );
 }
 

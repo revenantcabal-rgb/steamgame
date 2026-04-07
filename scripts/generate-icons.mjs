@@ -758,6 +758,275 @@ function drawHeroPortrait(ctx, bodyColor, helmetColor, weaponType, accentColor) 
 }
 
 // ════════════════════════════════════════════════
+// RESOURCE DRAWING FUNCTIONS
+// ════════════════════════════════════════════════
+function drawMetalScrap(ctx) {
+  // Jagged metal sheet
+  ctx.fillStyle = PAL.steel;
+  ctx.beginPath();
+  ctx.moveTo(14, 20); ctx.lineTo(28, 16); ctx.lineTo(42, 22);
+  ctx.lineTo(50, 18); ctx.lineTo(48, 36); ctx.lineTo(34, 42);
+  ctx.lineTo(18, 38); ctx.lineTo(12, 30);
+  ctx.closePath();
+  ctx.fill();
+  // Rust spots
+  pixel(ctx, 20, 24, 6, 4, PAL.rust);
+  pixel(ctx, 36, 28, 5, 3, PAL.rust);
+  // Edge highlight
+  line(ctx, 14, 20, 42, 22, '#FFFFFF33', 1);
+}
+
+function drawWoodPlank(ctx) {
+  // Wooden plank
+  roundRect(ctx, 12, 18, 40, 10, 2, PAL.wood);
+  roundRect(ctx, 16, 32, 36, 10, 2, '#6B4423');
+  // Wood grain
+  line(ctx, 14, 22, 50, 22, '#4A3020', 1);
+  line(ctx, 14, 25, 50, 25, '#4A3020', 1);
+  line(ctx, 18, 36, 50, 36, '#4A3020', 1);
+  // Charred edge
+  pixel(ctx, 12, 18, 3, 10, '#222');
+}
+
+function drawPipe(ctx) {
+  // Pipe sections
+  roundRect(ctx, 10, 26, 44, 8, 3, PAL.iron);
+  // Rust
+  pixel(ctx, 18, 27, 8, 3, PAL.rust);
+  pixel(ctx, 38, 28, 6, 3, PAL.rust);
+  // Pipe joint
+  roundRect(ctx, 28, 24, 6, 12, 1, PAL.steel);
+  // Highlight
+  line(ctx, 12, 27, 52, 27, '#FFFFFF22', 1);
+}
+
+function drawHerbs(ctx) {
+  // Stems
+  line(ctx, 24, 48, 24, 24, '#2d5a1e', 2);
+  line(ctx, 32, 48, 32, 20, '#2d5a1e', 2);
+  line(ctx, 40, 48, 40, 26, '#2d5a1e', 2);
+  // Leaves
+  ctx.fillStyle = '#4a8b2d';
+  ctx.beginPath(); ctx.ellipse(24, 22, 6, 4, -0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(32, 18, 7, 5, 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(40, 24, 5, 4, 0.4, 0, Math.PI * 2); ctx.fill();
+  // Flower dots
+  circle(ctx, 24, 18, 2, '#e8d44d');
+  circle(ctx, 32, 14, 2, '#e8d44d');
+}
+
+function drawBerries(ctx) {
+  // Bush shape
+  ctx.fillStyle = '#3a5a2a';
+  ctx.beginPath(); ctx.ellipse(32, 34, 18, 12, 0, 0, Math.PI * 2); ctx.fill();
+  // Berries
+  circle(ctx, 22, 28, 4, '#8b2252');
+  circle(ctx, 30, 24, 4, '#9b3262');
+  circle(ctx, 38, 30, 4, '#8b2252');
+  circle(ctx, 26, 36, 3, '#7b1242');
+  circle(ctx, 34, 38, 3, '#9b3262');
+  // Highlights
+  circle(ctx, 21, 26, 1, '#cc6699');
+  circle(ctx, 29, 22, 1, '#cc6699');
+  circle(ctx, 37, 28, 1, '#cc6699');
+}
+
+function drawRoots(ctx) {
+  // Thick mutant root
+  ctx.fillStyle = '#7a5a3a';
+  ctx.beginPath();
+  ctx.moveTo(20, 14); ctx.quadraticCurveTo(32, 20, 28, 40);
+  ctx.lineTo(36, 42); ctx.quadraticCurveTo(38, 22, 44, 16);
+  ctx.lineTo(40, 14); ctx.lineTo(20, 14);
+  ctx.closePath();
+  ctx.fill();
+  // Tendrils
+  line(ctx, 24, 36, 16, 50, '#6a4a2a', 3);
+  line(ctx, 34, 38, 42, 52, '#6a4a2a', 3);
+  // Glow (mutation)
+  circle(ctx, 30, 26, 3, '#7CFC0044');
+  circle(ctx, 36, 20, 2, '#7CFC0044');
+}
+
+function drawGears(ctx) {
+  // Big gear
+  circle(ctx, 26, 28, 12, PAL.iron);
+  circle(ctx, 26, 28, 6, PAL.steel);
+  circle(ctx, 26, 28, 3, '#222');
+  // Gear teeth (simplified)
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const x = 26 + Math.cos(angle) * 12;
+    const y = 28 + Math.sin(angle) * 12;
+    pixel(ctx, x - 2, y - 2, 4, 4, PAL.iron);
+  }
+  // Small gear
+  circle(ctx, 42, 38, 7, PAL.steel);
+  circle(ctx, 42, 38, 3, '#222');
+  // Spring
+  line(ctx, 14, 46, 22, 46, PAL.copper, 2);
+  line(ctx, 22, 46, 18, 50, PAL.copper, 2);
+  line(ctx, 18, 50, 24, 50, PAL.copper, 2);
+}
+
+function drawCircuitBoard(ctx) {
+  // Board
+  roundRect(ctx, 12, 16, 40, 32, 2, '#1a4a1a');
+  // Traces
+  line(ctx, 16, 24, 32, 24, PAL.copper, 1);
+  line(ctx, 32, 24, 32, 38, PAL.copper, 1);
+  line(ctx, 20, 30, 44, 30, PAL.copper, 1);
+  line(ctx, 24, 20, 24, 40, PAL.copper, 1);
+  // Components
+  pixel(ctx, 30, 22, 4, 4, '#222');
+  pixel(ctx, 22, 28, 4, 4, '#333');
+  pixel(ctx, 36, 32, 6, 3, '#444');
+  // LED
+  circle(ctx, 40, 22, 2, '#FF0000');
+  circle(ctx, 18, 36, 2, PAL.energy);
+}
+
+function drawChemicalFlask(ctx) {
+  // Flask body
+  ctx.fillStyle = '#334';
+  ctx.beginPath();
+  ctx.moveTo(24, 18); ctx.lineTo(40, 18);
+  ctx.lineTo(46, 42); ctx.lineTo(18, 42);
+  ctx.closePath();
+  ctx.fill();
+  // Fluid
+  ctx.fillStyle = PAL.toxic;
+  ctx.beginPath();
+  ctx.moveTo(20, 30); ctx.lineTo(44, 30);
+  ctx.lineTo(46, 42); ctx.lineTo(18, 42);
+  ctx.closePath();
+  ctx.fill();
+  // Neck
+  roundRect(ctx, 28, 12, 8, 8, 1, '#445');
+  // Bubbles
+  circle(ctx, 28, 36, 2, '#9dff5088');
+  circle(ctx, 36, 34, 1.5, '#9dff5088');
+}
+
+function drawWaterDrop(ctx, tint) {
+  // Water drop shape
+  ctx.fillStyle = tint;
+  ctx.beginPath();
+  ctx.moveTo(32, 12);
+  ctx.quadraticCurveTo(48, 32, 40, 44);
+  ctx.quadraticCurveTo(32, 54, 24, 44);
+  ctx.quadraticCurveTo(16, 32, 32, 12);
+  ctx.closePath();
+  ctx.fill();
+  // Highlight
+  ctx.fillStyle = '#FFFFFF44';
+  ctx.beginPath();
+  ctx.ellipse(28, 28, 4, 8, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawOreChunk(ctx, color, speckleColor) {
+  // Rocky shape
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(16, 38); ctx.lineTo(22, 18); ctx.lineTo(36, 14);
+  ctx.lineTo(48, 22); ctx.lineTo(50, 38); ctx.lineTo(40, 48);
+  ctx.lineTo(24, 46);
+  ctx.closePath();
+  ctx.fill();
+  // Facets
+  line(ctx, 36, 14, 34, 36, color + '88', 1);
+  line(ctx, 22, 18, 40, 36, color + '88', 1);
+  // Ore veins/speckles
+  circle(ctx, 28, 28, 3, speckleColor);
+  circle(ctx, 38, 22, 2, speckleColor);
+  circle(ctx, 34, 38, 2.5, speckleColor);
+  circle(ctx, 24, 36, 2, speckleColor);
+  // Shadow edge
+  line(ctx, 16, 38, 24, 46, '#00000044', 2);
+}
+
+function drawRawStone(ctx) {
+  drawOreChunk(ctx, '#6B6B6B', '#8a8a8a');
+  // Extra cracks
+  line(ctx, 20, 24, 32, 30, '#55555588', 1);
+  line(ctx, 38, 28, 44, 40, '#55555588', 1);
+}
+
+// ════════════════════════════════════════════════
+// RESOURCE DEFINITIONS
+// ════════════════════════════════════════════════
+const RESOURCE_ITEMS = {
+  // Scavenging
+  scrap_metal:    { category: 'scavenging', color: PAL.steel,  draw: drawMetalScrap },
+  salvaged_wood:  { category: 'scavenging', color: PAL.wood,   draw: drawWoodPlank },
+  rusted_pipes:   { category: 'scavenging', color: PAL.rust,   draw: drawPipe },
+  // Foraging
+  wild_herbs:         { category: 'foraging', color: '#4a8b2d', draw: drawHerbs },
+  wasteland_berries:  { category: 'foraging', color: '#8b2252', draw: drawBerries },
+  mutant_roots:       { category: 'foraging', color: '#7a5a3a', draw: drawRoots },
+  // Salvage hunting
+  mechanical_parts:       { category: 'salvage', color: PAL.iron,   draw: drawGears },
+  electronic_components:  { category: 'salvage', color: PAL.copper, draw: drawCircuitBoard },
+  chemical_fluids:        { category: 'salvage', color: PAL.toxic,  draw: drawChemicalFlask },
+  // Water
+  rainwater:    { category: 'water', color: '#5599cc', draw: (ctx) => drawWaterDrop(ctx, '#5599cc') },
+  well_water:   { category: 'water', color: '#447799', draw: (ctx) => drawWaterDrop(ctx, '#447799') },
+  river_water:  { category: 'water', color: '#6699aa', draw: (ctx) => drawWaterDrop(ctx, '#6699aa') },
+  // Prospecting
+  iron_ore:   { category: 'prospecting', color: PAL.iron,   draw: (ctx) => drawOreChunk(ctx, '#5a5a5a', '#888888') },
+  copper_ore: { category: 'prospecting', color: PAL.copper, draw: (ctx) => drawOreChunk(ctx, '#6a4a2a', PAL.copper) },
+  raw_stone:  { category: 'prospecting', color: '#6B6B6B',  draw: drawRawStone },
+
+  // ── T2 RESOURCES ──
+  // Scavenging T2
+  tempered_steel:  { category: 'scavenging', color: '#A0A0B0', draw: drawMetalScrap },
+  refined_lumber:  { category: 'scavenging', color: '#7A5A3A', draw: drawWoodPlank },
+  chrome_pipes:    { category: 'scavenging', color: '#C0C0D0', draw: drawPipe },
+  // Foraging T2
+  irradiated_moss: { category: 'foraging', color: '#5ADB3A', draw: drawHerbs },
+  glow_berries:    { category: 'foraging', color: '#CCFF00', draw: drawBerries },
+  deep_roots:      { category: 'foraging', color: '#5A3A1A', draw: drawRoots },
+  // Salvage Hunting T2
+  precision_gears:    { category: 'salvage', color: PAL.steel,  draw: drawGears },
+  quantum_chips:      { category: 'salvage', color: PAL.energy, draw: drawCircuitBoard },
+  volatile_compounds: { category: 'salvage', color: '#FF4500',  draw: drawChemicalFlask },
+  // Water Reclamation T2
+  purified_water:  { category: 'water', color: '#77BBEE', draw: (ctx) => drawWaterDrop(ctx, '#77BBEE') },
+  mineral_water:   { category: 'water', color: '#55AACC', draw: (ctx) => drawWaterDrop(ctx, '#55AACC') },
+  distilled_water: { category: 'water', color: '#99DDFF', draw: (ctx) => drawWaterDrop(ctx, '#99DDFF') },
+  // Prospecting T2
+  steel_ore:    { category: 'prospecting', color: '#7A7A8A', draw: (ctx) => drawOreChunk(ctx, '#6A6A7A', '#9A9AAA') },
+  titanium_ore: { category: 'prospecting', color: '#B0B0C0', draw: (ctx) => drawOreChunk(ctx, '#8A8A9A', '#C0C0D0') },
+  crystal_stone: { category: 'prospecting', color: PAL.crystal, draw: (ctx) => drawOreChunk(ctx, '#C0A0E0', '#E0C0FF') },
+
+  // ── T3 RESOURCES ──
+  // Scavenging T3
+  reinforced_alloy: { category: 'scavenging', color: '#6080A0', draw: drawMetalScrap },
+  hardened_timber:  { category: 'scavenging', color: '#4A3020', draw: drawWoodPlank },
+  plasma_conduits:  { category: 'scavenging', color: PAL.plasma, draw: drawPipe },
+  // Foraging T3
+  reactor_bloom: { category: 'foraging', color: '#FF6090', draw: drawHerbs },
+  void_berries:  { category: 'foraging', color: '#301050', draw: drawBerries },
+  titan_roots:   { category: 'foraging', color: '#3A2A0A', draw: drawRoots },
+  // Salvage Hunting T3
+  fusion_cores:      { category: 'salvage', color: PAL.energy, draw: drawGears },
+  neural_circuits:   { category: 'salvage', color: '#00DDAA', draw: drawCircuitBoard },
+  dark_matter_fluid: { category: 'salvage', color: PAL.void,   draw: drawChemicalFlask },
+  // Water Reclamation T3
+  reactor_coolant: { category: 'water', color: '#00FFCC', draw: (ctx) => drawWaterDrop(ctx, '#00FFCC') },
+  bio_solution:    { category: 'water', color: '#88DD44', draw: (ctx) => drawWaterDrop(ctx, '#88DD44') },
+  void_extract:    { category: 'water', color: '#2A1A4A', draw: (ctx) => drawWaterDrop(ctx, '#2A1A4A') },
+  // Prospecting T3
+  mythril_ore:  { category: 'prospecting', color: '#A0D0F0', draw: (ctx) => drawOreChunk(ctx, '#80B0D0', '#C0E0FF') },
+  obsidian_ore: { category: 'prospecting', color: '#1A1A2A', draw: (ctx) => drawOreChunk(ctx, '#0A0A1A', '#3A3A5A') },
+  void_crystal: { category: 'prospecting', color: '#4A2080', draw: (ctx) => drawOreChunk(ctx, '#3A1070', '#6A40A0') },
+
+  // ── SPECIAL ──
+  icqor_chess_piece: { category: 'special', color: PAL.gold, draw: (ctx) => drawOreChunk(ctx, '#DAA520', '#FFD700') },
+};
+
+// ════════════════════════════════════════════════
 // WEAPON DEFINITIONS — maps to draw functions
 // ════════════════════════════════════════════════
 const WEAPONS = {
@@ -1081,5 +1350,23 @@ for (const [id, hero] of Object.entries(HERO_CLASSES)) {
   count++;
 }
 console.log(`  ${count - heroCount} hero classes`);
+
+const resCount = count;
+console.log('Generating resource icons...');
+for (const [id, item] of Object.entries(RESOURCE_ITEMS)) {
+  const canvas = createIcon();
+  const ctx = canvas.getContext('2d');
+  // Dark background with earthy border
+  ctx.fillStyle = '#1a1a18';
+  ctx.fillRect(0, 0, SIZE, SIZE);
+  ctx.strokeStyle = '#4a4a38';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, SIZE - 2, SIZE - 2);
+
+  item.draw(ctx);
+  save(canvas, 'resources', id);
+  count++;
+}
+console.log(`  ${count - resCount} resources`);
 
 console.log(`\nDone! Generated ${count} icons total in public/assets/`);

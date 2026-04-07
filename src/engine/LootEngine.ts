@@ -1,6 +1,8 @@
 import { GEAR_TEMPLATES, getFacetsForSlot, getEnchantsForSlot, getBonusPoolForSlot, getDownsidePoolForSlot } from '../config/gear';
 import type { GearInstance, GearSource, ItemRarity, StatBonus, Facet, Enchantment } from '../types/equipment';
 import { getEnchantSlots, getRarityBonusCount, getRarityCurseCount, getRarityPowerMultiplier } from '../types/equipment';
+import { generateGameId } from './AnticheatEngine';
+import { useAuthStore } from '../store/useAuthStore';
 
 /** Facet power multiplier by gear tier */
 function getFacetTierMultiplier(tier: number): number {
@@ -45,8 +47,8 @@ export function rollBossDropRarity(zoneTier: number): ItemRarity {
 }
 
 /** Roll a random facet for a gear slot */
-function rollFacet(slotCategory: string, tier: number): Facet | null {
-  const pool = getFacetsForSlot(slotCategory);
+function rollFacet(slotCategory: string, tier: number, weaponType?: string): Facet | null {
+  const pool = getFacetsForSlot(slotCategory, weaponType);
   if (pool.length === 0) return null;
   const template = pool[Math.floor(Math.random() * pool.length)];
   const mult = getFacetTierMultiplier(tier);
@@ -156,14 +158,17 @@ export function createGearInstance(
   if (!template) return null;
 
   const sourceMult = getSourceMultiplier(source);
-  const facet = rollFacet(template.slot, template.tier);
+  const facet = rollFacet(template.slot, template.tier, template.weaponType);
   const bonuses = rollRarityBonuses(template.slot, rarity, sourceMult);
   const curses = rarity === 'plague' ? rollCurses(template.slot, template.inherentDownside?.stat) : [];
   const enchants = rollEnchantments(template.slot, rarity, template.tier);
 
+  const userId = useAuthStore.getState().user?.id || 'system';
+
   return {
     instanceId: `gear_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     templateId,
+    gameId: generateGameId('gear', userId),
     rarity,
     source,
     facet,

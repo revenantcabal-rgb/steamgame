@@ -4,6 +4,10 @@ import { craftGear } from '../engine/LootEngine';
 import { getTotalStats } from '../engine/HeroEngine';
 import { useGameStore } from './useGameStore';
 import { useHeroStore } from './useHeroStore';
+import { useAnticheatStore } from './useAnticheatStore';
+import { useAchievementStore } from './useAchievementStore';
+import { useStoryStore } from './useStoryStore';
+import { useAuthStore } from '../store/useAuthStore';
 import type { GearInstance, HeroEquipment, EquipmentSlot } from '../types/equipment';
 
 interface EquipmentState {
@@ -92,6 +96,13 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
       gear.rarity === 'plague' ? 'levelup' : gear.rarity === 'unique' ? 'levelup' : 'info',
     );
 
+    // Anti-cheat: log craft event
+    const actorId = useAuthStore.getState().user?.id || 'system';
+    useAnticheatStore.getState().logItemEvent(gear.gameId, 'craft', actorId, undefined, 1, { templateId, rarity: gear.rarity });
+
+    // Achievement: track gear crafted
+    useAchievementStore.getState().incrementStat('gearCrafted');
+
     return gear;
   },
 
@@ -158,6 +169,13 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
       },
     }));
 
+    // Story: count equipped slots for this hero
+    const updatedEquip = get().heroEquipment[heroId];
+    if (updatedEquip) {
+      const filledSlots = Object.values(updatedEquip).filter(v => v != null).length;
+      useStoryStore.getState().checkObjective('equip', slot, filledSlots);
+    }
+
     return true;
   },
 
@@ -183,6 +201,13 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
           return;
         }
       }
+    }
+
+    // Anti-cheat: log discard event before removing
+    const gear = state.inventory.find(g => g.instanceId === instanceId);
+    if (gear) {
+      const actorId = useAuthStore.getState().user?.id || 'system';
+      useAnticheatStore.getState().logItemEvent(gear.gameId, 'discard', actorId, undefined, 1, { templateId: gear.templateId });
     }
 
     set(state => ({

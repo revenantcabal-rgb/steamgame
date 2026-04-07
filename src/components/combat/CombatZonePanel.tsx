@@ -14,12 +14,13 @@ interface CombatZonePanelProps {
 export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
   const deployments = useCombatZoneStore(s => s.deployments);
   const tierUnlocks = useCombatZoneStore(s => s.tierUnlocks);
-  const deployHero = useCombatZoneStore(s => s.deployHero);
+  const deployParty = useCombatZoneStore(s => s.deployParty);
+  const recallParty = useCombatZoneStore(s => s.recallParty);
   const recallHero = useCombatZoneStore(s => s.recallHero);
   const heroes = useHeroStore(s => s.heroes);
   const [selectedZone, setSelectedZone] = useState<string>(initialZoneId || '');
   const [selectedTarget, setSelectedTarget] = useState<string>('');
-  const [selectedHero, setSelectedHero] = useState<string>('');
+  const [selectedHeroIds, setSelectedHeroIds] = useState<string[]>([]);
   const [selectedTier, setSelectedTier] = useState(1);
 
   // Sync when sidebar zone selection changes
@@ -33,25 +34,40 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
 
   const zone = selectedZone ? COMBAT_ZONES[selectedZone] : null;
   const maxTier = zone ? (tierUnlocks[zone.id] || 1) : 1;
-  const availableHeroes = heroes.filter(h => !deployments.find(d => d.heroId === h.id));
+  const deployedHeroIds = new Set(deployments.flatMap(d => d.heroIds));
+  const availableHeroes = heroes.filter(h => !deployedHeroIds.has(h.id));
+
+  const toggleHero = (heroId: string) => {
+    setSelectedHeroIds(prev =>
+      prev.includes(heroId) ? prev.filter(id => id !== heroId) : [...prev, heroId]
+    );
+  };
+
+  const selectAll = () => {
+    setSelectedHeroIds(availableHeroes.map(h => h.id));
+  };
+
+  const selectNone = () => {
+    setSelectedHeroIds([]);
+  };
 
   const handleDeploy = () => {
-    if (!selectedZone || !selectedTarget || !selectedHero) return;
-    deployHero(selectedHero, selectedZone, selectedTarget, selectedTier);
-    setSelectedHero('');
+    if (!selectedZone || !selectedTarget || selectedHeroIds.length === 0) return;
+    deployParty(selectedHeroIds, selectedZone, selectedTarget, selectedTier);
+    setSelectedHeroIds([]);
   };
 
   return (
     <div className="flex-1 p-6 overflow-y-auto">
       <h2 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>Combat Zones</h2>
       <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-        Deploy heroes to idle-farm combat zones. Bosses appear every 10 kills on Full Sweep.
+        Deploy hero parties to idle-farm combat zones. Enemies grow stronger every 10 kills. Bosses appear every 50 kills on Full Sweep.
       </p>
 
       {/* Deploy Form */}
       <div className="p-4 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-        <h3 className="font-bold text-sm mb-3">Deploy Hero to Zone</h3>
-        <div className="grid grid-cols-4 gap-2 mb-3">
+        <h3 className="font-bold text-sm mb-3">Deploy Party to Zone</h3>
+        <div className="grid grid-cols-3 gap-2 mb-3">
           <div>
             <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Zone</label>
             <select value={selectedZone} onChange={e => { setSelectedZone(e.target.value); setSelectedTarget(''); setSelectedTier(1); }}
@@ -81,72 +97,153 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
               ))}
             </select>
           </div>
-          <div>
-            <label className="text-xs block mb-1" style={{ color: 'var(--color-text-muted)' }}>Hero ({availableHeroes.length} free)</label>
-            <select value={selectedHero} onChange={e => setSelectedHero(e.target.value)}
-              className="w-full p-2 rounded text-xs" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}>
-              <option value="">-- Select --</option>
+        </div>
+
+        {/* Hero Selection - Multi-select checkboxes */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              Select Heroes ({selectedHeroIds.length}/{availableHeroes.length} available)
+            </label>
+            <div className="flex gap-2">
+              <button onClick={selectAll} className="text-xs px-2 py-0.5 rounded cursor-pointer"
+                style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}>
+                All
+              </button>
+              <button onClick={selectNone} className="text-xs px-2 py-0.5 rounded cursor-pointer"
+                style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}>
+                None
+              </button>
+            </div>
+          </div>
+          {availableHeroes.length === 0 ? (
+            <div className="p-2 rounded text-xs text-center" style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)' }}>
+              No heroes available — all deployed or none recruited.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-1">
               {availableHeroes.map(h => {
                 const cls = CLASSES[h.classId];
-                return <option key={h.id} value={h.id}>{h.name} (Lv.{h.level} {cls?.name})</option>;
+                const isSelected = selectedHeroIds.includes(h.id);
+                return (
+                  <button key={h.id} onClick={() => toggleHero(h.id)}
+                    className="flex items-center gap-2 p-2 rounded text-xs text-left cursor-pointer"
+                    style={{
+                      backgroundColor: isSelected ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+                      color: isSelected ? '#000' : 'var(--color-text-primary)',
+                      border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                    }}>
+                    <span style={{
+                      width: 14, height: 14, borderRadius: 3, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      backgroundColor: isSelected ? '#000' : 'transparent',
+                      border: isSelected ? 'none' : '1px solid var(--color-text-muted)',
+                      color: isSelected ? 'var(--color-accent)' : 'transparent', fontSize: 10,
+                    }}>
+                      {isSelected ? '✓' : ''}
+                    </span>
+                    <span className="font-bold">{h.name}</span>
+                    <span style={{ color: isSelected ? 'rgba(0,0,0,0.6)' : 'var(--color-text-muted)' }}>
+                      Lv.{h.level} {cls?.name}
+                    </span>
+                  </button>
+                );
               })}
-            </select>
-          </div>
+            </div>
+          )}
         </div>
+
         {zone && selectedTarget && (
           <div className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
             {zone.description} | Drops T{zone.baseGearTier} gear from bosses [Salvaged]
           </div>
         )}
-        <button onClick={handleDeploy} disabled={!selectedZone || !selectedTarget || !selectedHero}
+        <button onClick={handleDeploy} disabled={!selectedZone || !selectedTarget || selectedHeroIds.length === 0}
           className="w-full p-2 rounded text-sm font-bold cursor-pointer"
-          style={{ backgroundColor: selectedZone && selectedTarget && selectedHero ? 'var(--color-accent)' : 'var(--color-bg-tertiary)', color: selectedZone && selectedTarget && selectedHero ? '#000' : 'var(--color-text-muted)', border: 'none' }}>
-          Deploy to Combat
+          style={{
+            backgroundColor: selectedZone && selectedTarget && selectedHeroIds.length > 0 ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+            color: selectedZone && selectedTarget && selectedHeroIds.length > 0 ? '#000' : 'var(--color-text-muted)',
+            border: 'none',
+          }}>
+          Deploy {selectedHeroIds.length > 0 ? `${selectedHeroIds.length} Hero${selectedHeroIds.length > 1 ? 'es' : ''}` : 'Party'} to Combat
         </button>
       </div>
 
       {/* Active Deployments */}
       <h3 className="font-bold text-sm mb-3" style={{ color: 'var(--color-text-primary)' }}>
-        Active Deployments ({deployments.length})
+        Active Parties ({deployments.length})
       </h3>
       {deployments.length === 0 ? (
         <div className="p-6 rounded text-center text-sm" style={{ backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-muted)' }}>
-          No heroes in combat. Deploy a hero above.
+          No parties in combat. Deploy a party above.
         </div>
       ) : (
         <div className="space-y-3">
           {deployments.map(dep => {
-            const hero = heroes.find(h => h.id === dep.heroId);
             const zone = COMBAT_ZONES[dep.zoneId];
             const target = zone?.targets.find(t => t.id === dep.targetId);
-            const cls = hero ? CLASSES[hero.classId] : null;
-            const fightDuration = hero && zone ? getFightDuration(hero.level, zone.minLevel) : 8;
+            const partyHeroes = dep.heroIds.map(id => heroes.find(h => h.id === id)).filter(Boolean) as typeof heroes;
+            const fastestDuration = partyHeroes.length > 0 && zone
+              ? Math.min(...partyHeroes.map(h => getFightDuration(h.level, zone.minLevel)))
+              : 8;
             const tierInfo = ZONE_TIER_MULTIPLIERS[dep.zoneTier - 1];
-            const isRecovering = dep.recoveryCooldown > 0;
+            const allRecovering = partyHeroes.length > 0 && partyHeroes.every(h => (dep.recoveryCooldowns[h.id] || 0) > 0);
 
             return (
-              <div key={dep.heroId} className="p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: `1px solid ${isRecovering ? 'var(--color-danger)' : 'var(--color-border)'}` }}>
+              <div key={dep.partyId} className="p-4 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: `1px solid ${allRecovering ? 'var(--color-danger)' : 'var(--color-border)'}` }}>
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <span className="font-bold text-sm" style={{ color: 'var(--color-text-primary)' }}>
-                      {hero?.name || 'Unknown'} <span style={{ color: 'var(--color-text-muted)' }}>Lv.{hero?.level} {cls?.name}</span>
+                      {zone?.name}: {target?.name} <span style={{ color: 'var(--color-text-muted)' }}>| {tierInfo?.name} (T{dep.zoneTier})</span>
                     </span>
-                    <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                      {zone?.name}: {target?.name} | {tierInfo?.name} (T{dep.zoneTier})
-                    </div>
                   </div>
-                  <button onClick={() => recallHero(dep.heroId)}
+                  <button onClick={() => recallParty(dep.partyId)}
                     className="px-3 py-1 rounded text-xs cursor-pointer"
-                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>Recall</button>
+                    style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}>Recall All</button>
                 </div>
 
-                {isRecovering ? (
+                {/* Party Members */}
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {partyHeroes.map(hero => {
+                    const cls = CLASSES[hero.classId];
+                    const isRecovering = (dep.recoveryCooldowns[hero.id] || 0) > 0;
+                    const cooldown = dep.recoveryCooldowns[hero.id] || 0;
+                    return (
+                      <div key={hero.id} className="flex items-center gap-1 px-2 py-1 rounded text-xs"
+                        style={{
+                          backgroundColor: isRecovering ? 'rgba(255,50,50,0.15)' : 'var(--color-bg-tertiary)',
+                          border: `1px solid ${isRecovering ? 'var(--color-danger)' : 'var(--color-border)'}`,
+                        }}>
+                        <span className="font-bold" style={{ color: isRecovering ? 'var(--color-danger)' : 'var(--color-text-primary)' }}>
+                          {hero.name}
+                        </span>
+                        <span style={{ color: 'var(--color-text-muted)' }}>Lv.{hero.level} {cls?.name}</span>
+                        {(() => {
+                          const equipped = hero.equippedAbilities?.filter(a => a != null).length || 0;
+                          const totalSlots = hero.equippedAbilities?.length || 4;
+                          return equipped > 0 ? (
+                            <span style={{ color: 'var(--color-accent)', fontSize: 9, fontWeight: 'bold' }} title={`${equipped}/${totalSlots} abilities equipped`}>
+                              {equipped}/{totalSlots} AB
+                            </span>
+                          ) : null;
+                        })()}
+                        {isRecovering && (
+                          <span style={{ color: 'var(--color-danger)' }}> ({Math.floor(cooldown / 60)}m {cooldown % 60}s)</span>
+                        )}
+                        <button onClick={() => recallHero(dep.partyId, hero.id)}
+                          className="ml-1 cursor-pointer" style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', fontSize: 10 }}
+                          title="Recall this hero">✕</button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Fight Progress */}
+                {allRecovering ? (
                   <div>
                     <div className="flex justify-between text-xs mb-1" style={{ color: 'var(--color-danger)' }}>
-                      <span>Recovering from defeat...</span>
-                      <span>{Math.floor(dep.recoveryCooldown / 60)}m {dep.recoveryCooldown % 60}s</span>
+                      <span>All heroes recovering...</span>
                     </div>
-                    <ProgressBar value={dep.recoveryCooldown} max={dep.recoveryCooldown + dep.fightProgress} color="var(--color-danger)" height="6px" />
+                    <ProgressBar value={1} max={1} color="var(--color-danger)" height="6px" />
                   </div>
                 ) : (
                   <div>
@@ -156,15 +253,16 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                         {target?.isSweep && ` (${dep.fightCount}/50 to boss)`}
                         {dep.waveMultiplier > 1 && <span style={{ color: 'var(--color-energy)' }}> [Wave +{Math.round((dep.waveMultiplier - 1) * 100)}%]</span>}
                       </span>
-                      <span>{dep.fightProgress}s / {fightDuration}s</span>
+                      <span>{dep.fightProgress}s / {fastestDuration}s</span>
                     </div>
-                    <ProgressBar value={dep.fightProgress} max={fightDuration} color="var(--color-energy)" height="6px" />
+                    <ProgressBar value={dep.fightProgress} max={fastestDuration} color="var(--color-energy)" height="6px" />
                   </div>
                 )}
 
                 <div className="flex gap-4 text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
                   <span>Kills: <b style={{ color: 'var(--color-success)' }}>{dep.totalKills}</b></span>
                   <span>Bosses: <b style={{ color: 'var(--color-accent)' }}>{dep.bossKills}</b></span>
+                  <span>Party: <b>{partyHeroes.length}</b> heroes</span>
                 </div>
               </div>
             );

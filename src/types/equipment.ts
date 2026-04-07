@@ -97,6 +97,7 @@ export interface GearTemplate {
 export interface GearInstance {
   instanceId: string;
   templateId: string;
+  gameId: string;
   rarity: ItemRarity;
   source: GearSource;
   facet: Facet | null;

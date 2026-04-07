@@ -1,13 +1,15 @@
-# Wasteland Grind - Facets, Enchantments & Drop Rules
+# Wasteland Grind - Facets & Enchantments Reference
 
-Extends all previous wiki documents.
+Facet system (all facets by slot including SP facets), enchantment system (all enchants including SP enchants), rarity bonus pools, downside pools, how everything stacks.
+
+See also: [Equipment](GAME_WIKI_EQUIPMENT.md) | [Sets](GAME_WIKI_SETS.md) | [Spirit System](GAME_WIKI_SPIRIT_SYSTEM.md) | [Stats](GAME_WIKI_STATS.md)
 
 ---
 
 ## TABLE OF CONTENTS
 
-1. [Drop Rules (Who Drops What)](#drop-rules)
-2. [Facet System](#facet-system)
+1. [Facet System](#facet-system)
+2. [Facet Value Scaling by Tier](#facet-value-scaling-by-tier)
 3. [Facet List - Weapons](#facet-list---weapons)
 4. [Facet List - Body Armor](#facet-list---body-armor)
 5. [Facet List - Legs](#facet-list---legs)
@@ -15,56 +17,15 @@ Extends all previous wiki documents.
 7. [Facet List - Boots](#facet-list---boots)
 8. [Facet List - Shields/Off Hand](#facet-list---shields--off-hand)
 9. [Facet List - Accessories](#facet-list---accessories)
-10. [Enchantment System](#enchantment-system)
-11. [Enchantment List - Weapons](#enchantment-list---weapons)
-12. [Enchantment List - Armor (Body, Legs, Gloves, Boots)](#enchantment-list---armor)
-13. [Enchantment List - Shields](#enchantment-list---shields)
-14. [Enchantment List - Accessories](#enchantment-list---accessories)
-15. [How Facets + Enchantments + Rarity Stack](#how-everything-stacks)
-
----
-
-## DROP RULES
-
-### Who Drops What
-
-| Source | Drops Gear? | Drops Skills? | Drops Resources? | Drops Currency (WC)? |
-|--------|------------|--------------|-----------------|---------------------|
-| **Normal Mobs** | **NO** | Yes (low chance) | Yes | Yes (small) |
-| **Zone Boss (every 10 fights)** | **YES** (guaranteed 1 piece) | Yes (guaranteed 1) | Yes (bonus) | Yes (moderate) |
-| **Dungeon Boss** | **YES** (guaranteed 1-2 pieces) | Yes (guaranteed 1) | Yes (large) | Yes (large) |
-| **PVP Rewards** | Season rewards only | Season rewards | No | Yes |
-| **Crafting** | Player creates | No | No | No |
-| **Quest Rewards** | Specific quest gear | Specific quest skills | Yes | Yes |
-
-### Normal Mob Drops (NO GEAR)
-
-| Drop Type | Chance per Kill | What Drops |
-|-----------|----------------|------------|
-| Resources | 30-50% | 1-5 of the zone's resource type |
-| Currency (WC) | 80% | 5-50 WC based on zone level |
-| Skills | 2-5% | Random skill from zone's tier pool |
-| Consumables | 10-20% | Basic consumables (bandages, food) |
-| Enhancement Shards | 5-10% | Used for re-rolling enchantments |
-| **Gear** | **0% - NEVER** | **Normal mobs NEVER drop equipment** |
-
-### Boss Drops (GEAR SOURCE)
-
-| Drop | Count | Notes |
-|------|-------|-------|
-| Equipment piece | 1 guaranteed | Always [Salvaged] tag. Rarity based on zone tier table. |
-| Skill | 1 guaranteed | Rarity based on zone tier table. |
-| Resources | 5-20 | Bonus zone resources. |
-| Currency (WC) | 100-2000 | Based on zone level. |
-| Enhancement Shards | 1-5 | Guaranteed from bosses. |
-| Facet Stone (rare) | 10-20% chance | Used to re-roll a facet on equipment. |
-
-### Boss Gear is Always Weaker than Crafted
-
-See GAME_WIKI_ENHANCEMENTS.md for the full power hierarchy. Summary:
-- **[Forged] Crafted** = 100% base stats, 100% enhancement power
-- **[Salvaged] Boss Drop** = 75% base stats, 80% enhancement power
-- A [Forged] Rare beats a [Salvaged] Unique
+10. [SP Facets](#sp-facets)
+11. [Enchantment System](#enchantment-system)
+12. [Enchantment List - Weapons](#enchantment-list---weapons)
+13. [Enchantment List - Armor](#enchantment-list---armor)
+14. [Enchantment List - Shields](#enchantment-list---shields)
+15. [Enchantment List - Accessories](#enchantment-list---accessories)
+16. [SP Enchantments](#sp-enchantments)
+17. [How Everything Stacks](#how-everything-stacks)
+18. [Consumables: Facet Stone & Enhancement Shard](#consumables)
 
 ---
 
@@ -85,7 +46,6 @@ This is separate from the item's rarity bonuses and enchantments. Think of it as
 The facet becomes a **prefix** on the item's name:
 - "**Quick** Scrap Blade" = +10% Turn Speed, -8% Melee Damage
 - "**Heavy** Iron Breastplate" = +12% Defense, -10 Turn Speed
-- "**Corroded** Hunting Crossbow" = +15% Critical Damage, -Durability
 
 ### How Facets Are Determined
 
@@ -96,7 +56,9 @@ The facet becomes a **prefix** on the item's name:
 | **Facet Stone** | Rare consumable. Re-rolls the facet to a different random one. Destroys the stone. |
 | **Quest/PVP Reward** | Fixed facet (pre-determined by the quest/season). |
 
-### Facet Value Scaling by Tier
+---
+
+## FACET VALUE SCALING BY TIER
 
 Facet bonuses scale with the item's gear tier. Higher tier items have stronger facet effects:
 
@@ -114,8 +76,6 @@ Facet bonuses scale with the item's gear tier. Higher tier items have stronger f
 ---
 
 ## FACET LIST - WEAPONS
-
-Each weapon spawns with 1 random facet from this pool.
 
 | Facet Name | Upside | Downside |
 |------------|--------|----------|
@@ -135,6 +95,7 @@ Each weapon spawns with 1 random facet from this pool.
 | **Toxic** | Adds poison DoT: 2% weapon dmg/turn for 3 turns | -8% Weapon Damage |
 | **Shocking** | 15% chance to stun for 1 turn on hit | -10% Weapon Damage |
 | **Vampiric** | Heal 5% of damage dealt | -10% Weapon Damage |
+| **Channeling** | +15% maxSp | -8% Weapon Damage |
 | **Standard** | No change | No change |
 
 ---
@@ -206,7 +167,7 @@ Each weapon spawns with 1 random facet from this pool.
 |------------|--------|----------|
 | **Dense** | +15% Block Chance | +10% Equipment Weight |
 | **Spiked** | Reflect 10% blocked damage | -5% Block Chance |
-| **Meditative** | +3 HP Regen when blocking | -5% Block Chance |
+| **Meditative** | +3 SP Regen when blocking | -5% Block Chance |
 | **Sturdy** | +20% Durability | -3% Block Chance |
 | **Lightweight** | +5 Turn Speed | -8% Block Chance |
 | **Bulwark** | +10% Block Chance, +5% Damage Reduction | -8 Turn Speed |
@@ -225,7 +186,22 @@ Each weapon spawns with 1 random facet from this pool.
 | **Protective** | +5% Status Resistance, +3% Max HP | -2% Critical Chance |
 | **Draining** | +5% Damage dealt as HP heal | -3 HP Regen |
 | **Charged** | +8% to primary attack stat (matching hero type) | -3% Defense |
+| **Spirited** | +10% maxSp, +1 spRegen | -3% Max HP |
 | **Standard** | No change | No change |
+
+---
+
+## SP FACETS
+
+SP-related facets appear on specific slot types:
+
+| Facet | Slot | Upside | Downside |
+|-------|------|--------|----------|
+| **Channeling** | Weapons | +15% maxSp | -8% Weapon Damage |
+| **Meditative** | Shields | +3 SP Regen when blocking | -5% Block Chance |
+| **Spirited** | Accessories | +10% maxSp, +1 spRegen | -3% Max HP |
+
+These facets are particularly valuable for heroes with high RES builds who want to maximize their SP pool and sustain ability usage. See [Spirit System](GAME_WIKI_SPIRIT_SYSTEM.md) for full SP mechanics.
 
 ---
 
@@ -238,43 +214,17 @@ Enchantments are **additional magical properties** on equipment, separate from f
 ### Key Rules
 
 1. **Enchantments are organized into Groups** (Offensive, Defensive, Critical, Health, Utility, Elemental, Focus, Misc)
-2. **ONE enchantment per group per item.** An item can NEVER have two enchantments from the same group. For example, if a helmet has "Critical Hit Chance +5%" (Critical group), it CANNOT also roll "Critical Damage +10%" because both belong to the Critical group. The player must choose ONE Critical enchantment.
+2. **ONE enchantment per group per item.** An item can NEVER have two enchantments from the same group.
 3. **Enchantment slots per rarity:**
    - Common: 0 enchantment slots
    - Rare: 1 enchantment slot (1 group)
    - Unique: 2 enchantment slots (must be 2 different groups)
    - Plague: 3 enchantment slots (must be 3 different groups)
 4. **Enchantments roll randomly** when the item is created
-5. **Re-rolling:** Players can spend Enhancement Shards + WC to re-roll a specific enchantment slot. The new enchantment must stay within the same group OR switch to an unoccupied group.
+5. **Re-rolling:** Players can spend Enhancement Shards + WC to re-roll a specific enchantment slot
 6. **Enchantment power scales** with gear tier (same multiplier as facets)
 
-### Group Exclusivity Examples
-
-```
-VALID (Unique helmet, 2 enchantment slots, 2 DIFFERENT groups):
-  [Offensive] Armor Penetration +8%
-  [Health] HP Regen +2/turn
-
-INVALID (both are Critical group - NOT ALLOWED):
-  [Critical] Critical Hit Chance +5%
-  [Critical] Critical Damage +12%
-
-VALID (Plague weapon, 3 enchantment slots, 3 DIFFERENT groups):
-  [Offensive] Weapon Damage +12%
-  [Critical] Critical Hit Chance +8%
-  [Elemental] Burn on hit: 4% dmg/turn
-
-INVALID (two Offensive - NOT ALLOWED):
-  [Offensive] Weapon Damage +12%
-  [Offensive] Armor Penetration +8%
-  [Critical] Critical Hit Chance +8%
-```
-
-This forces meaningful choices: you can't stack all damage enchantments. You MUST diversify across groups.
-
 ### Enchantment Rarity
-
-Each enchantment has a power tier matching the 4 rarity colors:
 
 | Enchant Tier | Roll Range | How Obtained |
 |-------------|-----------|-------------|
@@ -329,7 +279,7 @@ Each enchantment has a power tier matching the 4 rarity colors:
 
 ## ENCHANTMENT LIST - ARMOR
 
-Applies to Body, Legs, Gloves, and Boots. Each piece rolls from this pool independently.
+Applies to Body, Legs, Gloves, and Boots.
 
 ### Defensive Group
 | Enchantment | Effect Range | Legendary Bonus |
@@ -370,7 +320,7 @@ Applies to Body, Legs, Gloves, and Boots. Each piece rolls from this pool indepe
 ### Block Group
 | Enchantment | Effect Range | Legendary Bonus |
 |-------------|-------------|-----------------|
-| Block Chance increased | +3% to +10% | Perfect blocks (within 0.5s) reflect 20% damage |
+| Block Chance increased | +3% to +10% | Perfect blocks reflect 20% damage |
 | Damage on block | Deal 3% to +10% of blocked damage to attacker | Also stuns attacker for 1 turn (10% chance) |
 | HP Regen on block | +1 to +3 HP per block | Regen persists for 2 turns after blocking |
 
@@ -421,6 +371,22 @@ Applies to Body, Legs, Gloves, and Boots. Each piece rolls from this pool indepe
 
 ---
 
+## SP ENCHANTMENTS
+
+SP-related enchantments belong to the **Focus** enchantment group. They can appear on any equipment slot.
+
+### Focus Group (SP Enchantments)
+| Enchantment | Effect Range | Legendary Bonus |
+|-------------|-------------|-----------------|
+| Max SP increased | +10 to +30 maxSp | +additional 15 maxSp when above 50% SP |
+| SP Regen increased | +1 to +3 spRegen/turn | Doubled for 2 turns after using an ability |
+| SP Cost Reduction | +3% to +10% spCostReduction | First ability each fight costs 0 SP |
+| SP on Kill | +5 to +15 SP restored on kill | Also restores 1 ability cooldown |
+
+**Group Exclusivity:** Like all enchantment groups, you can only have ONE Focus enchantment per item. You cannot stack Max SP and SP Regen on the same item.
+
+---
+
 ## HOW EVERYTHING STACKS
 
 A single piece of equipment can have ALL of these layers:
@@ -429,78 +395,25 @@ A single piece of equipment can have ALL of these layers:
 ITEM ANATOMY:
 
 [Source Tag] [Facet Prefix] Item Name [Rarity Color]
-─────────────────────────────────────────────────────
-1. BASE STATS          ← From the item's tier & type (Defense, Attack, etc.)
+-----------------------------------------------------
+1. BASE STATS          <- From the item's tier & type (Defense, Attack, etc.)
                          Reduced if [Salvaged] (75%) or [Scavenged] (60%)
 
-2. INHERENT TRADE-OFF  ← The item's built-in downside from gear tables
+2. INHERENT TRADE-OFF  <- The item's built-in downside from gear tables
                          (e.g., Sluggish: -20 Turn Speed on heavy armor)
 
-3. FACET               ← 1 permanent modifier (1 upside + 1 downside)
+3. FACET               <- 1 permanent modifier (1 upside + 1 downside)
                          Scales with gear tier multiplier
 
-4. RARITY BONUSES      ← 0/2/3/6 random bonuses based on Common/Rare/Unique/Plague
+4. RARITY BONUSES      <- 0/2/3/6 random bonuses based on Common/Rare/Unique/Plague
                          Reduced if [Salvaged] (80%) or [Scavenged] (65%)
 
-5. RARITY CURSES       ← 0/0/0/2 random curses for Plague only
+5. RARITY CURSES       <- 0/0/0/2 random curses for Plague only
 
-6. ENCHANTMENTS        ← 0/1/2/3 magical properties based on rarity
+6. ENCHANTMENTS        <- 0/1/2/3 magical properties based on rarity
                          Must be from different groups
                          Scales with gear tier multiplier
 ```
-
-### Full Example: Endgame Plague Weapon
-
-```
-[Forged] Vampiric Titan Cleaver [Plague]
-Type: Melee Weapon (2-Handed) | Tier: T6 | Level Req: 80 | STR Req: 60
-────────────────────────────────────────────────────────────────────
-
-BASE STATS:
-  +110 Melee Attack
-  +80 Max HP
-  +10% Crit Chance
-  +3 HP Regen
-
-INHERENT TRADE-OFF:
-  Sluggish: -25 Turn Speed
-
-FACET [Vampiric]:
-  ✓ Heal 7% of damage dealt (5% × 1.4 T6 multiplier)
-  ✗ -14% Weapon Damage (10% × 1.4 T6 multiplier)
-
-RARITY BONUSES [Plague - 6 bonuses at 150% power]:
-  ✓ +18 Melee Attack
-  ✓ +8% Critical Chance
-  ✓ +18% Critical Damage
-  ✓ +10% Accuracy
-  ✓ +11 Turn Speed
-  ✓ +10% Armor Penetration
-
-RARITY CURSES [Plague - 2 curses]:
-  ✗ Draining: -3 HP Regen
-  ✗ Unstable: -8% Accuracy
-
-ENCHANTMENTS [Plague - 3 enchantments, different groups]:
-  [Offensive] Weapon Damage increased by +12%
-  [Critical] Critical Damage increased by +20%
-  [Elemental] Burn on hit: 5% dmg/turn, 2 turns, 20% chance
-
-────────────────────────────────────────────────────────────────────
-EFFECTIVE TOTALS (after all modifiers):
-  Melee Attack: ~128 (110 base + 18 bonus, modified by facet & enchant)
-  Max HP: +80
-  Crit Chance: ~18%
-  Crit Damage: ~38%
-  Accuracy: +2% net (10% bonus - 8% curse)
-  HP Regen: 0 net (3 base - 3 curse)
-  Turn Speed: -14 net (11 bonus - 25 inherent)
-  Lifesteal: 7% of damage dealt (facet)
-  Burn: 5% dmg/turn on 20% of hits
-  Armor Pen: 10%
-```
-
-This item is incredibly powerful but has real trade-offs: slow turns, net-zero HP regen, and reduced accuracy. A player using this needs a Support hero or consumables to compensate.
 
 ### Layer Priority (what can be changed)
 
@@ -515,7 +428,9 @@ This item is incredibly powerful but has real trade-offs: slow turns, net-zero H
 
 ---
 
-## CONSUMABLE: FACET STONE
+## CONSUMABLES
+
+### Facet Stone
 
 | Property | Detail |
 |----------|--------|
@@ -526,7 +441,7 @@ This item is incredibly powerful but has real trade-offs: slow turns, net-zero H
 | Cannot get | The same facet you already have (guaranteed change) |
 | Tradeable | Yes (can be sold on marketplace) |
 
-## CONSUMABLE: ENHANCEMENT SHARD
+### Enhancement Shard
 
 | Property | Detail |
 |----------|--------|

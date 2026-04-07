@@ -2,8 +2,14 @@
   "permissions": {
     "allow": [
       "mcp__Claude_Preview__preview_start",
-      "Bash(npx tsc:*)",
-      "WebSearch"
+      "Bash(*)",
+      "WebSearch",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Agent"
     ]
   }
 }

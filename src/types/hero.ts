@@ -29,6 +29,30 @@ export interface DerivedStats {
   abilitySlots: number;
   /** Whether this hero can equip a Warband Decree (party-wide buff, 1 per party) */
   canEquipAura: boolean;
+  // Extended combat stats
+  lifesteal: number;
+  burnDot: number;
+  poisonDot: number;
+  frostSlow: number;
+  thornsDamage: number;
+  blockChance: number;
+  armorPen: number;
+  damageReduction: number;
+  dropChance: number;
+  // SP (Spirit Point) stats
+  maxSp: number;           // Max spirit points (30 + RES*3)
+  spRegen: number;         // SP regen per combat turn (1 + RES*0.2)
+  spCostReduction: number; // % reduction to ability SP costs (0-50)
+  /** Number of consumable slots unlocked (1 base + 1 per level threshold) */
+  consumableSlots: number;
+  // Gathering/production stats
+  gatheringSpeed: number;
+  gatheringYield: number;
+  productionSpeed: number;
+  xpBonus: number;
+  rareResourceChance: number;
+  rarityUpgrade: number;
+  doubleOutput: number;
 }
 
 export interface ClassDefinition {
@@ -68,6 +92,12 @@ export interface Hero {
   unspentPoints: number;
   /** Timestamp of recruitment */
   recruitedAt: number;
+  /** 4 ability slots (ability IDs) */
+  equippedAbilities: (string | null)[];
+  /** 1 decree slot (ability ID) */
+  equippedDecree: string | null;
+  /** Consumable slots (consumable IDs) */
+  equippedConsumables: (string | null)[];
 }
 
 /** Stat points per hero level */

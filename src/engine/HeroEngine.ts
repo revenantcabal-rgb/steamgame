@@ -1,9 +1,11 @@
 import { CLASSES } from '../config/classes';
 import { GEAR_TEMPLATES } from '../config/gear';
+import { ABILITIES } from '../config/abilities';
 import { levelFromXp } from '../types/skills';
 import type { Hero, PrimaryStats, DerivedStats } from '../types/hero';
 import { rollStat, generateHeroName, STAT_POINTS_PER_LEVEL } from '../types/hero';
 import type { GearInstance, StatBonus } from '../types/equipment';
+import { useStarlightStore } from '../store/useStarlightStore';
 
 /**
  * Create a new hero of a given class with flat base stats.
@@ -42,6 +44,9 @@ export function recruitHero(classId: string): Hero | null {
     allocatedStats: { str: 0, dex: 0, int: 0, con: 0, per: 0, luk: 0, res: 0 },
     unspentPoints: 0,
     recruitedAt: Date.now(),
+    equippedAbilities: [null, null, null, null],
+    equippedDecree: null,
+    equippedConsumables: [null],
   };
 }
 
@@ -101,6 +106,30 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
     abilityPower: stats.res * 1,
     abilitySlots,
     canEquipAura: stats.res >= 50,
+    // Consumable slots based on hero level
+    consumableSlots: 1 + (hero.level >= 15 ? 1 : 0) + (hero.level >= 30 ? 1 : 0) + (hero.level >= 45 ? 1 : 0) + (hero.level >= 60 ? 1 : 0) + (hero.level >= 80 ? 1 : 0),
+    // SP stats
+    maxSp: 30 + stats.res * 3,
+    spRegen: Math.round((1 + stats.res * 0.2) * 10) / 10,
+    spCostReduction: 0,
+    // Extended combat stats
+    lifesteal: 0,
+    burnDot: 0,
+    poisonDot: 0,
+    frostSlow: 0,
+    thornsDamage: 0,
+    blockChance: 0,
+    armorPen: 0,
+    damageReduction: 0,
+    dropChance: 0,
+    // Gathering/production stats
+    gatheringSpeed: 0,
+    gatheringYield: 0,
+    productionSpeed: 0,
+    xpBonus: 0,
+    rareResourceChance: 0,
+    rarityUpgrade: 0,
+    doubleOutput: 0,
   };
 
   // ── Apply equipment bonuses ──
@@ -150,6 +179,63 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
     derived.defense = Math.max(0, derived.defense);
     derived.turnSpeed = Math.max(1, derived.turnSpeed);
     derived.hpRegen = Math.max(0, derived.hpRegen);
+    derived.lifesteal = Math.min(25, Math.max(0, derived.lifesteal));
+    derived.burnDot = Math.min(20, Math.max(0, derived.burnDot));
+    derived.poisonDot = Math.min(15, Math.max(0, derived.poisonDot));
+    derived.frostSlow = Math.min(50, Math.max(0, derived.frostSlow));
+    derived.thornsDamage = Math.min(30, Math.max(0, derived.thornsDamage));
+    derived.blockChance = Math.min(50, Math.max(0, derived.blockChance));
+    derived.armorPen = Math.min(50, Math.max(0, derived.armorPen));
+    derived.damageReduction = Math.min(30, Math.max(0, derived.damageReduction));
+    derived.dropChance = Math.min(50, Math.max(0, derived.dropChance));
+    derived.gatheringSpeed = Math.min(100, Math.max(0, derived.gatheringSpeed));
+    derived.gatheringYield = Math.min(100, Math.max(0, derived.gatheringYield));
+    derived.productionSpeed = Math.min(100, Math.max(0, derived.productionSpeed));
+    derived.xpBonus = Math.min(100, Math.max(0, derived.xpBonus));
+    derived.rareResourceChance = Math.min(50, Math.max(0, derived.rareResourceChance));
+    derived.rarityUpgrade = Math.min(25, Math.max(0, derived.rarityUpgrade));
+    derived.doubleOutput = Math.min(25, Math.max(0, derived.doubleOutput));
+    // SP clamping
+    derived.maxSp = Math.max(10, derived.maxSp);
+    derived.spRegen = Math.max(0, derived.spRegen);
+    derived.spCostReduction = Math.min(50, Math.max(0, derived.spCostReduction));
+  }
+
+  // Apply equipped passive abilities (orange tomes) and decrees (purple tomes)
+  const equippedAbilities = hero.equippedAbilities || [null, null, null, null];
+  const equippedDecree = hero.equippedDecree || null;
+
+  const allEquippedIds = [...equippedAbilities.filter(Boolean), ...(equippedDecree ? [equippedDecree] : [])];
+  for (const abilityId of allEquippedIds) {
+    if (!abilityId) continue;
+    const ability = ABILITIES[abilityId];
+    if (!ability || !ability.mechanicalEffect) continue;
+    if (ability.mechanicalEffect.type === 'passive_stat' && ability.mechanicalEffect.stat) {
+      const baseValue = ability.mechanicalEffect.value;
+      const scalingBonus = ability.mechanicalEffect.scaling * stats.res;
+      const totalValue = baseValue + scalingBonus;
+      applyBonus(derived, {
+        stat: ability.mechanicalEffect.stat,
+        value: totalValue,
+        isPercentage: ability.mechanicalEffect.isPercentage,
+      });
+    }
+  }
+
+  // ── Account-level Starlight sphere grid bonuses (apply to ALL heroes) ──
+  const starlightBonuses = useStarlightStore.getState().getStatBonuses();
+  for (const [bonusKey, value] of Object.entries(starlightBonuses)) {
+    // Keys ending in _pct are percentage bonuses, others are flat
+    const isPct = bonusKey.endsWith('_pct');
+    const stat = isPct ? bonusKey.slice(0, -4) : bonusKey;
+    const key = stat as keyof DerivedStats;
+    if (typeof derived[key] === 'number') {
+      if (isPct) {
+        (derived as any)[key] = Math.round((derived[key] as number) * (1 + value / 100) * 100) / 100;
+      } else {
+        (derived as any)[key] = Math.round(((derived[key] as number) + value) * 100) / 100;
+      }
+    }
   }
 
   return derived;

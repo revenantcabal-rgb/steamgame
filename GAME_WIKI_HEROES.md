@@ -1,7 +1,8 @@
 # Wasteland Grind - Heroes, Classes & Population System
 
-This document covers the Hero system, 12 classes, population mechanics, and 5v5 PVP.
-It extends the main GAME_WIKI.md.
+Hero system, 16 classes (12 combat + 4 specialist), population mechanics, recruitment, leveling, stat allocation, hero types (combat vs specialist).
+
+See also: [Stats](GAME_WIKI_STATS.md) | [Abilities](GAME_WIKI_ABILITIES.md) | [Combat](GAME_WIKI_COMBAT.md) | [Equipment](GAME_WIKI_EQUIPMENT.md) | [Skills](GAME_WIKI_SKILLS.md)
 
 ---
 
@@ -11,15 +12,11 @@ It extends the main GAME_WIKI.md.
 2. [Population System](#population-system)
 3. [Hero System](#hero-system)
 4. [Class Categories](#class-categories)
-5. [All 12 Classes - Full Detail](#all-12-classes---full-detail)
-6. [Hero Recruitment & Leveling](#hero-recruitment--leveling)
-7. [Equipment Slots & Rarity](#equipment-slots--rarity)
-8. [Idle Combat Zones](#idle-combat-zones)
-9. [Squad Building (5v5)](#squad-building-5v5)
-10. [Combat Balance Rules](#combat-balance-rules)
-11. [PVP Format](#pvp-format)
-12. [GVG / Clan Wars](#gvg--clan-wars)
-13. [PVE Dungeons & Skirmishes](#pve-dungeons--skirmishes)
+5. [All 12 Combat Classes - Full Detail](#all-12-classes---full-detail)
+6. [Combat vs Specialist Heroes](#combat-vs-specialist-heroes)
+7. [Specialist Hero Classes (4)](#specialist-hero-classes)
+8. [Hero Recruitment & Leveling](#hero-recruitment--leveling)
+9. [Class Quick Reference Table](#class-quick-reference-table)
 
 ---
 
@@ -591,388 +588,175 @@ Heroes gain XP from:
 
 ### Stat Points
 
-Heroes gain **3 attribute points per level** to allocate freely across STR, DEX, INT, CON, PER, LUK.
+Heroes gain **3 attribute points per level** to allocate freely across STR, DEX, INT, CON, PER, LUK, RES.
 
 By Level 100, a hero has: Base Stats (~50 total) + 297 allocated points = ~347 total stat points.
 
----
-
-## EQUIPMENT SLOTS & RARITY
-
-### Equipment Slots (11 total)
-
-Each hero has 11 equipment slots:
-
-| Slot | Count | Source | Notes |
-|------|-------|--------|-------|
-| **Main Hand** | 1 | Weaponsmithing | Melee, Ranged, or Demolitions weapon. If 2-handed, Off Hand is locked. |
-| **Off Hand** | 1 | Weaponsmithing / Armorcrafting | Shield, secondary weapon, or ammo pouch. Blocked by 2H weapons. |
-| **Armor** (Body) | 1 | Armorcrafting | Chest armor - highest defense slot. |
-| **Legs** | 1 | Armorcrafting | Leg guards, pants, greaves. |
-| **Gloves** | 1 | Armorcrafting | Gauntlets, gloves, wraps. Often have accuracy/crit bonuses. |
-| **Boots** | 1 | Armorcrafting | Footwear. Often have Turn Speed or Evasion bonuses. |
-| **Ring** | 3 | Tinkering / Dungeon drops | Small stat bonuses. 3 slots allow stacking. |
-| **Earring** | 2 | Tinkering / Dungeon drops | Utility bonuses (Status Resist, HP Regen). |
-| **Necklace** | 1 | Tinkering / Dungeon drops | Major stat bonus, often unique effects. |
-
-### Item Rarity System
-
-Every equipment piece drops or is crafted in one of 4 rarities. Higher rarity = more bonus attributes. Rarity is determined at creation time (crafting has a chance for higher rarity based on production skill level).
-
-| Rarity | Color | Base Stats | Bonus Attributes | Negative Effects | Drop Rate |
-|--------|-------|-----------|-----------------|-----------------|-----------|
-| **Common** | White | Yes | 0 | 0 | 60% |
-| **Rare** | Blue | Yes | 2 random bonuses | 0 | 25% |
-| **Unique** | Purple | Yes | 3 random bonuses | 0 | 12% |
-| **Plague** | Orange | Yes | 6 random bonuses | 2 random negatives | 3% |
-
-### How Rarity Works
-
-**Common (White):**
-- Only the base stats of the item (Defense, Attack, etc. as listed in the gear tables)
-- No bonus attributes
-- Example: `Iron Breastplate [Common] - +32 Defense, +50 Max HP, +1 HP Regen | Sluggish: -15 Turn Speed`
-
-**Rare (Blue):**
-- Base stats + 2 randomly rolled bonus attributes
-- Bonuses are rolled from the bonus pool (see below)
-- Example: `Iron Breastplate [Rare] - +32 Defense, +50 Max HP, +1 HP Regen | Sluggish: -15 Turn Speed | BONUS: +8% Accuracy, +12 Max HP`
-
-**Unique (Purple):**
-- Base stats + 3 randomly rolled bonus attributes
-- Bonus values are 20% higher than Rare rolls
-- Example: `Iron Breastplate [Unique] - +32 Defense, +50 Max HP, +1 HP Regen | Sluggish: -15 Turn Speed | BONUS: +10% Accuracy, +18 Max HP, +3% Crit Chance`
-
-**Plague (Orange):**
-- Base stats + 6 randomly rolled bonus attributes + 2 randomly rolled negative effects
-- Bonus values are 50% higher than Rare rolls
-- The 2 negatives come from the downside pool (Sluggish, Fragile, etc.) - these stack with the item's inherent downside
-- Plague items are the most powerful but come with real trade-offs
-- Example: `Iron Breastplate [Plague] - +32 Defense, +50 Max HP, +1 HP Regen | Sluggish: -15 Turn Speed | BONUS: +15% Accuracy, +25 Max HP, +5% Crit, +4% Evasion, +10 Turn Speed, +2 HP Regen | CURSE: Draining: -2 HP Regen, Fragile: -8% Max HP`
-
-### Bonus Attribute Pool (randomly rolled for Rare/Unique/Plague)
-
-| Bonus | Rare Range | Unique Range | Plague Range |
-|-------|-----------|-------------|-------------|
-| +Max HP | +8 to +20 | +10 to +24 | +12 to +30 |
-| +Defense | +3 to +8 | +4 to +10 | +5 to +12 |
-| +Melee Attack | +3 to +8 | +4 to +10 | +5 to +12 |
-| +Ranged Attack | +3 to +8 | +4 to +10 | +5 to +12 |
-| +Blast Attack | +3 to +8 | +4 to +10 | +5 to +12 |
-| +Turn Speed | +3 to +8 | +4 to +10 | +5 to +12 |
-| +Accuracy | +2% to +6% | +3% to +8% | +4% to +10% |
-| +Evasion | +1% to +4% | +2% to +5% | +2% to +6% |
-| +Crit Chance | +1% to +4% | +2% to +5% | +2% to +6% |
-| +Crit Damage | +3% to +8% | +4% to +10% | +5% to +12% |
-| +HP Regen | +1 to +3 | +1 to +4 | +2 to +5 |
-| +Status Resist | +2% to +6% | +3% to +8% | +4% to +10% |
-| +Damage Reduction | +1% to +3% | +1% to +4% | +2% to +5% |
-
-### Crafting Rarity Chances
-
-When crafting an item, the player's production skill level affects rarity outcome:
-
-| Skill Level | Common | Rare | Unique | Plague |
-|-------------|--------|------|--------|--------|
-| 1-14 | 90% | 10% | 0% | 0% |
-| 15-29 | 75% | 22% | 3% | 0% |
-| 30-44 | 60% | 30% | 9% | 1% |
-| 45-59 | 50% | 32% | 15% | 3% |
-| 60-79 | 40% | 35% | 20% | 5% |
-| 80-89 | 30% | 35% | 27% | 8% |
-| 90-99 | 20% | 35% | 33% | 12% |
-| 100 | 15% | 30% | 37% | 18% |
-
-### Dungeon Drop Rarity
-
-Dungeon bosses have better rarity rates:
-
-| Enemy Type | Common | Rare | Unique | Plague |
-|------------|--------|------|--------|--------|
-| Normal mob | 70% | 22% | 7% | 1% |
-| Elite mob | 50% | 30% | 16% | 4% |
-| Boss (every 10th fight) | 25% | 35% | 30% | 10% |
-| Final dungeon boss | 10% | 30% | 40% | 20% |
+See [Stats](GAME_WIKI_STATS.md) for per-point breakdowns of each attribute, and [Spirit System](GAME_WIKI_SPIRIT_SYSTEM.md) for how RES affects SP.
 
 ---
 
-## IDLE COMBAT ZONES
+## COMBAT VS SPECIALIST HEROES
 
-Heroes can be set to **idle farm** in combat zones, just like workers idle in gathering.
-The player selects a combat zone, picks a target type, and the hero auto-fights.
+There are now two types of heroes:
 
-### How It Works
+### Combat Heroes (12 classes)
 
-1. Player selects a hero (or squad for harder zones)
-2. Player selects a Combat Zone (unlocked through progression)
-3. Player selects a **target** within that zone:
-   - **3 focused targets** (specific enemy, higher XP per kill, focused loot)
-   - **1 full sweep** (fight everything, every 10 fights = boss battle, varied loot)
-4. Hero auto-fights on a timer (similar to gathering actions)
-5. Hero earns Combat XP, loot drops, and resources
-6. Hero can die if the zone is too hard (returns after a cooldown penalty)
+These are the 12 classes defined above (Blade Dancer, Sharpshooter, Sapper, Warden, Trapper, Bombardier, Guardian, Field Medic, Chemist, Berserker, Deadeye, Demolisher).
 
-### Combat Zone Actions
+**When assigned to gathering/production:**
+- Give a base +15% gathering yield bonus
+- Provide worker safety (no death risk)
+- Hero earns combat XP from skirmish encounters
+- Gathering speed bonus: +5%
 
-| Action Type | What Happens | XP/Fight | Loot |
-|-------------|-------------|----------|------|
-| **Solo Target** (focused) | Fight 1 specific enemy type repeatedly | Higher XP | Focused drops from that enemy |
-| **Full Sweep** (mixed) | Fight random enemies from the zone. Every 10th fight is a boss. | Lower XP per fight, but boss XP is huge | Varied drops from all enemies + boss chest |
+**In combat:** Full combat effectiveness (100% stats)
 
-### Boss Battle (Full Sweep Mode)
+### Specialist Heroes (4 classes)
 
-- Every 10 normal fights, a zone boss appears
-- Boss has 3x normal enemy HP and damage
-- Defeating the boss gives:
-  - 5x normal XP
-  - Guaranteed equipment drop (rarity based on zone tier)
-  - Bonus resources
-- If the hero loses to a boss, they get a 5-minute recovery cooldown
-- Progress resets to 0/10 after boss (win or lose)
+Specialist heroes are optimized for gathering and production. They provide much better bonuses when assigned to population tasks.
 
-### All Combat Zones
+**When assigned to gathering/production:**
+- Give a +40% gathering yield bonus (vs combat hero's +15%)
+- Provide worker safety (no death risk)
+- Reduce gathering time by -25% (vs combat hero's -5%)
+- Workers under a Specialist gain +50% worker XP
+- Specialist earns gathering/production XP (not combat XP)
 
-#### Zone 1: The Outskirts (Level 1+, Solo hero)
+**In combat:** -20% to all combat stats. They CAN fight, but they're weaker than combat heroes.
 
-> The edges of the wasteland. Mutated vermin and small creatures. Perfect for new heroes.
+### Comparison Table
 
-| Target | Enemy | HP | Damage | XP/Kill | Notable Drops |
-|--------|-------|-----|--------|---------|---------------|
-| Marshland | Mutated Mosquito | 20 | 3 | 15 | Insect Chitin, Toxic Gland |
-| Bog | Mutated Frog | 30 | 5 | 18 | Frog Skin, Mutant Slime |
-| Burrows | Mutated Centipede | 25 | 7 | 20 | Chitin Plates, Venom Sac |
-| Full Sweep | All + Boss: Giant Roach | - | - | varies | All drops + boss chest |
-
-**Boss: Giant Roach** - HP: 90, Damage: 15, XP: 100
-Boss Chest: T1-T2 gear, 10-20 random resources
-
-#### Zone 2: Ruined Suburbs (Level 15+, Solo hero)
-
-> Abandoned neighborhoods overrun by mutant animals.
-
-| Target | Enemy | HP | Damage | XP/Kill | Notable Drops |
-|--------|-------|-----|--------|---------|---------------|
-| Alleys | Feral Dog Pack | 60 | 12 | 35 | Leather Scraps, Fang |
-| Rooftops | Mutant Hawk | 45 | 18 | 40 | Feathers, Talons |
-| Basements | Rad Rat Swarm | 80 | 10 | 38 | Rat Pelts, Glowing Eyes |
-| Full Sweep | All + Boss: Alpha Wolf | - | - | varies | All drops + boss chest |
-
-**Boss: Alpha Wolf** - HP: 250, Damage: 30, XP: 250
-Boss Chest: T2-T3 gear, 20-40 resources
-
-#### Zone 3: Toxic Industrial District (Level 30+, Solo or 3-hero squad)
-
-> A poisoned factory district with chemical mutants and rogue machines.
-
-| Target | Enemy | HP | Damage | XP/Kill | Notable Drops |
-|--------|-------|-----|--------|---------|---------------|
-| Chemical Vats | Slime Crawler | 120 | 22 | 65 | Toxic Residue, Acid Flask |
-| Assembly Line | Rogue Drone | 100 | 30 | 70 | Drone Core, Servo Motor |
-| Waste Tunnels | Sewer Beast | 150 | 25 | 75 | Beast Hide, Sewer Crystal |
-| Full Sweep | All + Boss: Factory Overseer | - | - | varies | All drops + boss chest |
-
-**Boss: Factory Overseer (Mech)** - HP: 500, Damage: 50, XP: 500
-Boss Chest: T3-T4 gear, 30-60 resources, rare crafting materials
-
-#### Zone 4: The Deadlands (Level 45+, 3-hero squad recommended)
-
-> An irradiated desert wasteland with dangerous creatures and raiders.
-
-| Target | Enemy | HP | Damage | XP/Kill | Notable Drops |
-|--------|-------|-----|--------|---------|---------------|
-| Sand Dunes | Sandworm | 200 | 35 | 100 | Worm Carapace, Sand Pearl |
-| Raider Camps | Raider Gang (3 enemies) | 120 ea | 28 ea | 120 | Raider Gear, Ammo Cache |
-| Radiation Craters | Glowing Ghoul | 180 | 45 | 110 | Ghoul Marrow, Rad Crystal |
-| Full Sweep | All + Boss: Raider Warlord | - | - | varies | All drops + boss chest |
-
-**Boss: Raider Warlord** - HP: 800, Damage: 70, XP: 800
-Boss Chest: T4-T5 gear, 50-100 resources, rare materials
-
-#### Zone 5: Military Exclusion Zone (Level 60+, 5-hero squad required)
-
-> A walled-off military installation with automated defenses and bio-weapons.
-
-| Target | Enemy | HP | Damage | XP/Kill | Notable Drops |
-|--------|-------|-----|--------|---------|---------------|
-| Perimeter | Turret Array (2 turrets) | 250 ea | 40 ea | 160 | Turret Parts, Targeting Module |
-| Barracks | Bio-Soldier Squad (3) | 200 ea | 50 ea | 180 | Military Gear, Dog Tags |
-| Research Lab | Escaped Experiment | 400 | 80 | 200 | Mutagen Sample, Lab Data |
-| Full Sweep | All + Boss: Commander Mech | - | - | varies | All drops + boss chest |
-
-**Boss: Commander Mech** - HP: 1500, Damage: 120, XP: 1200
-Boss Chest: T5-T6 gear, 80-150 resources, rare/unique materials
-
-#### Zone 6: The Core (Level 80+, 5-hero squad, endgame)
-
-> The reactor core where the apocalypse began. Maximum radiation and danger.
-
-| Target | Enemy | HP | Damage | XP/Kill | Notable Drops |
-|--------|-------|-----|--------|---------|---------------|
-| Outer Ring | Radiation Elemental | 500 | 100 | 300 | Core Fragment, Isotope |
-| Inner Chamber | Mutant Abomination | 600 | 130 | 350 | Abomination Heart, Mutant DNA |
-| Reactor Room | Fusion Golem | 700 | 150 | 400 | Fusion Core, Plasma Crystal |
-| Full Sweep | All + Boss: The Source | - | - | varies | All drops + boss chest |
-
-**Boss: The Source** - HP: 3000, Damage: 200, XP: 2500
-Boss Chest: T7-T8 gear, 150-300 resources, legendary materials, Plague rarity chance: 15%
-
-#### Zone 7: Ground Zero (Level 95+, 5-hero squad, ultimate endgame)
-
-> The epicenter. Reality warps here. Only the strongest survive.
-
-| Target | Enemy | HP | Damage | XP/Kill | Notable Drops |
-|--------|-------|-----|--------|---------|---------------|
-| Crater Edge | Phase Walker | 800 | 180 | 500 | Phase Shard, Void Dust |
-| Anomaly Field | Reality Breaker | 1000 | 200 | 600 | Anomaly Core, Warped Metal |
-| Epicenter | Apocalypse Herald | 1200 | 250 | 700 | Herald Fragment, Doom Essence |
-| Full Sweep | All + Boss: The Cataclysm | - | - | varies | All drops + boss chest |
-
-**Boss: The Cataclysm** - HP: 5000, Damage: 300, XP: 5000
-Boss Chest: T8 gear guaranteed, legendary materials, Plague rarity chance: 25%
-
-### Idle Combat Speed
-
-| Hero Level vs Zone Level | Fight Duration | Notes |
-|-------------------------|---------------|-------|
-| Overlevel by 20+ | 3 seconds | Farming easy content |
-| Overlevel by 10-19 | 5 seconds | Comfortable farming |
-| At zone level | 8 seconds | Challenging, hero may lose |
-| Underlevel by 5-10 | 12 seconds | Dangerous, high death risk |
-| Underlevel by 10+ | Cannot enter | Zone is locked |
-
-### Hero Death in Combat Zones
-
-- If a hero dies during idle combat, they enter a **recovery cooldown**
-- Recovery time: 5 minutes (normal enemy), 15 minutes (boss), 30 minutes (zone 6-7 boss)
-- During recovery, the hero cannot fight, join squads, or go on skirmishes
-- NO permanent death for heroes (workers can die permanently, heroes cannot)
+| Aspect | Combat Hero | Specialist Hero |
+|--------|------------|----------------|
+| Combat stats | 100% | 80% (-20%) |
+| Gathering yield bonus | +15% | +40% |
+| Gathering speed bonus | -5% time | -25% time |
+| Worker safety | Yes (no deaths) | Yes (no deaths) |
+| Worker XP bonus | +0% | +50% |
+| Can join PVP? | Yes (full power) | Yes (weakened) |
+| Can join dungeons? | Yes (full power) | Yes (weakened) |
+| Best used for | Fighting, PVP, GVG | Boosting population economy |
 
 ---
 
-## SQUAD BUILDING (5v5)
+## SPECIALIST HERO CLASSES
 
-### Rules
-- Player selects 5 heroes from their roster for any combat encounter
-- Each hero must be a unique individual (can't use same hero twice)
-- CAN use multiple heroes of the same class (e.g., 2 Berserkers)
-- Category auras stack (e.g., 3 Assault heroes = +24% damage, +15% Crit Dmg for all)
+### Category: ARTISAN (Production & Gathering)
 
-### Recommended Compositions
+**Team Aura (when in a combat squad, per Artisan hero):**
+- +3% rare loot drop chance for all team members
+- +10% resource drops from combat zones for all team members
 
-| Comp Name | Heroes | Strategy |
-|-----------|--------|----------|
-| **Balanced** | 1 Skirmisher, 1 Control, 1 Support, 2 Assault | Standard well-rounded team |
-| **Rush** | 3 Assault, 1 Skirmisher, 1 Support | Kill fast before they can react. Aura: +24% dmg |
-| **Turtle** | 2 Support, 2 Control, 1 Assault | Outheal and outlast. Win by attrition. |
-| **Blitz** | 3 Skirmisher, 1 Assault, 1 Support | Maximum speed. Act first, kill priority targets. Aura: +15 Turn Speed |
-| **Lockdown** | 3 Control, 1 Support, 1 Assault | Enemy can barely act. Stuns, slows, debuffs. Aura: -15 enemy Turn Speed |
-| **GVG Siege** | 2 Demolisher, 1 Chemist, 1 Bombardier, 1 Guardian | AoE everything. Demolishers nuke, Chemist heals splash, Bombardier disables, Guardian tanks. |
+### 13. SCAVENGER (Artisan / Close Combat primary)
 
----
+> A wasteland survivalist who knows every ruin, wreck, and hideaway. Expert at finding materials that others miss.
 
-## COMBAT BALANCE RULES
+**Primary Combat Style:** Close Combat (Melee) - but at 80% effectiveness
+**Gathering Specialty:** Scavenging + Salvage Hunting
 
-### Weapon Penalty
-- Heroes deal **-30% damage** when using a weapon outside their primary combat style
-- Example: A Blade Dancer (Close Combat primary) using a Marksman Rifle deals 70% of its listed damage
-- This prevents heroes from being good at everything
+**Base Stat Ranges:**
+| STR | DEX | INT | CON | PER | LUK |
+|-----|-----|-----|-----|-----|-----|
+| 8-13 | 5-10 | 4-9 | 8-13 | 6-11 | 8-14 |
 
-### Stat Requirement Gate
-- Equipment has stat requirements (STR, DEX, INT, etc.)
-- A hero who doesn't meet requirements **cannot equip** the item
-- This naturally prevents ranged heroes from wearing full heavy armor (needs STR they don't have)
-- A Deadeye (DEX/PER focused) would need to sacrifice ~40 DEX/PER points to get enough STR for T5 heavy armor, making their damage terrible
+*Note: Higher LUK base - Scavengers are lucky finders.*
 
-### The Triangle
-```
-Close Combat (STR) beats Demolitions (INT) ── Melee closes distance, disrupts setup
-Demolitions (INT) beats Marksmanship (DEX) ── AoE forces repositioning, splash unavoidable
-Marksmanship (DEX) beats Close Combat (STR) ── Kite and shoot before they reach you
-```
-- +10% damage bonus when attacking the type you counter
-- -10% damage penalty when attacking the type that counters you
-- This adds another layer of squad composition strategy
+**Specialist Bonuses (when assigned to population):**
+- Scavenging yield: +50% (instead of base +40%)
+- Salvage Hunting yield: +50% (instead of base +40%)
+- 10% chance to find bonus rare resources per gathering trip
+- Workers assigned with Scavenger gain +75% XP in Scavenging/Salvage
 
-### Diminishing Returns
-- Stacking 5 heroes of the same category gives massive aura bonuses but you lack versatility
-- Category auras have soft diminishing returns after 3 stacks:
-  - 1 hero: 100% aura value
-  - 2 heroes: 100% each (200% total)
-  - 3 heroes: 100% each (300% total)
-  - 4th hero: 50% aura value (350% total)
-  - 5th hero: 25% aura value (375% total)
+**Class Abilities:**
+| Ability | Unlock | Cooldown | Effect |
+|---------|--------|----------|--------|
+| **Resourceful Strike** | Lv.1 | 3 turns | Deal 90% melee damage. If kill, guaranteed resource drop. |
+| **Salvage Instinct** | Lv.30 | Passive | +20% chance to find rare materials in combat loot. |
+| **Treasure Sense** | Lv.60 | 8 turns | Reveal all hidden loot in current combat zone floor. Next 3 fights have guaranteed Rare+ drops. |
 
 ---
 
-## PVP FORMAT
+### 14. RANGER (Artisan / Marksmanship primary)
 
-### Ranked PVP (5v5)
-- Player selects 5 heroes as their squad
-- Combat auto-resolves based on stats, gear, abilities, and turn order
-- ELO matchmaking (starts at 1000)
-- 3-month seasons with rank tiers:
+> A wilderness expert who navigates irradiated forests and swamps, finding edible plants and clean water where no one else can.
 
-| Rank | ELO Range | Season Reward |
-|------|-----------|---------------|
-| Bronze | 0-1099 | Basic resource pack |
-| Silver | 1100-1299 | Moderate resource pack + cosmetic |
-| Gold | 1300-1499 | Large resource pack + cosmetic + 1 hero recruit |
-| Platinum | 1500-1699 | Huge resource pack + rare cosmetic + high-stat hero |
-| Diamond | 1700-1899 | Massive resource pack + legendary cosmetic + guaranteed top-stat hero |
-| Wasteland Champion | 1900+ | All of above + unique title + profile border |
+**Primary Combat Style:** Marksmanship (Ranged) - but at 80% effectiveness
+**Gathering Specialty:** Foraging + Water Reclamation
 
-### Quick Match (unranked)
-- Same 5v5 format but no ELO changes
-- For testing comps and practicing
+**Base Stat Ranges:**
+| STR | DEX | INT | CON | PER | LUK |
+|-----|-----|-----|-----|-----|-----|
+| 4-9 | 8-13 | 5-10 | 8-13 | 8-14 | 6-11 |
 
----
+**Specialist Bonuses (when assigned to population):**
+- Foraging yield: +50%
+- Water Reclamation yield: +50%
+- Foraged items have 10% chance to be higher tier
+- Workers assigned with Ranger gain +75% XP in Foraging/Water Reclamation
 
-## GVG / CLAN WARS
-
-### War Format
-- Clans of up to 30 members
-- **War declaration:** Leader/Officers start war search
-- **Matchmaking:** Clans matched by total hero power
-- **Prep Phase (24 hours):** Members assign heroes to defense, build structures (Engineering skill)
-- **Battle Phase (24 hours):** Each member gets 2 attacks using their 5-hero squad
-- **Each attack:** Your 5-hero squad vs defender's 5-hero squad
-- **Stars:** 1 star = deal >33% total damage. 2 stars = deal >66%. 3 stars = full wipe.
-- **Winner:** Most total stars. Tiebreaker: most total damage %.
-
-### Hero Role in GVG
-- Each member sets a **Defense Squad** (5 heroes who defend when attacked)
-- Each member uses an **Attack Squad** (5 heroes for their 2 attacks, can be different from defense)
-- Demolitions heroes get bonus damage vs structures
-- Engineering skill determines defense structure HP
-- Support heroes are critical for keeping attackers alive through defenses
+**Class Abilities:**
+| Ability | Unlock | Cooldown | Effect |
+|---------|--------|----------|--------|
+| **Survival Shot** | Lv.1 | 3 turns | Deal 90% ranged damage. Heal self for 10% max HP. |
+| **Nature's Bounty** | Lv.30 | Passive | +20% food buff duration when this hero consumes food. |
+| **Wild Harvest** | Lv.60 | 8 turns | For 5 turns, all team members regen 5% max HP per turn. |
 
 ---
 
-## PVE DUNGEONS & SKIRMISHES
+### 15. PROSPECTOR (Artisan / Demolitions primary)
 
-### Dungeons
+> A mining expert who uses controlled blasts to extract ores and minerals.
 
-Dungeons are multi-fight PVE encounters that drop rare resources and equipment.
+**Primary Combat Style:** Demolitions (Blast) - but at 80% effectiveness
+**Gathering Specialty:** Prospecting
 
-| Dungeon | Rec. Level | Floors | Theme | Notable Drops |
-|---------|-----------|--------|-------|---------------|
-| The Ruins | 10+ | 5 | Collapsed city | T2 gear, basic recipes |
-| Abandoned Factory | 25+ | 8 | Industrial complex | T3 gear, Mechanical Parts |
-| The Wasteland | 40+ | 10 | Open desert, mutant beasts | T4 gear, rare forage |
-| Toxic Sewers | 55+ | 12 | Underground, poison enemies | T5 gear, Chemical Fluids |
-| Military Bunker | 70+ | 15 | Pre-war military base | T6 gear, Electronic Components |
-| The Core | 85+ | 18 | Reactor facility, radiation | T7 gear, rare ore |
-| Ground Zero | 95+ | 20 | The epicenter, final challenge | T8 gear, legendary materials |
+**Base Stat Ranges:**
+| STR | DEX | INT | CON | PER | LUK |
+|-----|-----|-----|-----|-----|-----|
+| 8-13 | 4-9 | 8-13 | 8-13 | 5-10 | 6-11 |
 
-### Skirmishes
+**Specialist Bonuses (when assigned to population):**
+- Prospecting yield: +60% (highest single-skill bonus)
+- 15% chance to find gem-tier resources
+- Workers assigned with Prospector gain +75% XP in Prospecting
+- Prospecting speed bonus: -30% time
 
-Skirmishes are short PVE encounters where heroes escort gathering parties.
+**Class Abilities:**
+| Ability | Unlock | Cooldown | Effect |
+|---------|--------|----------|--------|
+| **Controlled Blast** | Lv.1 | 3 turns | Deal 90% blast damage. No self-damage. |
+| **Mineral Sense** | Lv.30 | Passive | +25% ore drops from combat zones. Can detect hidden ore veins. |
+| **Seismic Charge** | Lv.60 | 8 turns | Deal 120% blast to all enemies. Stun 1 turn. No self-damage. Generate 5-10 random ores. |
 
-- Duration: 1-4 hours (based on gathering task difficulty)
-- Hero earns combat XP during skirmish
-- Eliminates worker death risk
-- +25% yield bonus (more with Skirmisher/Assault category heroes)
-- Hero is locked out of PVP/Dungeons while on skirmish duty
+---
+
+### 16. ARTIFICER (Artisan / Marksmanship secondary)
+
+> A master crafter who can produce higher-quality items and speeds up all production tasks.
+
+**Primary Combat Style:** Marksmanship (Ranged) - but at 80% effectiveness
+**Production Specialty:** ALL Production skills
+
+**Base Stat Ranges:**
+| STR | DEX | INT | CON | PER | LUK |
+|-----|-----|-----|-----|-----|-----|
+| 4-9 | 6-11 | 10-16 | 6-11 | 6-11 | 8-14 |
+
+*Note: Highest INT and LUK base - Artificers are smart and lucky crafters.*
+
+**Specialist Bonuses (when assigned to production):**
+- ALL production speed: +35%
+- Rarity upgrade chance: +10% (shifts rarity table up)
+- Workers assigned with Artificer gain +100% production XP
+- 5% chance to produce double output on any craft
+
+**Class Abilities:**
+| Ability | Unlock | Cooldown | Effect |
+|---------|--------|----------|--------|
+| **Precision Tinker** | Lv.1 | Passive | All crafted items by this hero's squad have +5% bonus stat rolls. |
+| **Quality Control** | Lv.30 | Passive | When this hero crafts, Common items are automatically upgraded to Rare. |
+| **Masterwork** | Lv.60 | 10 turns (combat) / 1 per day (production) | In combat: Repair all team gear, heal 20% team HP. In production: Guarantee next craft is Unique or higher. |
 
 ---
 
@@ -992,3 +776,21 @@ Skirmishes are short PVE encounters where heroes escort gathering parties.
 | 10 | Berserker | Assault | Close Combat | STR+STR | Ramping damage, frenzy, lifesteal |
 | 11 | Deadeye | Assault | Marksmanship | DEX+PER | Crit assassin, headshot, one-shot |
 | 12 | Demolisher | Assault | Demolitions | INT+INT | Max AoE, carpet bomb, nuke |
+| 13 | Scavenger | Artisan | Close Combat | STR+LUK | Gathering specialist, lucky finds |
+| 14 | Ranger | Artisan | Marksmanship | DEX+PER | Foraging specialist, wilderness expert |
+| 15 | Prospector | Artisan | Demolitions | INT+STR | Mining specialist, ore extraction |
+| 16 | Artificer | Artisan | Marksmanship | INT+LUK | Production specialist, master crafter |
+
+For combat mechanics, squad building, and PVP, see [Combat](GAME_WIKI_COMBAT.md).
+For equipment and gear, see [Equipment](GAME_WIKI_EQUIPMENT.md).
+For abilities and skills, see [Abilities](GAME_WIKI_ABILITIES.md) and [Skills](GAME_WIKI_SKILLS.md).
+
+---
+
+*Content that was previously in this file has been reorganized:*
+- *Equipment slots & rarity -> [Equipment](GAME_WIKI_EQUIPMENT.md)*
+- *Idle combat zones -> [Combat](GAME_WIKI_COMBAT.md)*
+- *Squad building & PVP -> [Combat](GAME_WIKI_COMBAT.md)*
+- *Combat balance rules -> [Combat](GAME_WIKI_COMBAT.md)*
+- *GVG / Clan Wars -> [Combat](GAME_WIKI_COMBAT.md)*
+- *PVE Dungeons -> [Combat](GAME_WIKI_COMBAT.md)*

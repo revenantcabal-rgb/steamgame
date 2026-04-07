@@ -97,7 +97,7 @@ export const COMBAT_ZONES: Record<string, CombatZone> = {
       { id: 'deadlands_sweep', name: 'Full Sweep', description: 'Clear everything. Boss every 10 kills.', isSweep: true,
         enemy: { id: 'deadlands_mix', name: 'Deadlands Dweller', hp: 190, damage: 40, xpReward: 110, resourceDrops: [{ resourceId: 'iron_ore', chance: 0.2, minQty: 2, maxQty: 4 }, { resourceId: 'raw_stone', chance: 0.2, minQty: 2, maxQty: 4 }] }},
     ],
-    boss: { id: 'raider_warlord', name: 'Raider Warlord', hp: 800, damage: 70, xpReward: 800, resourceDrops: [{ resourceId: 'iron_ore', chance: 1, minQty: 15, maxQty: 30 }, { resourceId: 'copper_ore', chance: 1, minQty: 10, maxQty: 20 }] },
+    boss: { id: 'raider_warlord', name: 'Raider Warlord', hp: 800, damage: 70, xpReward: 800, resourceDrops: [{ resourceId: 'iron_ore', chance: 1, minQty: 15, maxQty: 30 }, { resourceId: 'copper_ore', chance: 1, minQty: 10, maxQty: 20 }, { resourceId: 'icqor_chess_piece', chance: 0.15, minQty: 1, maxQty: 1 }] },
     bossDropPool: ['reinforced_mace', 'assassins_dirk', 'scoped_carbine', 'repeater_crossbow', 'rocket_launcher', 'toxic_gas_canister', 'plated_war_armor', 'shadow_leathers', 'hazmat_suit', 'plated_legguards', 'precision_gauntlets', 'plated_boots', 'bulwark_shield', 'titanium_ring', 'hydraulic_earring', 'fusion_pendant'],
   },
   military: {
@@ -112,7 +112,7 @@ export const COMBAT_ZONES: Record<string, CombatZone> = {
       { id: 'military_sweep', name: 'Full Sweep', description: 'Clear everything. Boss every 10 kills.', isSweep: true,
         enemy: { id: 'military_mix', name: 'Military Hazard', hp: 320, damage: 60, xpReward: 180, resourceDrops: [{ resourceId: 'electronic_components', chance: 0.2, minQty: 2, maxQty: 4 }, { resourceId: 'mechanical_parts', chance: 0.2, minQty: 2, maxQty: 4 }] }},
     ],
-    boss: { id: 'commander_mech', name: 'Commander Mech', hp: 1500, damage: 120, xpReward: 1200, resourceDrops: [{ resourceId: 'electronic_components', chance: 1, minQty: 20, maxQty: 40 }, { resourceId: 'mechanical_parts', chance: 1, minQty: 15, maxQty: 30 }] },
+    boss: { id: 'commander_mech', name: 'Commander Mech', hp: 1500, damage: 120, xpReward: 1200, resourceDrops: [{ resourceId: 'electronic_components', chance: 1, minQty: 20, maxQty: 40 }, { resourceId: 'mechanical_parts', chance: 1, minQty: 15, maxQty: 30 }, { resourceId: 'icqor_chess_piece', chance: 0.30, minQty: 1, maxQty: 2 }] },
     bossDropPool: ['warlords_hammer', 'shadow_fang', 'marksmans_rifle', 'dual_revolvers', 'siege_mortar', 'napalm_launcher', 'fortress_plate', 'nightstalker_suit', 'reactor_vest', 'fortress_legplates', 'deadeye_gloves', 'fortress_boots', 'siege_shield', 'plasma_ring', 'resonance_earring', 'core_pendant'],
   },
   the_core: {
@@ -127,7 +127,7 @@ export const COMBAT_ZONES: Record<string, CombatZone> = {
       { id: 'core_sweep', name: 'Full Sweep', description: 'Clear everything. Boss every 10 kills.', isSweep: true,
         enemy: { id: 'core_mix', name: 'Core Abomination', hp: 600, damage: 125, xpReward: 350, resourceDrops: [{ resourceId: 'copper_ore', chance: 0.2, minQty: 3, maxQty: 6 }, { resourceId: 'electronic_components', chance: 0.2, minQty: 3, maxQty: 6 }] }},
     ],
-    boss: { id: 'the_source', name: 'The Source', hp: 3000, damage: 200, xpReward: 2500, resourceDrops: [{ resourceId: 'electronic_components', chance: 1, minQty: 30, maxQty: 60 }, { resourceId: 'copper_ore', chance: 1, minQty: 25, maxQty: 50 }] },
+    boss: { id: 'the_source', name: 'The Source', hp: 3000, damage: 200, xpReward: 2500, resourceDrops: [{ resourceId: 'electronic_components', chance: 1, minQty: 30, maxQty: 60 }, { resourceId: 'copper_ore', chance: 1, minQty: 25, maxQty: 50 }, { resourceId: 'icqor_chess_piece', chance: 0.50, minQty: 1, maxQty: 3 }] },
     bossDropPool: ['titan_cleaver', 'phantom_blade', 'anti_material_rifle', 'storm_repeater', 'plasma_bombard', 'radiation_emitter', 'siege_bulwark', 'wraith_armor', 'fusion_core_suit', 'titan_legplates', 'assassin_gloves', 'titan_boots', 'dreadnought_shield', 'quantum_ring', 'void_earring', 'stellar_pendant'],
   },
   ground_zero: {
@@ -142,7 +142,7 @@ export const COMBAT_ZONES: Record<string, CombatZone> = {
       { id: 'gz_sweep', name: 'Full Sweep', description: 'Clear everything. Boss every 10 kills.', isSweep: true,
         enemy: { id: 'gz_mix', name: 'Void Entity', hp: 1000, damage: 210, xpReward: 600, resourceDrops: [{ resourceId: 'iron_ore', chance: 0.3, minQty: 5, maxQty: 10 }, { resourceId: 'electronic_components', chance: 0.3, minQty: 5, maxQty: 10 }] }},
     ],
-    boss: { id: 'the_cataclysm', name: 'The Cataclysm', hp: 5000, damage: 300, xpReward: 5000, resourceDrops: [{ resourceId: 'electronic_components', chance: 1, minQty: 50, maxQty: 100 }, { resourceId: 'iron_ore', chance: 1, minQty: 40, maxQty: 80 }] },
+    boss: { id: 'the_cataclysm', name: 'The Cataclysm', hp: 5000, damage: 300, xpReward: 5000, resourceDrops: [{ resourceId: 'electronic_components', chance: 1, minQty: 50, maxQty: 100 }, { resourceId: 'iron_ore', chance: 1, minQty: 40, maxQty: 80 }, { resourceId: 'icqor_chess_piece', chance: 0.80, minQty: 2, maxQty: 5 }] },
     bossDropPool: ['apocalypse_edge', 'railgun', 'orbital_beacon', 'doomsday_maul', 'oblivion_cannon', 'apocalypse_device', 'apocalypse_aegis', 'void_walker_suit', 'singularity_frame', 'eternity_shell', 'doomsday_legplates', 'godhand_gloves', 'godstep_boots', 'world_shield', 'infinity_ring', 'void_earring_t8', 'eternity_amulet'],
   },
 };

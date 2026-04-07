@@ -2,6 +2,7 @@ import { GATHERING_SKILLS, PRODUCTION_SKILLS } from '../../config/skills';
 import { COMBAT_ZONE_LIST } from '../../config/combatZones';
 import { SkillListItem } from '../skills/SkillListItem';
 import { useGameStore } from '../../store/useGameStore';
+import { useStoryStore } from '../../store/useStoryStore';
 import { ProgressBar } from '../common/ProgressBar';
 
 interface SidebarProps {
@@ -11,11 +12,14 @@ interface SidebarProps {
   onSelectCombatZone?: (zoneId: string) => void;
   /** Currently selected combat zone id (for highlighting) */
   activeCombatZoneId?: string | null;
+  /** Callback when story section is clicked */
+  onNavigateToStory?: () => void;
 }
 
-export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId }: SidebarProps) {
+export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId, onNavigateToStory }: SidebarProps) {
   const idle = useGameStore(s => s.idle);
   const activeSkillId = useGameStore(s => s.activeSkillId);
+  const currentObjective = useStoryStore(s => s.getCurrentObjective);
 
   const idleHoursUsed = Math.floor(idle.idleSecondsUsedToday / 3600);
   const idleMinutesUsed = Math.floor((idle.idleSecondsUsedToday % 3600) / 60);
@@ -55,6 +59,9 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId 
         />
       </div>
 
+      {/* Story objective indicator */}
+      <StoryIndicator objective={currentObjective()} onClick={onNavigateToStory} />
+
       {/* Skill + Zone Lists */}
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         <SkillSection title="Gathering" skills={GATHERING_SKILLS} onSelectSkill={onSelectSkill} />
@@ -84,6 +91,78 @@ function SkillSection({ title, skills, onSelectSkill }: { title: string; skills:
         ))}
       </div>
     </div>
+  );
+}
+
+function StoryIndicator({
+  objective,
+  onClick,
+}: {
+  objective: ReturnType<ReturnType<typeof useStoryStore.getState>['getCurrentObjective']>;
+  onClick?: () => void;
+}) {
+  if (!objective) {
+    return (
+      <button
+        onClick={onClick}
+        className="w-full p-3 text-left cursor-pointer"
+        style={{
+          borderBottom: '1px solid var(--color-border)',
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderBottomWidth: '1px',
+          borderBottomStyle: 'solid',
+          borderBottomColor: 'var(--color-border)',
+        }}
+      >
+        <div className="text-xs uppercase font-bold tracking-wider mb-1" style={{ color: 'var(--color-accent)' }}>
+          Story
+        </div>
+        <div className="text-xs" style={{ color: 'var(--color-success)' }}>
+          All chapters complete!
+        </div>
+      </button>
+    );
+  }
+
+  const progress = Math.min(objective.progress, objective.part.objective.count);
+  const pct = Math.floor((progress / objective.part.objective.count) * 100);
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full p-3 text-left cursor-pointer"
+      style={{
+        borderBottom: '1px solid var(--color-border)',
+        backgroundColor: 'transparent',
+        border: 'none',
+        borderBottomWidth: '1px',
+        borderBottomStyle: 'solid',
+        borderBottomColor: 'var(--color-border)',
+      }}
+    >
+      <div className="text-xs uppercase font-bold tracking-wider mb-1" style={{ color: 'var(--color-accent)' }}>
+        Story {objective.chapter.number}
+      </div>
+      <div className="text-xs font-bold mb-0.5" style={{ color: 'var(--color-text-primary)' }}>
+        {objective.part.title}
+      </div>
+      <div className="text-[10px] mb-1" style={{ color: 'var(--color-text-muted)' }}>
+        {objective.part.objective.description}
+      </div>
+      <div
+        className="w-full rounded-full overflow-hidden"
+        style={{ backgroundColor: 'var(--color-bg-primary)', height: '4px' }}
+      >
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: 'var(--color-accent)' }}
+        />
+      </div>
+      <div className="text-[10px] mt-0.5 text-right" style={{ color: 'var(--color-text-muted)' }}>
+        {progress}/{objective.part.objective.count}
+      </div>
+    </button>
   );
 }
 

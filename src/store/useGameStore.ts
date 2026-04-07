@@ -7,6 +7,8 @@ import { GEAR_TEMPLATES } from '../config/gear';
 import { levelFromXp } from '../types/skills';
 import type { IdleState, OfflineResult } from '../engine/IdleEngine';
 import { useEquipmentStore } from './useEquipmentStore';
+import { useAchievementStore } from './useAchievementStore';
+import { useStoryStore } from './useStoryStore';
 
 export interface GameLog {
   id: number;
@@ -206,8 +208,6 @@ export const useGameStore = create<GameState>((set, get) => ({
           get().addLog(`Not enough materials for ${activity.name}. Gathering more...`, 'error');
           set({
             actionProgress: 0, // Reset, don't freeze at max
-            activeSkillId: null,
-            activeSubActivityId: null,
             idle: { ...newIdle, lastActiveTime: now, idleSecondsUsedToday: newIdle.idleSecondsUsedToday + 1 },
             totalPlayTime: state.totalPlayTime + 1,
           });
@@ -275,6 +275,9 @@ export const useGameStore = create<GameState>((set, get) => ({
               `Crafted [${rarityLabel}] ${facetPrefix}${template?.name || activity.gearTemplateId}!`,
               gear.rarity === 'plague' || gear.rarity === 'unique' ? 'levelup' : 'drop',
             );
+
+            // Story: gear craft
+            useStoryStore.getState().checkObjective('craft', activity.gearTemplateId, 1);
           }
 
           // Give XP but no resource drops for gear
@@ -290,6 +293,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
           if (leveledUp) {
             get().addLog(`LEVEL UP! ${skillDef.name} is now level ${newLevel}!`, 'levelup');
+            useAchievementStore.getState().setMaxStat('maxSkillLevel', newLevel);
+            // Story: skill level up (production)
+            useStoryStore.getState().checkObjective('reach_skill_level', state.activeSkillId!, newLevel);
           }
 
           set({
@@ -322,8 +328,20 @@ export const useGameStore = create<GameState>((set, get) => ({
         const inputStr = activity.resourceInputs.map(i => `${i.quantity}x ${i.resourceId.replace(/_/g, ' ')}`).join(', ');
         get().addLog(`+${xpGained} XP | Crafted: ${dropStr} (used: ${inputStr})`, 'drop');
 
+        // Story: craft consumable/tool
+        for (const drop of activity.resourceDrops) {
+          useStoryStore.getState().checkObjective('craft', drop.resourceId, 1);
+          // If this is a cooking skill, also fire 'cook'
+          if (skillDef.id === 'cooking') {
+            useStoryStore.getState().checkObjective('cook', drop.resourceId, 1);
+          }
+        }
+
         if (leveledUp) {
           get().addLog(`LEVEL UP! ${skillDef.name} is now level ${newLevel}!`, 'levelup');
+          useAchievementStore.getState().setMaxStat('maxSkillLevel', newLevel);
+          // Story: skill level up (production)
+          useStoryStore.getState().checkObjective('reach_skill_level', state.activeSkillId!, newLevel);
         }
 
         set({
@@ -361,12 +379,20 @@ export const useGameStore = create<GameState>((set, get) => ({
             .map(d => `${d.quantity}x ${d.resourceId.replace(/_/g, ' ')}`)
             .join(', ');
           get().addLog(`+${result.xpGained} XP | Found: ${dropStr}`, 'drop');
+
+          // Story: resource gather
+          for (const drop of result.resourcesGained) {
+            useStoryStore.getState().checkObjective('gather', drop.resourceId, drop.quantity);
+          }
         } else {
           get().addLog(`+${result.xpGained} XP`, 'drop');
         }
 
         if (result.leveledUp) {
           get().addLog(`LEVEL UP! ${skillDef.name} is now level ${result.newLevel}!`, 'levelup');
+          useAchievementStore.getState().setMaxStat('maxSkillLevel', result.newLevel);
+          // Story: skill level up (gathering)
+          useStoryStore.getState().checkObjective('reach_skill_level', state.activeSkillId, result.newLevel);
         }
 
         // Check gathering goal completion
@@ -390,7 +416,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           actionProgress: 0,
           idle: { ...newIdle, lastActiveTime: now, idleSecondsUsedToday: newIdle.idleSecondsUsedToday + 1 },
           totalPlayTime: state.totalPlayTime + 1,
-          ...(goalMet ? { activeSkillId: null, activeSubActivityId: null, gatheringGoal: { type: 'none' as const } } : {}),
+          ...(goalMet ? { gatheringGoal: { type: 'none' as const } } : {}),
         });
       }
     } else {

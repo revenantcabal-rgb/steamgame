@@ -3,6 +3,7 @@ import { GEAR_TEMPLATE_LIST, GEAR_TEMPLATES, EQUIPMENT_SETS } from '../../config
 import { RESOURCES } from '../../config/resources';
 import { RARITY_COLORS } from '../../types/equipment';
 import type { GearTemplate } from '../../types/equipment';
+import { ItemIcon } from '../../utils/itemIcons';
 
 type FilterSlot = 'all' | 'weapon' | 'armor' | 'legs' | 'gloves' | 'boots' | 'shield' | 'ring' | 'earring' | 'necklace';
 type FilterTier = 'all' | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
@@ -93,7 +94,8 @@ export function EquipmentBrowser() {
                       borderLeftColor: isSet ? SET_COLOR : isSelected ? 'var(--color-accent)' : 'transparent',
                     }}>
                     <div className="flex justify-between items-center">
-                      <span className="text-xs font-bold" style={{ color: isSet ? SET_COLOR : 'var(--color-text-primary)' }}>
+                      <span className="text-xs font-bold flex items-center gap-1" style={{ color: isSet ? SET_COLOR : 'var(--color-text-primary)' }}>
+                        <ItemIcon itemId={t.id} itemType="equipment" gearSlot={t.slot} size={24} fallbackLabel={t.name.charAt(0)} />
                         {t.name}
                       </span>
                       <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>

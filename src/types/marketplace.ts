@@ -1,13 +1,13 @@
 /**
- * Marketplace System - BDO-inspired with min/max price bidding
+ * Marketplace System - BDO-inspired Central Market
  *
- * Adapted from Black Desert Online's Central Market:
- * - Each item type has a Base Price determined by tier/rarity
- * - Tradable range: Base Price ±10%
- * - Prices shift with supply/demand (buy at max = base rises, sell at min = base drops)
- * - Pre-orders: place buy orders for items not yet listed
- * - 5% tax on all sales (seller receives 95%)
- * - Developer price caps prevent extreme inflation/deflation
+ * Anti-ghost-trading design from Black Desert Online:
+ * - Sellers list at a set price within ±15% band (rarity-adjusted for gear)
+ * - Purchase Orders (POs) compete; highest bid group wins via random lottery
+ * - Bot/NPC POs at base price ensure every item has a floor buyer
+ * - No direct trade — random selection prevents ghost trading
+ * - Price band shifts with supply/demand (±15%, hard floor 50% / ceiling 300% of initial base)
+ * - 5% tax on all sales
  */
 
 export type MarketCategory = 'resources' | 'consumables' | 'abilities' | 'expedition_passes' | 'equipment' | 'accessories' | 'tools';
@@ -16,7 +16,7 @@ export const MARKET_CATEGORY_LABELS: Record<MarketCategory, string> = {
   resources: 'Resources',
   consumables: 'Consumables',
   abilities: 'Ability Tomes',
-  expedition_passes: 'Expedition Passes', // Post-apocalyptic rename of "Dungeon Keys"
+  expedition_passes: 'Expedition Passes',
   equipment: 'Equipment',
   accessories: 'Accessories',
   tools: 'Wasteland Tools',
@@ -56,8 +56,8 @@ export interface MarketListing {
   gearData?: any;
 }
 
-/** A pre-order (buy order) placed by a player */
-export interface MarketPreOrder {
+/** A purchase order (buy order) placed by a player or bot */
+export interface MarketPurchaseOrder {
   id: string;
   buyerId: string;
   buyerName: string;
@@ -65,11 +65,31 @@ export interface MarketPreOrder {
   itemId: string;
   itemName: string;
   category: MarketCategory;
-  /** Max price they're willing to pay per unit */
+  /** Bid price per unit */
   bidPrice: number;
   /** Quantity wanted */
   quantity: number;
+  /** Quantity already filled */
+  quantityFilled: number;
   /** WC locked in escrow */
+  escrowAmount: number;
+  createdAt: number;
+  /** When this PO expires (7 days after creation) */
+  expiresAt: number;
+  /** Whether this is a bot/NPC purchase order */
+  isBot: boolean;
+}
+
+/** @deprecated Use MarketPurchaseOrder instead */
+export interface MarketPreOrder {
+  id: string;
+  buyerId: string;
+  buyerName: string;
+  itemId: string;
+  itemName: string;
+  category: MarketCategory;
+  bidPrice: number;
+  quantity: number;
   escrowAmount: number;
   createdAt: number;
 }
@@ -93,9 +113,9 @@ export interface MarketTransaction {
 export interface MarketPriceInfo {
   itemId: string;
   basePrice: number;
-  /** Current min price (base - 10%, floored by dev cap) */
+  /** Current min price (base - 15%, floored by dev cap) */
   minPrice: number;
-  /** Current max price (base + 10%, capped by dev cap) */
+  /** Current max price (base + 15%, capped by dev cap) */
   maxPrice: number;
   /** Developer-set absolute floor */
   devFloor: number;
@@ -105,13 +125,46 @@ export interface MarketPriceInfo {
   trend: 'rising' | 'falling' | 'stable';
   /** How many listed currently */
   supply: number;
-  /** How many pre-orders exist */
+  /** How many purchase orders exist */
   demand: number;
+}
+
+/** A single point in the price history chart */
+export interface PriceHistoryPoint {
+  timestamp: number;
+  price: number;
+  volume: number;
+}
+
+/** Snapshot of an item's pricing state for charts and display */
+export interface ItemPriceSnapshot {
+  itemId: string;
+  basePrice: number;
+  minPrice: number;
+  maxPrice: number;
+  priceHistory: PriceHistoryPoint[];
+  lastSalePrice: number;
+  lastSaleAt: number;
+}
+
+/** An item waiting to be collected from the market warehouse */
+export interface MarketCollectable {
+  id: string;
+  itemId: string;
+  itemName: string;
+  category: MarketCategory;
+  quantity: number;
+  /** For gear purchases, contains the gear instance data */
+  gearData?: any;
+  /** When this transaction completed */
+  completedAt: number;
 }
 
 /** Market tax rate */
 export const MARKET_TAX_RATE = 0.05; // 5%
 /** Listing duration in ms (48 hours) */
 export const LISTING_DURATION_MS = 48 * 60 * 60 * 1000;
-/** Price range percentage above/below base */
-export const PRICE_RANGE_PERCENT = 0.10; // ±10%
+/** Price range percentage above/below base (±15%) */
+export const PRICE_RANGE_PERCENT = 0.15;
+/** Purchase order duration in ms (7 days) */
+export const PO_DURATION_MS = 7 * 24 * 60 * 60 * 1000;

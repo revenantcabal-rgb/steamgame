@@ -5,6 +5,9 @@ import { GEAR_TEMPLATE_LIST, GEAR_TEMPLATES } from '../../config/gear';
 import { RESOURCES } from '../../config/resources';
 import { RARITY_COLORS, RARITY_LABELS } from '../../types/equipment';
 import type { GearInstance } from '../../types/equipment';
+import { ItemIcon } from '../../utils/itemIcons';
+import { getResourceSources } from '../../utils/resourceSources';
+import { useNavigation } from '../../utils/NavigationContext';
 
 export function CraftingPanel() {
   const skills = useGameStore(s => s.skills);
@@ -13,6 +16,7 @@ export function CraftingPanel() {
   const craftItem = useEquipmentStore(s => s.craftItem);
   const discardItem = useEquipmentStore(s => s.discardItem);
   const [filterSlot, setFilterSlot] = useState<string>('all');
+  const navigation = useNavigation();
 
   // Get craftable items based on player's production skill levels
   const craftable = GEAR_TEMPLATE_LIST.filter(t => {
@@ -75,7 +79,8 @@ export function CraftingPanel() {
               return (
                 <div key={t.id} className="p-3 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
                   <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold text-xs" style={{ color: 'var(--color-text-primary)' }}>
+                    <span className="font-bold text-xs flex items-center gap-1" style={{ color: 'var(--color-text-primary)' }}>
+                      <ItemIcon itemId={t.id} itemType="equipment" gearSlot={t.slot} size={20} fallbackLabel={t.name.charAt(0)} />
                       {t.name} <span style={{ color: 'var(--color-text-muted)' }}>(T{t.tier} {t.slot})</span>
                     </span>
                     <button onClick={() => handleCraft(t.id)} disabled={!affordable}
@@ -88,9 +93,25 @@ export function CraftingPanel() {
                     {t.craftingInputs.map(i => {
                       const have = resources[i.resourceId] || 0;
                       const enough = have >= i.quantity;
+                      const resName = RESOURCES[i.resourceId]?.name || i.resourceId;
+                      const sources = !enough ? getResourceSources(i.resourceId) : null;
+                      const combatTip = sources?.combatZones.length
+                        ? `Drops from: ${sources.combatZones.map(z => `${z.enemyName} (${z.zoneName})`).join(', ')}`
+                        : '';
                       return (
-                        <span key={i.resourceId} style={{ color: enough ? 'var(--color-success)' : 'var(--color-danger)' }}>
-                          {RESOURCES[i.resourceId]?.name || i.resourceId}: {have}/{i.quantity}
+                        <span key={i.resourceId} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', color: enough ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                          <ItemIcon itemId={i.resourceId} itemType="resource" size={14} fallbackLabel={resName.charAt(0)} />
+                          {!enough && sources?.skill ? (
+                            <span
+                              title={combatTip || `Gather via ${sources.skill.name}`}
+                              style={{ textDecoration: 'underline', cursor: 'pointer' }}
+                              onClick={(e) => { e.stopPropagation(); navigation.navigateToSkill(sources.skill!.id); }}
+                            >
+                              {resName}: {have}/{i.quantity}
+                            </span>
+                          ) : (
+                            <span>{resName}: {have}/{i.quantity}</span>
+                          )}
                         </span>
                       );
                     })}
@@ -146,7 +167,8 @@ export function GearCard({ gear, onDiscard, compact }: { gear: GearInstance; onD
       <div className="flex justify-between items-start">
         <div>
           <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{sourceLabel}</div>
-          <div className="font-bold text-xs" style={{ color: rarityColor }}>
+          <div className="font-bold text-xs flex items-center gap-1" style={{ color: rarityColor }}>
+            <ItemIcon itemId={template.id} itemType="equipment" gearSlot={template.slot} size={20} fallbackLabel={template.name.charAt(0)} />
             {facetPrefix}{template.name} [{RARITY_LABELS[gear.rarity]}]
           </div>
           <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
