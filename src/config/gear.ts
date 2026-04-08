@@ -44,9 +44,27 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   worn_gloves: a('worn_gloves','Worn Gloves',1,1,'gloves',[],[['accuracy',2,true],['defense',2,false]],null,[[MR,3],[SM,2]],AC,1,18,undefined,undefined,'Thick leather gloves, worn but functional.'),
   wasteland_boots: a('wasteland_boots','Wasteland Boots',1,1,'boots',[],[['turnSpeed',3,false],['defense',2,false]],null,[[MR,3],[IO,2]],AC,1,18,undefined,undefined,'Heavy boots for rough terrain.'),
   scrap_buckler: a('scrap_buckler','Scrap Buckler',1,1,'shield',[],[['defense',4,false],['blockChance',5,true]],null,[[SM,5],[SW,3]],AC,1,22,undefined,undefined,'A small shield hammered from scrap metal.'),
-  rusty_ring: a('rusty_ring','Rusty Ring',1,1,'ring',[],[['maxHp',5,false]],null,[[IO,3],[CO,2]],TK,1,15),
-  bone_earring: a('bone_earring','Bone Earring',1,1,'earring',[],[['statusResist',2,true]],null,[[MR,3],[CO,1]],TK,1,12),
-  scrap_pendant: a('scrap_pendant','Scrap Pendant',1,1,'necklace',[],[['maxHp',8,false],['hpRegen',0.5,false]],null,[[CO,3],[IO,2]],TK,1,18),
+  // ── BASIC RINGS (Tier 1, Lv.0) ──
+  brawlers_band: a('brawlers_band',"Brawler's Band",1,0,'ring',[],[['meleeAttack',5,false],['defense',3,false],['maxHp',8,false]],null,[[IO,2],[SM,2],[CO,1]],TK,1,20),
+  marksmans_loop: a('marksmans_loop',"Marksman's Loop",1,0,'ring',[],[['rangedAttack',5,false],['accuracy',2,true],['critChance',2,true]],null,[[CO,2],[SM,2],[IO,1]],TK,1,20),
+  chemists_signet: a('chemists_signet',"Chemist's Signet",1,0,'ring',[],[['blastAttack',5,false],['poisonDot',2,false],['critDamage',1,true]],null,[[EC,2],[CF,2],[CO,1]],TK,1,20),
+  healers_circle: a('healers_circle',"Healer's Circle",1,0,'ring',[],[['maxHp',8,false],['hpRegen',1,false],['statusResist',3,true],['maxSp',5,false]],null,[[MR,2],[CF,2],[CO,1]],TK,1,20),
+  wanderers_ring: a('wanderers_ring',"Wanderer's Ring",1,0,'ring',[],[['meleeAttack',3,false],['rangedAttack',3,false],['maxHp',5,false]],null,[[IO,2],[CO,2],[SM,1]],TK,1,20),
+  swiftblade_band: a('swiftblade_band','Swiftblade Band',1,0,'ring',[],[['turnSpeed',4,false],['evasion',3,true],['maxHp',3,false]],null,[[CO,2],[SM,2],[MR,1]],TK,1,20),
+  // ── BASIC EARRINGS (Tier 1, Lv.0) ──
+  warriors_stud: a('warriors_stud',"Warrior's Stud",1,0,'earring',[],[['defense',3,false],['maxHp',5,false],['blockChance',1,true]],null,[[IO,2],[SM,2],[CO,1]],TK,1,20),
+  scouts_hoop: a('scouts_hoop',"Scout's Hoop",1,0,'earring',[],[['accuracy',2,true],['critChance',2,true],['turnSpeed',2,false]],null,[[CO,2],[SM,2],[IO,1]],TK,1,20),
+  blasters_clip: a('blasters_clip',"Blaster's Clip",1,0,'earring',[],[['blastAttack',3,false],['critDamage',1,true],['burnDot',2,false]],null,[[EC,2],[CF,2],[CO,1]],TK,1,20),
+  medics_stud: a('medics_stud',"Medic's Stud",1,0,'earring',[],[['statusResist',3,true],['hpRegen',0.5,false],['maxHp',4,false]],null,[[MR,2],[CF,2],[CO,1]],TK,1,20),
+  survivors_stud: a('survivors_stud',"Survivor's Stud",1,0,'earring',[],[['statusResist',2,true],['maxHp',3,false],['defense',1,false]],null,[[SM,2],[IO,2],[MR,1]],TK,1,20),
+  venoms_drop: a('venoms_drop',"Venom's Drop",1,0,'earring',[],[['poisonDot',2,false],['bleedDot',1,false],['maxHp',2,false]],null,[[CF,2],[MR,2],[CO,1]],TK,1,20),
+  // ── BASIC NECKLACES (Tier 1, Lv.0) ──
+  ironheart_chain: a('ironheart_chain','Ironheart Chain',1,0,'necklace',[],[['maxHp',8,false],['defense',4,false],['hpRegen',0.5,false]],null,[[IO,2],[SM,2],[RS,1]],TK,1,20),
+  eagles_pendant: a('eagles_pendant',"Eagle's Pendant",1,0,'necklace',[],[['rangedAttack',4,false],['accuracy',3,true],['maxHp',4,false]],null,[[CO,2],[SM,2],[IO,1]],TK,1,20),
+  volatile_charm: a('volatile_charm','Volatile Charm',1,0,'necklace',[],[['blastAttack',4,false],['critDamage',3,true],['maxHp',4,false]],null,[[EC,2],[CF,2],[CO,1]],TK,1,20),
+  lifebinder_amulet: a('lifebinder_amulet','Lifebinder Amulet',1,0,'necklace',[],[['maxHp',10,false],['hpRegen',1,false],['statusResist',4,true],['maxSp',5,false]],null,[[MR,2],[CF,2],[RS,1]],TK,1,20),
+  travelers_locket: a('travelers_locket',"Traveler's Locket",1,0,'necklace',[],[['maxHp',6,false],['defense',2,false],['hpRegen',0.5,false],['turnSpeed',2,false]],null,[[SM,2],[CO,2],[IO,1]],TK,1,20),
+  thorned_pendant: a('thorned_pendant','Thorned Pendant',1,0,'necklace',[],[['thornsDamage',3,true],['maxHp',5,false],['defense',2,false]],null,[[IO,2],[SM,2],[MR,1]],TK,1,20),
 
   // =====================================================================
   // T2 WEAPONS (Level 15)
@@ -68,9 +86,27 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   iron_boots: a('iron_boots','Iron Boots',2,15,'boots',[['str',8]],[['defense',5,false],['maxHp',12,false]],['turnSpeed',-5,false],[[IO,5],[SM,3]],AC,15,38,'wasteland_boots'),
   scout_boots: a('scout_boots','Scout Boots',2,15,'boots',[['dex',8]],[['turnSpeed',8,false],['evasion',3,true]],['defense',-3,false],[[MR,4],[CF,3]],AC,15,38,'wasteland_boots'),
   iron_shield: a('iron_shield','Iron Shield',2,15,'shield',[['str',10]],[['defense',10,false],['blockChance',8,true],['maxHp',15,false]],['turnSpeed',-8,false],[[IO,8],[SM,5],[RS,3]],AC,15,50,'scrap_buckler'),
-  copper_band: a('copper_band','Copper Band',2,15,'ring',[],[['maxHp',12,false],['critChance',1,true]],null,[[CO,5],[IO,3]],TK,15,30,'rusty_ring'),
-  wire_earring: a('wire_earring','Wire Earring',2,15,'earring',[],[['statusResist',4,true],['hpRegen',0.5,false]],null,[[EC,3],[CO,2]],TK,15,25,'bone_earring'),
-  gear_pendant: a('gear_pendant','Gear Pendant',2,15,'necklace',[],[['maxHp',15,false],['critDamage',3,true],['hpRegen',1,false]],null,[[MP,4],[CO,3],[IO,2]],TK,15,35,'scrap_pendant'),
+  // ── T1 RINGS (Tier 2, Lv.15) ──
+  crushers_seal: a('crushers_seal',"Crusher's Seal",2,15,'ring',[],[['meleeAttack',12,false],['defense',6,false],['maxHp',15,false]],null,[[IO,4],[SM,3],[CO,2],[RS,2]],TK,15,35,'brawlers_band'),
+  sharpshooters_ring: a('sharpshooters_ring',"Sharpshooter's Ring",2,15,'ring',[],[['rangedAttack',12,false],['accuracy',4,true],['critChance',3,true]],null,[[CO,4],[SM,3],[IO,2],[EC,2]],TK,15,35,'marksmans_loop'),
+  detonators_band: a('detonators_band',"Detonator's Band",2,15,'ring',[],[['blastAttack',12,false],['critDamage',4,true],['poisonDot',3,false]],null,[[EC,4],[CF,3],[CO,2],[SM,2]],TK,15,35,'chemists_signet'),
+  wardens_signet: a('wardens_signet',"Warden's Signet",2,15,'ring',[],[['maxHp',18,false],['hpRegen',2,false],['statusResist',5,true],['maxSp',10,false]],null,[[MR,4],[CF,3],[CO,2],[RS,2]],TK,15,35,'healers_circle'),
+  vanguards_ring: a('vanguards_ring',"Vanguard's Ring",2,15,'ring',[],[['meleeAttack',7,false],['rangedAttack',7,false],['maxHp',10,false]],null,[[IO,3],[CO,3],[SM,3],[MP,2]],TK,15,35,'wanderers_ring'),
+  phantoms_loop: a('phantoms_loop',"Phantom's Loop",2,15,'ring',[],[['turnSpeed',8,false],['evasion',5,true],['maxHp',8,false]],null,[[CO,4],[SM,3],[MR,2],[CF,2]],TK,15,35,'swiftblade_band'),
+  // ── T1 EARRINGS (Tier 2, Lv.15) ──
+  berserkers_stud: a('berserkers_stud',"Berserker's Stud",2,15,'earring',[],[['defense',6,false],['maxHp',12,false],['blockChance',3,true]],null,[[IO,4],[SM,3],[CO,2],[RS,2]],TK,15,35,'warriors_stud'),
+  trackers_hoop: a('trackers_hoop',"Tracker's Hoop",2,15,'earring',[],[['accuracy',4,true],['critChance',3,true],['turnSpeed',4,false]],null,[[CO,4],[SM,3],[IO,2],[EC,2]],TK,15,35,'scouts_hoop'),
+  pyros_clip: a('pyros_clip',"Pyro's Clip",2,15,'earring',[],[['blastAttack',7,false],['critDamage',3,true],['burnDot',3,false]],null,[[EC,4],[CF,3],[CO,2],[SM,2]],TK,15,35,'blasters_clip'),
+  chaplains_earring: a('chaplains_earring',"Chaplain's Earring",2,15,'earring',[],[['statusResist',6,true],['hpRegen',1,false],['maxHp',10,false]],null,[[MR,4],[CF,3],[CO,2],[RS,2]],TK,15,35,'medics_stud'),
+  veterans_stud: a('veterans_stud',"Veteran's Stud",2,15,'earring',[],[['statusResist',4,true],['maxHp',8,false],['defense',3,false]],null,[[SM,4],[IO,3],[MR,2],[CO,2]],TK,15,35,'survivors_stud'),
+  parasites_drop: a('parasites_drop',"Parasite's Drop",2,15,'earring',[],[['lifesteal',3,true],['bleedDot',2,false],['maxHp',5,false]],null,[[CF,4],[MR,3],[CO,2],[SM,2]],TK,15,35,'venoms_drop'),
+  // ── T1 NECKLACES (Tier 2, Lv.15) ──
+  warhorns_chain: a('warhorns_chain',"Warhorn's Chain",2,15,'necklace',[],[['maxHp',18,false],['defense',8,false],['hpRegen',1,false]],null,[[IO,4],[SM,3],[RS,3],[CO,2]],TK,15,35,'ironheart_chain'),
+  falcons_pendant: a('falcons_pendant',"Falcon's Pendant",2,15,'necklace',[],[['rangedAttack',10,false],['accuracy',5,true],['maxHp',10,false]],null,[[CO,4],[SM,3],[IO,2],[EC,2]],TK,15,35,'eagles_pendant'),
+  ignition_charm: a('ignition_charm','Ignition Charm',2,15,'necklace',[],[['blastAttack',10,false],['critDamage',6,true],['maxHp',10,false]],null,[[EC,4],[CF,3],[CO,2],[SM,2]],TK,15,35,'volatile_charm'),
+  sanctum_amulet: a('sanctum_amulet','Sanctum Amulet',2,15,'necklace',[],[['maxHp',22,false],['hpRegen',2,false],['statusResist',6,true],['maxSp',10,false]],null,[[MR,4],[CF,3],[RS,2],[CO,2]],TK,15,35,'lifebinder_amulet'),
+  nomads_locket: a('nomads_locket',"Nomad's Locket",2,15,'necklace',[],[['maxHp',14,false],['defense',4,false],['hpRegen',1,false],['turnSpeed',4,false]],null,[[SM,4],[CO,3],[IO,2],[MR,2]],TK,15,35,'travelers_locket'),
+  bloodthorn_pendant: a('bloodthorn_pendant','Bloodthorn Pendant',2,15,'necklace',[],[['thornsDamage',5,true],['maxHp',12,false],['defense',4,false]],null,[[IO,4],[SM,3],[MR,2],[RS,2]],TK,15,35,'thorned_pendant'),
 
   // =====================================================================
   // T3 WEAPONS (Level 30)
@@ -89,9 +125,27 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   combat_gauntlets: a('combat_gauntlets','Combat Gauntlets',3,30,'gloves',[['str',15]],[['defense',8,false],['accuracy',5,true],['critChance',3,true]],['turnSpeed',-4,false],[[IO,8],[SM,5],[MP,3]],AC,30,80,'iron_gauntlets'),
   strider_boots: a('strider_boots','Strider Boots',3,30,'boots',[['dex',15]],[['turnSpeed',10,false],['evasion',4,true],['defense',5,false]],['maxHp',-4,true],[[MR,6],[CF,4],[IO,3]],AC,30,80,'scout_boots'),
   tower_shield: a('tower_shield','Tower Shield',3,30,'shield',[['str',18]],[['defense',18,false],['blockChance',12,true],['maxHp',25,false]],['turnSpeed',-12,false],[[IO,12],[RS,8],[SM,5]],AC,30,100,'iron_shield'),
-  alloy_ring: a('alloy_ring','Alloy Ring',3,30,'ring',[],[['maxHp',18,false],['critChance',2,true],['defense',3,false]],null,[[CO,6],[IO,4],[MP,2]],TK,30,45,'copper_band'),
-  circuit_earring: a('circuit_earring','Circuit Earring',3,30,'earring',[],[['statusResist',6,true],['hpRegen',1,false],['maxHp',10,false]],null,[[EC,5],[CO,3]],TK,30,40,'wire_earring'),
-  motor_pendant: a('motor_pendant','Motor Pendant',3,30,'necklace',[],[['maxHp',25,false],['critDamage',6,true],['hpRegen',1.5,false]],null,[[MP,6],[CO,4],[EC,3]],TK,30,55,'gear_pendant'),
+  // ── T2 RINGS (Tier 3, Lv.30) ──
+  juggernauts_seal: a('juggernauts_seal',"Juggernaut's Seal",3,30,'ring',[],[['meleeAttack',22,false],['defense',10,false],['maxHp',25,false]],null,[[IO,6],[SM,4],[RS,3],[CO,2],[MP,2]],TK,30,50,'crushers_seal'),
+  deadeyes_ring: a('deadeyes_ring',"Deadeye's Ring",3,30,'ring',[],[['rangedAttack',22,false],['accuracy',6,true],['critChance',5,true]],null,[[CO,6],[IO,4],[EC,3],[SM,2],[MP,2]],TK,30,50,'sharpshooters_ring'),
+  demolishers_band: a('demolishers_band',"Demolisher's Band",3,30,'ring',[],[['blastAttack',22,false],['critDamage',7,true],['poisonDot',4,false]],null,[[EC,6],[CF,4],[CO,3],[SM,2],[MP,2]],TK,30,50,'detonators_band'),
+  restorers_signet: a('restorers_signet',"Restorer's Signet",3,30,'ring',[],[['maxHp',30,false],['hpRegen',3,false],['statusResist',8,true],['maxSp',15,false]],null,[[MR,6],[CF,4],[RS,3],[CO,2],[SM,2]],TK,30,50,'wardens_signet'),
+  champions_ring: a('champions_ring',"Champion's Ring",3,30,'ring',[],[['meleeAttack',12,false],['rangedAttack',12,false],['maxHp',18,false]],null,[[IO,5],[CO,5],[SM,3],[MP,2],[RS,2]],TK,30,50,'vanguards_ring'),
+  wraiths_loop: a('wraiths_loop',"Wraith's Loop",3,30,'ring',[],[['turnSpeed',12,false],['evasion',7,true],['maxHp',15,false]],null,[[CO,6],[SM,4],[MR,3],[CF,2],[MP,2]],TK,30,50,'phantoms_loop'),
+  // ── T2 EARRINGS (Tier 3, Lv.30) ──
+  warlords_stud: a('warlords_stud',"Warlord's Stud",3,30,'earring',[],[['defense',10,false],['maxHp',20,false],['blockChance',5,true]],null,[[IO,6],[SM,4],[RS,3],[CO,2],[MP,2]],TK,30,50,'berserkers_stud'),
+  snipers_hoop: a('snipers_hoop',"Sniper's Hoop",3,30,'earring',[],[['accuracy',6,true],['critChance',5,true],['turnSpeed',6,false]],null,[[CO,6],[IO,4],[EC,3],[SM,2],[MP,2]],TK,30,50,'trackers_hoop'),
+  incinerators_clip: a('incinerators_clip',"Incinerator's Clip",3,30,'earring',[],[['blastAttack',12,false],['critDamage',5,true],['burnDot',4,false]],null,[[EC,6],[CF,4],[CO,3],[SM,2],[MP,2]],TK,30,50,'pyros_clip'),
+  priests_earring: a('priests_earring',"Priest's Earring",3,30,'earring',[],[['statusResist',8,true],['hpRegen',2,false],['maxHp',18,false]],null,[[MR,6],[CF,4],[RS,3],[CO,2],[SM,2]],TK,30,50,'chaplains_earring'),
+  elders_stud: a('elders_stud',"Elder's Stud",3,30,'earring',[],[['statusResist',6,true],['maxHp',14,false],['defense',5,false]],null,[[SM,6],[IO,4],[MR,3],[CO,2],[RS,2]],TK,30,50,'veterans_stud'),
+  leeches_drop: a('leeches_drop',"Leech's Drop",3,30,'earring',[],[['lifesteal',5,true],['bleedDot',3,false],['maxHp',10,false]],null,[[CF,6],[MR,4],[CO,3],[SM,2],[EC,2]],TK,30,50,'parasites_drop'),
+  // ── T2 NECKLACES (Tier 3, Lv.30) ──
+  titans_chain: a('titans_chain',"Titan's Chain",3,30,'necklace',[],[['maxHp',30,false],['defense',14,false],['hpRegen',2,false]],null,[[IO,6],[SM,4],[RS,3],[CO,2],[MP,2]],TK,30,50,'warhorns_chain'),
+  hawkeyes_pendant: a('hawkeyes_pendant',"Hawkeye's Pendant",3,30,'necklace',[],[['rangedAttack',18,false],['accuracy',7,true],['maxHp',18,false]],null,[[CO,6],[IO,4],[EC,3],[SM,2],[MP,2]],TK,30,50,'falcons_pendant'),
+  meltdown_charm: a('meltdown_charm','Meltdown Charm',3,30,'necklace',[],[['blastAttack',18,false],['critDamage',10,true],['maxHp',18,false]],null,[[EC,6],[CF,4],[CO,3],[SM,2],[MP,2]],TK,30,50,'ignition_charm'),
+  guardians_amulet: a('guardians_amulet',"Guardian's Amulet",3,30,'necklace',[],[['maxHp',35,false],['hpRegen',3,false],['statusResist',10,true],['maxSp',15,false]],null,[[MR,6],[CF,4],[RS,3],[CO,2],[SM,2]],TK,30,50,'sanctum_amulet'),
+  pathfinders_locket: a('pathfinders_locket',"Pathfinder's Locket",3,30,'necklace',[],[['maxHp',22,false],['defense',7,false],['hpRegen',1.5,false],['turnSpeed',6,false]],null,[[SM,6],[CO,4],[IO,3],[MR,2],[MP,2]],TK,30,50,'nomads_locket'),
+  briarwall_pendant: a('briarwall_pendant','Briarwall Pendant',3,30,'necklace',[],[['thornsDamage',8,true],['maxHp',20,false],['defense',6,false]],null,[[IO,6],[SM,4],[MR,3],[RS,2],[MP,2]],TK,30,50,'bloodthorn_pendant'),
 
   // =====================================================================
   // T4 WEAPONS (Level 45)
@@ -110,9 +164,27 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   precision_gauntlets: a('precision_gauntlets','Precision Gauntlets',4,45,'gloves',[['dex',22]],[['accuracy',8,true],['critChance',5,true],['critDamage',5,true]],['defense',-4,false],[[CO,8],[MP,6],[CF,4]],AC,45,140,'combat_gauntlets'),
   plated_boots: a('plated_boots','Plated Boots',4,45,'boots',[['str',20]],[['defense',10,false],['maxHp',25,false],['turnSpeed',-3,false]],null,[[IO,10],[SM,6],[RS,4]],AC,45,130,'strider_boots'),
   bulwark_shield: a('bulwark_shield','Bulwark Shield',4,45,'shield',[['str',25]],[['defense',25,false],['blockChance',15,true],['maxHp',40,false]],['turnSpeed',-15,false],[[IO,16],[RS,10],[SM,8]],AC,45,160,'tower_shield'),
-  titanium_ring: a('titanium_ring','Titanium Ring',4,45,'ring',[],[['maxHp',25,false],['critChance',3,true],['defense',5,false]],null,[[CO,8],[IO,6],[MP,4]],TK,45,60,'alloy_ring'),
-  hydraulic_earring: a('hydraulic_earring','Hydraulic Earring',4,45,'earring',[],[['statusResist',8,true],['hpRegen',1.5,false],['maxHp',15,false]],null,[[MP,6],[CF,4],[CO,3]],TK,45,55,'circuit_earring'),
-  fusion_pendant: a('fusion_pendant','Fusion Pendant',4,45,'necklace',[],[['maxHp',35,false],['critDamage',8,true],['hpRegen',2,false]],null,[[EC,8],[MP,5],[CO,4]],TK,45,70,'motor_pendant'),
+  // ── T3 RINGS (Tier 4, Lv.45) ──
+  colossus_seal: a('colossus_seal','Colossus Seal',4,45,'ring',[],[['meleeAttack',35,false],['defense',15,false],['maxHp',40,false]],null,[[IO,8],[SM,6],[RS,4],[CO,3],[MP,3],[MR,2]],TK,45,65,'juggernauts_seal'),
+  hawkstrike_ring: a('hawkstrike_ring','Hawkstrike Ring',4,45,'ring',[],[['rangedAttack',35,false],['accuracy',8,true],['critChance',7,true]],null,[[CO,8],[IO,6],[EC,4],[SM,3],[MP,3],[MR,2]],TK,45,65,'deadeyes_ring'),
+  annihilators_band: a('annihilators_band',"Annihilator's Band",4,45,'ring',[],[['blastAttack',35,false],['critDamage',10,true],['poisonDot',5,false]],null,[[EC,8],[CF,6],[CO,4],[SM,3],[MP,3],[MR,2]],TK,45,65,'demolishers_band'),
+  archons_signet: a('archons_signet',"Archon's Signet",4,45,'ring',[],[['maxHp',45,false],['hpRegen',4,false],['statusResist',10,true],['maxSp',20,false]],null,[[MR,8],[CF,6],[RS,4],[CO,3],[SM,3],[IO,2]],TK,45,65,'restorers_signet'),
+  legends_ring: a('legends_ring',"Legend's Ring",4,45,'ring',[],[['meleeAttack',18,false],['rangedAttack',18,false],['maxHp',28,false]],null,[[IO,7],[CO,7],[SM,4],[MP,3],[RS,3],[MR,2]],TK,45,65,'champions_ring'),
+  specters_loop: a('specters_loop',"Specter's Loop",4,45,'ring',[],[['turnSpeed',16,false],['evasion',10,true],['maxHp',22,false]],null,[[CO,8],[SM,6],[MR,4],[CF,3],[MP,3],[IO,2]],TK,45,65,'wraiths_loop'),
+  // ── T3 EARRINGS (Tier 4, Lv.45) ──
+  gladiators_stud: a('gladiators_stud',"Gladiator's Stud",4,45,'earring',[],[['defense',15,false],['maxHp',30,false],['blockChance',7,true]],null,[[IO,8],[SM,6],[RS,4],[CO,3],[MP,3],[MR,2]],TK,45,65,'warlords_stud'),
+  aces_hoop: a('aces_hoop',"Ace's Hoop",4,45,'earring',[],[['accuracy',8,true],['critChance',7,true],['turnSpeed',8,false]],null,[[CO,8],[IO,6],[EC,4],[SM,3],[MP,3],[MR,2]],TK,45,65,'snipers_hoop'),
+  armageddon_clip: a('armageddon_clip','Armageddon Clip',4,45,'earring',[],[['blastAttack',18,false],['critDamage',8,true],['burnDot',5,false]],null,[[EC,8],[CF,6],[CO,4],[SM,3],[MP,3],[MR,2]],TK,45,65,'incinerators_clip'),
+  saints_earring: a('saints_earring',"Saint's Earring",4,45,'earring',[],[['statusResist',10,true],['hpRegen',3,false],['maxHp',28,false]],null,[[MR,8],[CF,6],[RS,4],[CO,3],[SM,3],[IO,2]],TK,45,65,'priests_earring'),
+  sages_stud: a('sages_stud',"Sage's Stud",4,45,'earring',[],[['statusResist',8,true],['maxHp',22,false],['defense',8,false]],null,[[SM,8],[IO,6],[MR,4],[CO,3],[RS,3],[CF,2]],TK,45,65,'elders_stud'),
+  vampires_drop: a('vampires_drop',"Vampire's Drop",4,45,'earring',[],[['lifesteal',7,true],['bleedDot',4,false],['maxHp',15,false]],null,[[CF,8],[MR,6],[CO,4],[SM,3],[EC,3],[IO,2]],TK,45,65,'leeches_drop'),
+  // ── T3 NECKLACES (Tier 4, Lv.45) ──
+  fortress_chain: a('fortress_chain','Fortress Chain',4,45,'necklace',[],[['maxHp',45,false],['defense',20,false],['hpRegen',3,false]],null,[[IO,8],[SM,6],[RS,4],[CO,3],[MP,3],[MR,2]],TK,45,65,'titans_chain'),
+  predators_pendant: a('predators_pendant',"Predator's Pendant",4,45,'necklace',[],[['rangedAttack',28,false],['accuracy',10,true],['maxHp',28,false]],null,[[CO,8],[IO,6],[EC,4],[SM,3],[MP,3],[MR,2]],TK,45,65,'hawkeyes_pendant'),
+  cataclysm_charm: a('cataclysm_charm','Cataclysm Charm',4,45,'necklace',[],[['blastAttack',28,false],['critDamage',14,true],['maxHp',28,false]],null,[[EC,8],[CF,6],[CO,4],[SM,3],[MP,3],[MR,2]],TK,45,65,'meltdown_charm'),
+  divines_amulet: a('divines_amulet',"Divine's Amulet",4,45,'necklace',[],[['maxHp',50,false],['hpRegen',4,false],['statusResist',12,true],['maxSp',20,false]],null,[[MR,8],[CF,6],[RS,4],[CO,3],[SM,3],[IO,2]],TK,45,65,'guardians_amulet'),
+  sovereigns_locket: a('sovereigns_locket',"Sovereign's Locket",4,45,'necklace',[],[['maxHp',35,false],['defense',10,false],['hpRegen',2,false],['turnSpeed',8,false]],null,[[SM,8],[CO,6],[IO,4],[MR,3],[MP,3],[RS,2]],TK,45,65,'pathfinders_locket'),
+  razorwire_pendant: a('razorwire_pendant','Razorwire Pendant',4,45,'necklace',[],[['thornsDamage',12,true],['maxHp',30,false],['defense',10,false]],null,[[IO,8],[SM,6],[MR,4],[RS,3],[MP,3],[CF,2]],TK,45,65,'briarwall_pendant'),
 
   // =====================================================================
   // T5 WEAPONS (Level 60)
@@ -131,9 +203,6 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   deadeye_gloves: a('deadeye_gloves','Deadeye Gloves',5,60,'gloves',[['dex',35]],[['accuracy',10,true],['critChance',7,true],['critDamage',8,true]],['defense',-6,false],[[CO,12],[MP,8],[CF,6]],AC,60,240,'precision_gauntlets'),
   fortress_boots: a('fortress_boots','Fortress Boots',5,60,'boots',[['str',30]],[['defense',15,false],['maxHp',35,false]],['turnSpeed',-8,false],[[IO,14],[SM,8],[RS,6]],AC,60,220,'plated_boots'),
   siege_shield: a('siege_shield','Siege Shield',5,60,'shield',[['str',40]],[['defense',35,false],['blockChance',18,true],['maxHp',55,false]],['turnSpeed',-18,false],[[IO,22],[RS,14],[SM,10]],AC,60,270,'bulwark_shield'),
-  plasma_ring: a('plasma_ring','Plasma Ring',5,60,'ring',[],[['maxHp',32,false],['critChance',4,true],['defense',7,false]],null,[[EC,10],[CO,8],[MP,5]],TK,60,80,'titanium_ring'),
-  resonance_earring: a('resonance_earring','Resonance Earring',5,60,'earring',[],[['statusResist',10,true],['hpRegen',2,false],['maxHp',20,false]],null,[[EC,8],[CF,5],[CO,4]],TK,60,75,'hydraulic_earring'),
-  core_pendant: a('core_pendant','Core Pendant',5,60,'necklace',[],[['maxHp',45,false],['critDamage',12,true],['hpRegen',2.5,false]],null,[[EC,12],[MP,8],[CO,6]],TK,60,90,'fusion_pendant'),
 
   // =====================================================================
   // T6 WEAPONS (Level 80)
@@ -152,9 +221,6 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   assassin_gloves: a('assassin_gloves','Assassin Gloves',6,80,'gloves',[['dex',45]],[['accuracy',12,true],['critChance',10,true],['critDamage',12,true]],['defense',-8,false],[[CO,15],[MP,10],[CF,8]],AC,80,380,'deadeye_gloves'),
   titan_boots: a('titan_boots','Titan Boots',6,80,'boots',[['str',40]],[['defense',22,false],['maxHp',50,false]],['turnSpeed',-12,false],[[IO,20],[SM,12],[RS,8]],AC,80,350,'fortress_boots'),
   dreadnought_shield: a('dreadnought_shield','Dreadnought Shield',6,80,'shield',[['str',55]],[['defense',48,false],['blockChance',22,true],['maxHp',70,false]],['turnSpeed',-22,false],[[IO,30],[RS,18],[SM,12]],AC,80,420,'siege_shield'),
-  quantum_ring: a('quantum_ring','Quantum Ring',6,80,'ring',[],[['maxHp',40,false],['critChance',5,true],['defense',10,false]],null,[[EC,14],[CO,10],[MP,8]],TK,80,100,'plasma_ring'),
-  void_earring: a('void_earring','Void Earring',6,80,'earring',[],[['statusResist',12,true],['hpRegen',3,false],['maxHp',28,false]],null,[[EC,12],[CF,8],[CO,6]],TK,80,95,'resonance_earring'),
-  stellar_pendant: a('stellar_pendant','Stellar Pendant',6,80,'necklace',[],[['maxHp',58,false],['critDamage',16,true],['hpRegen',3,false]],null,[[EC,16],[MP,10],[CO,8]],TK,80,115,'core_pendant'),
 
   // =====================================================================
   // T7 WEAPONS (Level 90)
@@ -170,9 +236,6 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   apex_gloves: a('apex_gloves','Apex Gloves',7,90,'gloves',[['dex',55]],[['accuracy',15,true],['critChance',12,true],['critDamage',15,true]],['defense',-10,false],[[CO,18],[MP,14],[CF,10]],AC,90,550,'assassin_gloves'),
   apex_boots: a('apex_boots','Apex Boots',7,90,'boots',[['dex',50]],[['turnSpeed',18,false],['evasion',8,true],['defense',12,false]],['maxHp',-6,true],[[MR,12],[CF,10],[IO,8]],AC,90,530,'titan_boots'),
   omega_shield: a('omega_shield','Omega Shield',7,90,'shield',[['str',65]],[['defense',60,false],['blockChance',25,true],['maxHp',90,false]],['turnSpeed',-25,false],[[IO,38],[RS,22],[SM,16]],AC,90,620,'dreadnought_shield'),
-  singularity_ring: a('singularity_ring','Singularity Ring',7,90,'ring',[],[['maxHp',50,false],['critChance',6,true],['defense',12,false]],null,[[EC,18],[CO,14],[MP,10]],TK,90,130,'quantum_ring'),
-  anomaly_earring: a('anomaly_earring','Anomaly Earring',7,90,'earring',[],[['statusResist',14,true],['hpRegen',3.5,false],['maxHp',35,false]],null,[[EC,16],[CF,10],[CO,8]],TK,90,120,'void_earring'),
-  eternity_pendant: a('eternity_pendant','Eternity Pendant',7,90,'necklace',[],[['maxHp',70,false],['critDamage',20,true],['hpRegen',3.5,false]],null,[[EC,20],[MP,14],[CO,10]],TK,90,145,'stellar_pendant'),
 
   // =====================================================================
   // T8 WEAPONS (Level 100) - LEGENDARY TIER
@@ -189,9 +252,6 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   godhand_gloves: a('godhand_gloves','Godhand Gloves',8,100,'gloves',[['dex',65]],[['accuracy',18,true],['critChance',14,true],['critDamage',18,true]],['defense',-12,false],[[CO,22],[MP,16],[CF,12]],AC,100,780,'apex_gloves'),
   godstep_boots: a('godstep_boots','Godstep Boots',8,100,'boots',[['dex',60]],[['turnSpeed',22,false],['evasion',10,true],['defense',15,false]],['maxHp',-8,true],[[MR,15],[CF,12],[IO,10]],AC,100,760,'apex_boots'),
   world_shield: a('world_shield','World Shield',8,100,'shield',[['str',80]],[['defense',75,false],['blockChance',28,true],['maxHp',110,false]],['turnSpeed',-28,false],[[IO,48],[RS,28],[SM,20]],AC,100,900,'omega_shield'),
-  infinity_ring: a('infinity_ring','Infinity Ring',8,100,'ring',[],[['maxHp',60,false],['critChance',7,true],['defense',15,false]],null,[[EC,22],[CO,18],[MP,12]],TK,100,160,'singularity_ring'),
-  void_earring_t8: a('void_earring_t8','Void Whisper Earring',8,100,'earring',[],[['statusResist',16,true],['hpRegen',4,false],['maxHp',42,false]],null,[[EC,20],[CF,14],[CO,10]],TK,100,150,'anomaly_earring'),
-  eternity_amulet: a('eternity_amulet','Eternity Amulet',8,100,'necklace',[],[['maxHp',85,false],['critDamage',22,true],['hpRegen',4,false]],null,[[EC,24],[MP,18],[CO,12]],TK,100,175,'eternity_pendant'),
 
   // =====================================================================
   // GREEN SET: EARLY GAME - "Survivor's Outfit" (T1, Lv.1, Gathering focus)
@@ -396,20 +456,6 @@ export const GEAR_TEMPLATES: Record<string, GearTemplate> = {
   engineer_drone_t3: a2('engineer_drone_t3','Combat Drone Mk.III',5,60,'shield',[['defense',16,false],['maxHp',40,false],['hpRegen',3,false]],[[IO,10]],AC,60,300,'engineer','engineer_drone_t2'),
 };
 
-// =====================================================================
-// STAT FOCUS RINGS (Ring slot 3 only)
-// =====================================================================
-// Single stat rings: 70% XP to primary, 30% determined by weapon
-GEAR_TEMPLATES['ring_of_str'] = { id: 'ring_of_str', name: 'Ring of Strength', slot: 'ring', tier: 1, levelReq: 1, statRequirements: [], baseStats: [{ stat: 'meleeAttack', value: 3, isPercentage: false }], craftingInputs: [[IO,5],[CO,3]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 1, craftXp: 20, statFocusRing: { primaryStat: 'str' } };
-GEAR_TEMPLATES['ring_of_dex'] = { id: 'ring_of_dex', name: 'Ring of Dexterity', slot: 'ring', tier: 1, levelReq: 1, statRequirements: [], baseStats: [{ stat: 'rangedAttack', value: 3, isPercentage: false }], craftingInputs: [[CO,5],[IO,3]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 1, craftXp: 20, statFocusRing: { primaryStat: 'dex' } };
-GEAR_TEMPLATES['ring_of_int'] = { id: 'ring_of_int', name: 'Ring of Intelligence', slot: 'ring', tier: 1, levelReq: 1, statRequirements: [], baseStats: [{ stat: 'blastAttack', value: 3, isPercentage: false }], craftingInputs: [[EC,5],[CO,3]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 1, craftXp: 20, statFocusRing: { primaryStat: 'int' } };
-GEAR_TEMPLATES['ring_of_con'] = { id: 'ring_of_con', name: 'Ring of Constitution', slot: 'ring', tier: 1, levelReq: 1, statRequirements: [], baseStats: [{ stat: 'maxHp', value: 12, isPercentage: false }], craftingInputs: [[RS,5],[IO,3]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 1, craftXp: 20, statFocusRing: { primaryStat: 'con' } };
-GEAR_TEMPLATES['ring_of_per'] = { id: 'ring_of_per', name: 'Ring of Perception', slot: 'ring', tier: 1, levelReq: 1, statRequirements: [], baseStats: [{ stat: 'accuracy', value: 3, isPercentage: true }], craftingInputs: [[EC,4],[CO,4]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 1, craftXp: 20, statFocusRing: { primaryStat: 'per' } };
-GEAR_TEMPLATES['ring_of_luk'] = { id: 'ring_of_luk', name: 'Ring of Luck', slot: 'ring', tier: 1, levelReq: 1, statRequirements: [], baseStats: [{ stat: 'critChance', value: 2, isPercentage: true }], craftingInputs: [[CO,6],[IO,2]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 1, craftXp: 20, statFocusRing: { primaryStat: 'luk' } };
-// Dual stat rings: 50/50 XP split
-GEAR_TEMPLATES['ring_of_providence'] = { id: 'ring_of_providence', name: 'Ring of Providence', slot: 'ring', tier: 2, levelReq: 15, statRequirements: [], baseStats: [{ stat: 'maxHp', value: 8, isPercentage: false }, { stat: 'meleeAttack', value: 3, isPercentage: false }], craftingInputs: [[IO,8],[RS,5],[CO,3]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 15, craftXp: 35, statFocusRing: { primaryStat: 'str', secondaryStat: 'con', isDual: true } };
-GEAR_TEMPLATES['ring_of_precision'] = { id: 'ring_of_precision', name: 'Ring of Precision', slot: 'ring', tier: 2, levelReq: 15, statRequirements: [], baseStats: [{ stat: 'accuracy', value: 3, isPercentage: true }, { stat: 'rangedAttack', value: 3, isPercentage: false }], craftingInputs: [[CO,8],[EC,5],[IO,3]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 15, craftXp: 35, statFocusRing: { primaryStat: 'dex', secondaryStat: 'per', isDual: true } };
-GEAR_TEMPLATES['ring_of_destruction'] = { id: 'ring_of_destruction', name: 'Ring of Destruction', slot: 'ring', tier: 2, levelReq: 15, statRequirements: [], baseStats: [{ stat: 'blastAttack', value: 4, isPercentage: false }, { stat: 'critDamage', value: 3, isPercentage: true }], craftingInputs: [[EC,8],[CF,5],[CO,3]].map(([r,q])=>({resourceId:r,quantity:q})), craftSkillId: TK, craftSkillLevel: 15, craftXp: 35, statFocusRing: { primaryStat: 'int', secondaryStat: 'luk', isDual: true } };
 
 export const GEAR_TEMPLATE_LIST = Object.values(GEAR_TEMPLATES);
 
@@ -425,56 +471,6 @@ export function getCraftableTemplates(skillId: string, skillLevel: number): Gear
   return GEAR_TEMPLATE_LIST.filter(t => t.craftSkillId === skillId && t.craftSkillLevel <= skillLevel);
 }
 
-/**
- * Get the weapon's primary stat (used for the 30% portion when a focus ring is equipped).
- * Melee = STR, Ranged = DEX, Demolitions = INT
- */
-export function getWeaponPrimaryStat(weaponType: 'melee' | 'ranger' | 'demolitions'): string {
-  switch (weaponType) {
-    case 'melee': return 'str';
-    case 'ranger': return 'dex';
-    case 'demolitions': return 'int';
-  }
-}
-
-/**
- * Calculate combat XP distribution based on equipped focus ring and weapon type.
- *
- * Rules:
- * - WITH single focus ring: 70% to ring stat, 30% to weapon primary stat
- * - WITH dual focus ring: 50% to each stat (weapon ignored)
- * - WITHOUT focus ring: 30% to weapon primary, 70% split evenly across all 7 stats (~10% each)
- */
-export function getCombatXpDistribution(
-  weaponType: 'melee' | 'ranger' | 'demolitions',
-  focusRing?: { primaryStat: string; secondaryStat?: string; isDual?: boolean } | null,
-): [string, number][] {
-  const weaponStat = getWeaponPrimaryStat(weaponType);
-  const allStats = ['str', 'dex', 'int', 'con', 'per', 'luk', 'res'];
-
-  if (focusRing?.isDual && focusRing.secondaryStat) {
-    // Dual ring: 50/50 split, weapon ignored
-    return [[focusRing.primaryStat, 0.5], [focusRing.secondaryStat, 0.5]];
-  }
-
-  if (focusRing) {
-    // Single ring: 70% to ring stat, 30% to weapon primary
-    return [[focusRing.primaryStat, 0.7], [weaponStat, 0.3]];
-  }
-
-  // No ring: 30% weapon primary + 70% spread evenly across all 7 stats
-  const evenSplit = 0.7 / allStats.length; // ~10% each
-  const distribution: [string, number][] = allStats.map(s => [s, evenSplit]);
-  // Add the 30% weapon bonus on top
-  const weaponIdx = distribution.findIndex(d => d[0] === weaponStat);
-  if (weaponIdx >= 0) distribution[weaponIdx][1] += 0.3;
-  return distribution;
-}
-
-/** Get stat focus rings only (for ring3 slot) */
-export function getStatFocusRings(): GearTemplate[] {
-  return GEAR_TEMPLATE_LIST.filter(t => t.statFocusRing);
-}
 
 // ============================
 // ASPECT POOLS

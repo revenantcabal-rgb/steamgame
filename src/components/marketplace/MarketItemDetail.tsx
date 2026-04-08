@@ -427,7 +427,7 @@ function EquipmentInfo({ id }: { id: string }) {
   if (!t) return null;
   const typeLabel = t.slot === 'weapon'
     ? (t.isTwoHanded ? 'Two Hand' : 'One Hand')
-    : (t.statFocusRing ? 'Stat Focus Ring' : (SLOT_LABELS[t.slot] || t.slot));
+    : (SLOT_LABELS[t.slot] || t.slot);
 
   return (
     <>
@@ -438,13 +438,6 @@ function EquipmentInfo({ id }: { id: string }) {
         <InfoLine key={i} label="Requires" value={`${req.value} ${STAT_LABELS[req.stat] || req.stat}`} />
       ))}
       {t.weaponType && <InfoLine label="Combat Style" value={t.weaponType.charAt(0).toUpperCase() + t.weaponType.slice(1)} />}
-      {t.statFocusRing && (
-        <InfoLine label="XP Focus" value={
-          t.statFocusRing.isDual
-            ? `${STAT_LABELS[t.statFocusRing.primaryStat]} / ${STAT_LABELS[t.statFocusRing.secondaryStat!]} (50/50)`
-            : `${STAT_LABELS[t.statFocusRing.primaryStat]} (70/30)`
-        } valueColor="#f59e0b" />
-      )}
       {t.setId && (
         <InfoLine label="Set" value={t.setId.replace('set_', '').replace(/^\w/, (c: string) => c.toUpperCase()) + "'s Set"} valueColor="#22c55e" />
       )}

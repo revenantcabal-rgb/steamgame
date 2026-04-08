@@ -5,6 +5,7 @@ import { levelFromXp } from '../types/skills';
 import type { Hero, PrimaryStats, DerivedStats } from '../types/hero';
 import { rollStat, generateHeroName, STAT_POINTS_PER_LEVEL, PRIMARY_ATTR_SPD_BONUS } from '../types/hero';
 import type { GearInstance, StatBonus } from '../types/equipment';
+import { getUpgradeStatBonuses } from './UpgradeEngine';
 import { useStarlightStore } from '../store/useStarlightStore';
 
 /**
@@ -167,6 +168,14 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
         applyBonus(derived, gear.aspect.upside);
         applyBonus(derived, gear.aspect.downside);
       }
+
+      // 6. Upgrade level bonuses
+      if (gear.upgradeLevel > 0) {
+        const upgradeBonuses = getUpgradeStatBonuses(gear.templateId, gear.upgradeLevel);
+        for (const bonus of upgradeBonuses) {
+          applyBonus(derived, bonus);
+        }
+      }
     }
 
     // Clamp values after gear application
@@ -299,65 +308,23 @@ export function getEquippedGear(
 
 /**
  * Add XP to a hero and check for level up.
- * If the hero has a Focus Ring in ring3, stat XP is distributed accordingly:
- *   - Single focus: 70% to primary stat, 30% spread across others
- *   - Dual focus: 50/50 between primary and secondary
- *   - No focus ring: all XP goes to hero level (default behavior)
- *
- * Note: Focus Ring XP distribution affects stat auto-allocation on level-up,
- * giving bonus points toward the focused stat(s).
+ * Awards unspent stat points on each level gained.
  */
 export function addHeroXp(
   hero: Hero,
   xpAmount: number,
-  focusRing?: { primaryStat: string; secondaryStat?: string; isDual?: boolean } | null,
 ): Hero {
   const newXp = hero.xp + xpAmount;
   const newLevel = Math.min(100, levelFromXp(newXp));
   const levelsGained = newLevel - hero.level;
-  let newPoints = hero.unspentPoints + levelsGained * STAT_POINTS_PER_LEVEL;
-
-  // Auto-allocate bonus stat points based on Focus Ring
-  let newAllocated = hero.allocatedStats;
-  if (focusRing && levelsGained > 0) {
-    const bonusPoints = levelsGained; // 1 bonus auto-allocated point per level gained
-    newAllocated = { ...hero.allocatedStats };
-    const primary = focusRing.primaryStat as keyof PrimaryStats;
-
-    if (focusRing.isDual && focusRing.secondaryStat) {
-      const secondary = focusRing.secondaryStat as keyof PrimaryStats;
-      const primaryPts = Math.ceil(bonusPoints / 2);
-      const secondaryPts = Math.floor(bonusPoints / 2);
-      newAllocated[primary] = (newAllocated[primary] || 0) + primaryPts;
-      newAllocated[secondary] = (newAllocated[secondary] || 0) + secondaryPts;
-    } else {
-      newAllocated[primary] = (newAllocated[primary] || 0) + bonusPoints;
-    }
-  }
+  const newPoints = hero.unspentPoints + levelsGained * STAT_POINTS_PER_LEVEL;
 
   return {
     ...hero,
     xp: newXp,
     level: newLevel,
     unspentPoints: newPoints,
-    allocatedStats: newAllocated,
   };
-}
-
-/**
- * Get the Focus Ring data for a hero (from ring3 slot), if any.
- */
-export function getHeroFocusRing(
-  heroId: string,
-  heroEquipment: Record<string, any>,
-  inventory: GearInstance[],
-): { primaryStat: string; secondaryStat?: string; isDual?: boolean } | null {
-  const equipment = heroEquipment[heroId];
-  if (!equipment?.ring3) return null;
-  const ring = inventory.find(g => g.instanceId === equipment.ring3);
-  if (!ring) return null;
-  const template = GEAR_TEMPLATES[ring.templateId];
-  return template?.statFocusRing || null;
 }
 
 /**

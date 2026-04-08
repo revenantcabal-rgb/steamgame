@@ -489,6 +489,7 @@ function CompactGearCard({ gear, onDiscard }: { gear: GearInstance; onDiscard: (
       <div className="flex-1 min-w-0">
         <div className="text-xs font-bold truncate" style={{ color: rarityColor }}>
           {aspectPrefix}{template.name}
+          {gear.upgradeLevel > 0 && <span style={{ color: '#d4a843' }}> +{gear.upgradeLevel}</span>}
         </div>
         <div className="flex gap-1">
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>T{template.tier} {template.slot}</span>
@@ -517,7 +518,7 @@ export function GearCard({ gear, onDiscard, compact }: { gear: GearInstance; onD
         <div>
           <div className="font-bold text-xs flex items-center gap-1" style={{ color: rarityColor }}>
             <ItemIcon itemId={template.id} itemType="equipment" gearSlot={template.slot} size={20} fallbackLabel={template.name.charAt(0)} />
-            {aspectPrefix}{template.name} [{RARITY_LABELS[gear.rarity]}]
+            {aspectPrefix}{template.name}{gear.upgradeLevel > 0 ? ` +${gear.upgradeLevel}` : ''} [{RARITY_LABELS[gear.rarity]}]
           </div>
           <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             T{template.tier} {template.slot} | Lv.{template.levelReq}+

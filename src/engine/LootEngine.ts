@@ -141,6 +141,7 @@ export function createGearInstance(
     rarityCurses: curses,
     sourcePowerMultiplier: sourceMult,
     createdAt: Date.now(),
+    upgradeLevel: 0,
   };
 }
 

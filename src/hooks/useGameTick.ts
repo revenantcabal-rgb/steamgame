@@ -20,7 +20,7 @@ import { syncSave, flushPendingWrites } from '../lib/saveService';
 const TICK_INTERVAL_MS = 1000;
 const SAVE_INTERVAL_MS = 30_000;
 
-const FULL_SAVE_VERSION = 17;
+const FULL_SAVE_VERSION = 18;
 
 export function useGameTick() {
   const gameTick = useGameStore(s => s.tick);
@@ -70,6 +70,25 @@ export function useGameTick() {
           if (parsed.encampment) useEncampmentStore.getState().loadState(parsed.encampment);
           if (parsed.scanTower) useScanTowerStore.getState().loadState(parsed.scanTower);
           gameStore.addLog('Save data loaded.', 'system');
+          setTimeout(() => useGameStore.getState().processOfflineProgress(), 100);
+        } else if (parsed.version === 17) {
+          // Migrate v17 → v18: equipment upgrade system (upgradeLevel + ring3 removal handled by useEquipmentStore.loadState)
+          gameStore.loadState(parsed.game);
+          usePopulationStore.getState().loadState(parsed.population);
+          if (parsed.heroes) useHeroStore.getState().loadState(parsed.heroes);
+          if (parsed.equipment) useEquipmentStore.getState().loadState(parsed.equipment);
+          if (parsed.combat) useCombatZoneStore.getState().loadState(parsed.combat);
+          if (parsed.expedition) useExpeditionStore.getState().loadState(parsed.expedition);
+          if (parsed.market) useMarketStore.getState().loadState(parsed.market);
+          if (parsed.anticheat) useAnticheatStore.getState().loadState(parsed.anticheat);
+          if (parsed.achievements) useAchievementStore.getState().loadState(parsed.achievements);
+          if (parsed.story) useStoryStore.getState().loadState(parsed.story);
+          if (parsed.starlight) useStarlightStore.getState().loadState(parsed.starlight);
+          if (parsed.lootTracker) useLootTrackerStore.getState().loadState(parsed.lootTracker);
+          if (parsed.goldenCap) useGoldenCapStore.getState().loadState(parsed.goldenCap);
+          if (parsed.encampment) useEncampmentStore.getState().loadState(parsed.encampment);
+          if (parsed.scanTower) useScanTowerStore.getState().loadState(parsed.scanTower);
+          gameStore.addLog('Save data migrated from v17 to v18 (equipment upgrade system).', 'system');
           setTimeout(() => useGameStore.getState().processOfflineProgress(), 100);
         } else if (parsed.version === 16) {
           // Migrate v16 → v17: add Scan Tower system

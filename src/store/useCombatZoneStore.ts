@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { COMBAT_ZONES, ZONE_TIER_MULTIPLIERS } from '../config/combatZones';
 import { simulateFight, simulateBossFight, getFightDuration, canEnterZone, getDynamicDifficultyMultiplier, calculateAbilityContribution, getCombatTriangleMultiplier } from '../engine/IdleCombatEngine';
-import { addHeroXp, getHeroFocusRing, calculateDerivedStats, getEquippedGear } from '../engine/HeroEngine';
+import { addHeroXp, calculateDerivedStats, getEquippedGear } from '../engine/HeroEngine';
 import { getCombatDamageBonus } from '../engine/EncampmentBonuses';
 import { CLASSES } from '../config/classes';
 import type { CombatStyle } from '../config/combatZones';
@@ -17,6 +17,7 @@ import { useLootTrackerStore } from './useLootTrackerStore';
 import { getPremiumBonuses } from '../engine/PremiumBonuses';
 import { getEncampmentBonuses } from '../engine/EncampmentBonuses';
 import { useScanTowerStore } from './useScanTowerStore';
+import { ABILITIES } from '../config/abilities';
 
 const BOSS_EVERY_N_FIGHTS = 50;
 const ENEMY_SCALE_EVERY_N = 10;
@@ -472,11 +473,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               }
             }
 
-            const eqStore = useEquipmentStore.getState();
-            const focusRing = getHeroFocusRing(hero.id, eqStore.heroEquipment, eqStore.inventory);
             const xpAmount = Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100));
             fightXpGained += xpAmount;
-            const updatedHero = addHeroXp(hero, xpAmount, focusRing);
+            const updatedHero = addHeroXp(hero, xpAmount);
             useHeroStore.setState(s => ({ heroes: s.heroes.map(h => h.id === hero.id ? { ...updatedHero, equippedConsumables: h.equippedConsumables } : h) }));
             // Story: hero level up
             if (updatedHero.level > hero.level) {
@@ -503,6 +502,26 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
                 // Anti-cheat: log loot event
                 const actorId = useAuthStore.getState().user?.id || 'system';
                 useAnticheatStore.getState().logItemEvent(result.gearDrop.gameId, 'loot', actorId, undefined, 1, { zoneId: dep.zoneId, enemyName: result.enemyName, rarity: result.gearDrop.rarity });
+              }
+
+              // 15% chance to drop an ability from boss
+              const abilityDropRoll = Math.random();
+              if (abilityDropRoll < 0.15) {
+                // Filter to droppable abilities: not vendor, not Job2, not passive, not decree
+                const droppableAbilities = Object.values(ABILITIES).filter((a) =>
+                  a.color !== 'gold' && a.color !== 'orange' && a.color !== 'purple' &&
+                  !a.source.includes('Vendor')
+                );
+                if (droppableAbilities.length > 0) {
+                  const heroStore = useHeroStore.getState();
+                  // Only drop abilities the player doesn't own yet
+                  const unownedAbilities = droppableAbilities.filter((a) => !heroStore.ownedAbilities.includes(a.id));
+                  if (unownedAbilities.length > 0) {
+                    const drop = unownedAbilities[Math.floor(Math.random() * unownedAbilities.length)];
+                    heroStore.addOwnedAbility(drop.id);
+                    gameStore.addLog(`ABILITY DROP! Found ${drop.name} from ${result.enemyName || 'boss'}!`, 'levelup');
+                  }
+                }
               }
             }
 
@@ -637,11 +656,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               }
             }
 
-            const eqStoreNorm = useEquipmentStore.getState();
-            const focusRingNorm = getHeroFocusRing(hero.id, eqStoreNorm.heroEquipment, eqStoreNorm.inventory);
             const xpAmountNorm = Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100));
             fightXpGained += xpAmountNorm;
-            const updatedHero = addHeroXp(hero, xpAmountNorm, focusRingNorm);
+            const updatedHero = addHeroXp(hero, xpAmountNorm);
             useHeroStore.setState(s => ({ heroes: s.heroes.map(h => h.id === hero.id ? { ...updatedHero, equippedConsumables: h.equippedConsumables } : h) }));
             // Story: hero level up
             if (updatedHero.level > hero.level) {

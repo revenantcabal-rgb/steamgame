@@ -1,6 +1,6 @@
 import type { Job2ClassId } from './hero';
 
-export type EquipmentSlot = 'main_hand' | 'off_hand' | 'armor' | 'legs' | 'gloves' | 'boots' | 'ring1' | 'ring2' | 'ring3' | 'earring1' | 'earring2' | 'necklace';
+export type EquipmentSlot = 'main_hand' | 'off_hand' | 'armor' | 'legs' | 'gloves' | 'boots' | 'ring1' | 'ring2' | 'earring1' | 'earring2' | 'necklace';
 export type ItemRarity = 'common' | 'rare' | 'unique' | 'plague';
 export type GearSource = 'forged' | 'salvaged' | 'scavenged' | 'issued' | 'decorated';
 export type WeaponType = 'melee' | 'ranger' | 'demolitions';
@@ -29,7 +29,6 @@ export const ALL_EQUIPMENT_SLOTS: { slot: EquipmentSlot; label: string; category
   { slot: 'boots', label: 'Boots', category: 'boots' },
   { slot: 'ring1', label: 'Ring 1', category: 'ring' },
   { slot: 'ring2', label: 'Ring 2', category: 'ring' },
-  { slot: 'ring3', label: 'Ring 3', category: 'ring' },
   { slot: 'earring1', label: 'Earring 1', category: 'earring' },
   { slot: 'earring2', label: 'Earring 2', category: 'earring' },
   { slot: 'necklace', label: 'Necklace', category: 'necklace' },
@@ -67,15 +66,6 @@ export interface GearTemplate {
   isTwoHanded?: boolean;
   /** Weapon stat XP: which stats gain XP when this weapon is used in combat. [stat, percentage] */
   weaponStatXp?: [string, number][];
-  /** Ring3-only: stat focus ring type. Only rings with this field can go in ring3 slot. */
-  statFocusRing?: {
-    /** Primary stat (70% of combat XP goes here) */
-    primaryStat: string;
-    /** Secondary stat (30% goes here, OR if dual, 50/50 split) */
-    secondaryStat?: string;
-    /** If true, it's a dual ring (50/50 split instead of 70/30) */
-    isDual?: boolean;
-  };
   /** Crafting recipe */
   craftingInputs: { resourceId: string; quantity: number }[];
   craftSkillId: string;
@@ -111,6 +101,8 @@ export interface GearInstance {
   /** Source power multiplier (1.0 for forged, 0.75 for salvaged, etc.) */
   sourcePowerMultiplier: number;
   createdAt: number;
+  /** Equipment upgrade level (0-12). Accessories cannot be upgraded. */
+  upgradeLevel: number;
 }
 
 /** Equipment set definition (Green sets) */
@@ -141,14 +133,13 @@ export interface HeroEquipment {
   boots: string | null;
   ring1: string | null;
   ring2: string | null;
-  ring3: string | null;
   earring1: string | null;
   earring2: string | null;
   necklace: string | null;
 }
 
 export function createEmptyEquipment(): HeroEquipment {
-  return { main_hand: null, off_hand: null, armor: null, legs: null, gloves: null, boots: null, ring1: null, ring2: null, ring3: null, earring1: null, earring2: null, necklace: null };
+  return { main_hand: null, off_hand: null, armor: null, legs: null, gloves: null, boots: null, ring1: null, ring2: null, earring1: null, earring2: null, necklace: null };
 }
 
 /** Number of rarity bonuses by rarity */

@@ -99,6 +99,15 @@ export const RESOURCES: Record<string, Resource> = {
   // ENHANCEMENT MATERIALS
   // =============================================
   aspect_stone: { id: 'aspect_stone', name: 'Aspect Stone', description: 'A rare crystalline stone that can re-roll the aspect on a piece of gear. Craft via Tinkering.', sourceSkillId: 'tinkering', sellValue: 75 },
+
+  // =============================================
+  // EQUIPMENT UPGRADE MATERIALS
+  // =============================================
+  reinforcement_ore: { id: 'reinforcement_ore', name: 'Reinforcement Ore', description: 'Common ore for guaranteed equipment upgrades (+1 to +3).', sourceSkillId: 'prospecting', sellValue: 8 },
+  refinement_metal: { id: 'refinement_metal', name: 'Refinement Metal', description: 'Processed metal for intermediate upgrades (+4 to +6). Chance of failure.', sourceSkillId: 'prospecting', sellValue: 20 },
+  highgrade_alloy: { id: 'highgrade_alloy', name: 'High-grade Alloy', description: 'Premium alloy for advanced upgrades (+7 to +10). High failure risk.', sourceSkillId: 'combat', sellValue: 50 },
+  masterwork_ore: { id: 'masterwork_ore', name: 'Masterwork Ore', description: 'Exceedingly rare ore for legendary upgrades (+11 to +12). Item destroyed on failure.', sourceSkillId: 'combat', sellValue: 100 },
+  smelting_ore: { id: 'smelting_ore', name: 'Smelting Ore', description: 'Adds +5% success rate to upgrade attempts. Stackable.', sourceSkillId: 'prospecting', sellValue: 12 },
 };
 
 export function getResourceById(id: string): Resource | undefined {

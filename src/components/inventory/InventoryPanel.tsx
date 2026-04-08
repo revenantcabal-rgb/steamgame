@@ -226,7 +226,7 @@ function ConsumablesGrid({ consumables }: { consumables: { id: string; name: str
 
 // ── Equipment tab ──
 
-function EquipmentGrid({ items }: { items: { instanceId: string; rarity: string; aspect: any; template: { id: string; name: string; slot: string; tier: number; baseStats: { stat: string; value: number; isPercentage: boolean }[] } }[] }) {
+function EquipmentGrid({ items }: { items: { instanceId: string; rarity: string; aspect: any; upgradeLevel: number; template: { id: string; name: string; slot: string; tier: number; baseStats: { stat: string; value: number; isPercentage: boolean }[] } }[] }) {
   if (items.length === 0) {
     return <EmptyState text="No equipment yet. Defeat bosses or craft gear." />;
   }
@@ -248,6 +248,7 @@ function EquipmentGrid({ items }: { items: { instanceId: string; rarity: string;
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-bold truncate" style={{ color: rarityColor }}>
                   {item.aspect ? `${item.aspect.name} ` : ''}{item.template.name}
+                  {item.upgradeLevel > 0 && <span style={{ color: '#d4a843' }}> +{item.upgradeLevel}</span>}
                 </div>
                 <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                   T{item.template.tier} {item.template.slot} | {RARITY_LABELS[item.rarity as keyof typeof RARITY_LABELS] || item.rarity}

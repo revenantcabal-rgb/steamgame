@@ -599,10 +599,9 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
 
       {/* Accessories Row */}
       <div className="text-xs font-bold mb-1 mt-3" style={{ color: 'var(--color-text-muted)', borderTop: '1px solid var(--color-border)', paddingTop: '8px' }}>Accessories</div>
-      <div className="grid grid-cols-3 gap-2 mb-2">
+      <div className="grid grid-cols-2 gap-2 mb-2">
         {renderSlot('ring1', 'Ring 1', 'ring')}
         {renderSlot('ring2', 'Ring 2', 'ring')}
-        {renderSlot('ring3', 'Focus Ring', 'ring')}
       </div>
       <div className="grid grid-cols-3 gap-2">
         {renderSlot('earring1', 'Earring 1', 'earring')}
@@ -624,8 +623,6 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
       const tmpl = GEAR_TEMPLATES[g.templateId];
       if (!tmpl) return false;
       if (tmpl.slot !== category) return false;
-      if (slot === 'ring3' && !tmpl.statFocusRing) return false;
-      if ((slot === 'ring1' || slot === 'ring2') && tmpl.statFocusRing) return false;
       // Only show weapons matching hero's combat style
       if (tmpl.weaponType && heroStyle && tmpl.weaponType !== heroStyle) return false;
       return true;
@@ -650,6 +647,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
               <div className="font-bold flex items-center gap-1" style={{ color: RARITY_COLORS[equippedGear.rarity], fontSize: 11 }}>
                 <ItemIcon itemId={equippedTemplate.id} itemType="equipment" gearSlot={equippedTemplate.slot} size={16} fallbackLabel={equippedTemplate.name.charAt(0)} />
                 {equippedGear.aspect ? `${equippedGear.aspect.name} ` : ''}{equippedTemplate.name}
+                {equippedGear.upgradeLevel > 0 && <span style={{ color: '#d4a843' }}> +{equippedGear.upgradeLevel}</span>}
               </div>
               <div className="flex flex-wrap gap-1 mt-0.5">
                 {equippedTemplate.baseStats.slice(0, 2).map((s, i) => (
@@ -698,7 +696,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                         style={{ backgroundColor: 'var(--color-bg-tertiary)', border: `1px solid ${RARITY_COLORS[gear.rarity]}44`, color: 'var(--color-text-primary)' }}>
                         <div className="font-bold flex items-center gap-1" style={{ color: RARITY_COLORS[gear.rarity] }}>
                           <ItemIcon itemId={tmpl.id} itemType="equipment" gearSlot={tmpl.slot} size={18} fallbackLabel={tmpl.name.charAt(0)} />
-                          {gear.aspect ? `${gear.aspect.name} ` : ''}{tmpl.name} [{RARITY_LABELS[gear.rarity]}]
+                          {gear.aspect ? `${gear.aspect.name} ` : ''}{tmpl.name}{gear.upgradeLevel > 0 ? ` +${gear.upgradeLevel}` : ''} [{RARITY_LABELS[gear.rarity]}]
                         </div>
                         {tmpl.description && (
                           <div style={{ color: 'var(--color-text-muted)', fontSize: 11, fontStyle: 'italic', marginTop: '2px' }}>

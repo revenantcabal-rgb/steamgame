@@ -11,6 +11,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useCombatZoneStore } from './useCombatZoneStore';
 import type { GearInstance, HeroEquipment, EquipmentSlot, Aspect } from '../types/equipment';
 import { getCraftTime } from '../types/equipment';
+import { isUpgradeable, getUpgradeConfig, attemptUpgrade } from '../engine/UpgradeEngine';
+import type { UpgradeResult } from '../engine/UpgradeEngine';
 
 interface ActiveCraft {
   templateId: string;
@@ -40,6 +42,7 @@ interface EquipmentState {
   unequipItem: (heroId: string, slot: EquipmentSlot) => void;
   discardItem: (instanceId: string) => void;
   rerollAspect: (instanceId: string) => boolean;
+  upgradeEquipment: (instanceId: string, smeltingOreCount: number) => UpgradeResult | null;
 
   getSerializableState: () => SerializedEquipmentState;
   loadState: (state: SerializedEquipmentState) => void;
@@ -493,6 +496,87 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     return true;
   },
 
+  upgradeEquipment: (instanceId, smeltingOreCount) => {
+    const state = get();
+    const gear = state.inventory.find(g => g.instanceId === instanceId);
+    if (!gear) return null;
+
+    const template = GEAR_TEMPLATES[gear.templateId];
+    if (!template) return null;
+
+    // Check it's upgradeable (not accessory)
+    if (!isUpgradeable(template)) {
+      useGameStore.getState().addLog('Accessories cannot be upgraded.', 'error');
+      return null;
+    }
+
+    // Check max level
+    if (gear.upgradeLevel >= 12) {
+      useGameStore.getState().addLog(`${template.name} is already at max upgrade level (+12).`, 'error');
+      return null;
+    }
+
+    // Get upgrade config for next level
+    const config = getUpgradeConfig(gear.upgradeLevel);
+    if (!config) return null;
+
+    const gameStore = useGameStore.getState();
+    const resources = { ...gameStore.resources };
+
+    // Check required resources
+    if ((resources[config.resourceId] || 0) < config.resourceQty) {
+      gameStore.addLog(`Not enough ${config.resourceId.replace(/_/g, ' ')} to upgrade ${template.name}.`, 'error');
+      return null;
+    }
+
+    // Check smelting ores if player wants to use them
+    if (smeltingOreCount > 0 && (resources['smelting_ore'] || 0) < smeltingOreCount) {
+      gameStore.addLog(`Not enough smelting ore.`, 'error');
+      return null;
+    }
+
+    // Deduct resources
+    resources[config.resourceId] -= config.resourceQty;
+    if (smeltingOreCount > 0) {
+      resources['smelting_ore'] = (resources['smelting_ore'] || 0) - smeltingOreCount;
+    }
+    useGameStore.setState({ resources });
+
+    // Attempt upgrade
+    const result = attemptUpgrade(gear.upgradeLevel, smeltingOreCount);
+
+    if (result.success) {
+      // Update gear's upgradeLevel in inventory
+      set(s => ({
+        inventory: s.inventory.map(g => g.instanceId === instanceId ? { ...g, upgradeLevel: result.newLevel } : g),
+      }));
+      gameStore.addLog(`Upgrade success! ${template.name} is now +${result.newLevel}.`, 'levelup');
+    } else if (result.destroyed) {
+      // Remove from inventory and unequip from any hero
+      const newHeroEquipment = { ...state.heroEquipment };
+      for (const [heroId, equipment] of Object.entries(newHeroEquipment)) {
+        for (const [slot, slotValue] of Object.entries(equipment)) {
+          if (slotValue === instanceId) {
+            newHeroEquipment[heroId] = { ...equipment, [slot]: null };
+          }
+        }
+      }
+      set(s => ({
+        inventory: s.inventory.filter(g => g.instanceId !== instanceId),
+        heroEquipment: newHeroEquipment,
+      }));
+      gameStore.addLog(`Upgrade failed! ${template.name} was destroyed!`, 'error');
+    } else {
+      // Downgrade
+      set(s => ({
+        inventory: s.inventory.map(g => g.instanceId === instanceId ? { ...g, upgradeLevel: result.newLevel } : g),
+      }));
+      gameStore.addLog(`Upgrade failed. ${template.name} downgraded to +${result.newLevel}.`, 'error');
+    }
+
+    return result;
+  },
+
   getSerializableState: () => ({
     inventory: get().inventory,
     heroEquipment: get().heroEquipment,
@@ -500,14 +584,27 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
   }),
 
   loadState: (saved) => {
+    // Migration: add upgradeLevel to all GearInstances if missing
+    const inventory = (saved.inventory || []).map(g => ({
+      ...g,
+      upgradeLevel: g.upgradeLevel ?? 0,
+    }));
+
+    // Migration: remove ring3 from all heroEquipment records
+    const heroEquipment: Record<string, HeroEquipment> = {};
+    for (const [heroId, eq] of Object.entries(saved.heroEquipment || {})) {
+      const { ring3, ...rest } = eq as any;
+      heroEquipment[heroId] = rest;
+    }
+
     set({
-      inventory: saved.inventory,
-      heroEquipment: saved.heroEquipment,
+      inventory,
+      heroEquipment,
       activeCraft: saved.activeCraft || null,
     });
   },
 }));
 
 function createEmptyEquipment(): HeroEquipment {
-  return { main_hand: null, off_hand: null, armor: null, legs: null, gloves: null, boots: null, ring1: null, ring2: null, ring3: null, earring1: null, earring2: null, necklace: null };
+  return { main_hand: null, off_hand: null, armor: null, legs: null, gloves: null, boots: null, ring1: null, ring2: null, earring1: null, earring2: null, necklace: null };
 }
