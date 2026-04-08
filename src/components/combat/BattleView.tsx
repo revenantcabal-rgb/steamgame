@@ -90,14 +90,10 @@ export function BattleView({
   const progressRatio = fastestDuration > 0 ? Math.min(1, dep.fightProgress / fastestDuration) : 0;
   const elapsed = Math.floor((Date.now() - deployedAt) / 1000);
 
-  // Determine which hero attacked this tick
+  // Determine which hero attacked this tick (ATB gauge-based)
   const attackingHeroIdx = (() => {
     for (let hi = 0; hi < activeHeroes.length; hi++) {
-      const hero = activeHeroes[hi];
-      const gear = getEquippedGear(hero.id, heroEquipment, inventory);
-      const d = calculateDerivedStats(hero, gear);
-      const interval = Math.max(1, Math.round(100 / Math.max(1, d.turnSpeed) * 3));
-      if ((gt + hi) % interval === 0) return hi;
+      if (dep.heroLastAttackTick?.[activeHeroes[hi].id] === gt) return hi;
     }
     return -1;
   })();
@@ -143,14 +139,14 @@ export function BattleView({
     const effectiveMaxHp = Math.round(derived.maxHp * encampmentHpMult);
     const currentHp = dep.heroHpMap?.[hero.id] ?? effectiveMaxHp;
     const currentSp = dep.heroSpMap?.[hero.id] ?? derived.maxSp;
-    const attackInterval = Math.max(1, Math.round(100 / Math.max(1, derived.turnSpeed) * 3));
-    const justAttacked = gt > 0 && (gt + heroIndex) % attackInterval === 0;
+    const justAttacked = dep.heroLastAttackTick?.[hero.id] === gt;
+    const gaugeProgress = Math.min(99, dep.heroGaugeMap?.[hero.id] ?? 0);
 
     return {
       hero, derived, dps: Math.round(heroDps),
       maxHp: effectiveMaxHp, currentHp,
       maxSp: derived.maxSp, currentSp: Math.min(derived.maxSp, currentSp),
-      justAttacked, colorIndex: heroIndex,
+      justAttacked, colorIndex: heroIndex, gaugeProgress,
       isRecovering: false, recoverySecs: 0,
     };
   });
@@ -162,7 +158,7 @@ export function BattleView({
       const derived = calculateDerivedStats(hero, equippedGear);
       return {
         hero, derived, dps: 0, maxHp: 0, currentHp: 0, maxSp: 0, currentSp: 0,
-        justAttacked: false, colorIndex: 0,
+        justAttacked: false, colorIndex: 0, gaugeProgress: 0,
         isRecovering: true, recoverySecs: dep.recoveryCooldowns[hero.id] || 0,
       };
     });
@@ -303,7 +299,7 @@ export function BattleView({
                     -{Math.round(d.value)}
                   </div>
                 ))}
-              <EnemyBattleCard enemy={enemy} isTarget={idx === firstAliveIdx} index={idx} />
+              <EnemyBattleCard enemy={enemy} isTarget={idx === firstAliveIdx} index={idx} gaugeProgress={Math.min(99, dep.enemyGaugeMap?.[idx] ?? 0)} />
             </div>
           ))}
         </div>

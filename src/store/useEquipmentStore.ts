@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { GEAR_TEMPLATES, getFacetsForSlot, getEnchantsForSlot } from '../config/gear';
+import { GEAR_TEMPLATES, getAspectsForSlot } from '../config/gear';
 import { craftGear } from '../engine/LootEngine';
 import { getTotalStats } from '../engine/HeroEngine';
 import { useGameStore } from './useGameStore';
@@ -9,8 +9,8 @@ import { useAchievementStore } from './useAchievementStore';
 import { useStoryStore } from './useStoryStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useCombatZoneStore } from './useCombatZoneStore';
-import type { GearInstance, HeroEquipment, EquipmentSlot, Facet, Enchantment } from '../types/equipment';
-import { getCraftTime, getEnchantSlots } from '../types/equipment';
+import type { GearInstance, HeroEquipment, EquipmentSlot, Aspect } from '../types/equipment';
+import { getCraftTime } from '../types/equipment';
 
 interface ActiveCraft {
   templateId: string;
@@ -39,8 +39,7 @@ interface EquipmentState {
   equipItem: (heroId: string, slot: EquipmentSlot, instanceId: string) => boolean;
   unequipItem: (heroId: string, slot: EquipmentSlot) => void;
   discardItem: (instanceId: string) => void;
-  rerollFacet: (instanceId: string) => boolean;
-  rerollEnchantments: (instanceId: string) => boolean;
+  rerollAspect: (instanceId: string) => boolean;
 
   getSerializableState: () => SerializedEquipmentState;
   loadState: (state: SerializedEquipmentState) => void;
@@ -148,9 +147,9 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
       if (gear) {
         const template = GEAR_TEMPLATES[templateId];
         const rarityLabel = gear.rarity.charAt(0).toUpperCase() + gear.rarity.slice(1);
-        const facetPrefix = gear.facet ? `${gear.facet.name} ` : '';
+        const aspectPrefix = gear.aspect ? `${gear.aspect.name} ` : '';
         useGameStore.getState().addLog(
-          `Crafted [${rarityLabel}] ${facetPrefix}${template?.name || 'item'}!`,
+          `Crafted [${rarityLabel}] ${aspectPrefix}${template?.name || 'item'}!`,
           gear.rarity === 'plague' || gear.rarity === 'unique' ? 'levelup' : 'info',
         );
 
@@ -300,9 +299,9 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     set({ inventory: newInventory });
 
     const rarityLabel = gear.rarity.charAt(0).toUpperCase() + gear.rarity.slice(1);
-    const facetPrefix = gear.facet ? `${gear.facet.name} ` : '';
+    const aspectPrefix = gear.aspect ? `${gear.aspect.name} ` : '';
     gameStore.addLog(
-      `Crafted [${rarityLabel}] ${facetPrefix}${template.name}!`,
+      `Crafted [${rarityLabel}] ${aspectPrefix}${template.name}!`,
       gear.rarity === 'plague' ? 'levelup' : gear.rarity === 'unique' ? 'levelup' : 'info',
     );
 
@@ -438,7 +437,7 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     }));
   },
 
-  rerollFacet: (instanceId) => {
+  rerollAspect: (instanceId) => {
     const state = get();
     const gear = state.inventory.find(g => g.instanceId === instanceId);
     if (!gear) return false;
@@ -447,37 +446,37 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
     for (const eq of Object.values(state.heroEquipment)) {
       for (const slotVal of Object.values(eq)) {
         if (slotVal === instanceId) {
-          useGameStore.getState().addLog('Cannot re-roll facet on equipped gear. Unequip it first.', 'error');
+          useGameStore.getState().addLog('Cannot re-roll aspect on equipped gear. Unequip it first.', 'error');
           return false;
         }
       }
     }
 
-    // Check player has a Facet Stone
+    // Check player has an Aspect Stone
     const gameStore = useGameStore.getState();
-    const facetStones = gameStore.resources['facet_stone'] || 0;
-    if (facetStones < 1) {
-      gameStore.addLog('Need a Facet Stone to re-roll facet. Craft one via Tinkering.', 'error');
+    const aspectStones = gameStore.resources['aspect_stone'] || 0;
+    if (aspectStones < 1) {
+      gameStore.addLog('Need an Aspect Stone to re-roll aspect. Craft one via Tinkering.', 'error');
       return false;
     }
 
     const template = GEAR_TEMPLATES[gear.templateId];
     if (!template) return false;
 
-    // Consume Facet Stone
+    // Consume Aspect Stone
     const newResources = { ...gameStore.resources };
-    newResources['facet_stone'] = facetStones - 1;
+    newResources['aspect_stone'] = aspectStones - 1;
     useGameStore.setState({ resources: newResources });
 
-    // Roll a new facet
-    const pool = getFacetsForSlot(template.slot, template.weaponType);
+    // Roll a new aspect
+    const pool = getAspectsForSlot(template.slot, template.weaponType);
     const filtered = pool.filter(f => f.name !== 'Standard');
-    let newFacet: Facet | null = null;
+    let newAspect: Aspect | null = null;
     if (filtered.length > 0) {
       const chosen = filtered[Math.floor(Math.random() * filtered.length)];
       const tierMults: Record<number, number> = { 1: 0.5, 2: 0.7, 3: 0.85, 4: 1.0, 5: 1.2, 6: 1.4, 7: 1.6, 8: 1.8 };
       const mult = tierMults[template.tier] || 1.0;
-      newFacet = {
+      newAspect = {
         name: chosen.name,
         upside: { stat: chosen.upside.stat, value: Math.round(chosen.upside.value * mult * 10) / 10, isPercentage: chosen.upside.isPercentage },
         downside: { stat: chosen.downside.stat, value: Math.round(chosen.downside.value * mult * 10) / 10, isPercentage: chosen.downside.isPercentage },
@@ -486,83 +485,11 @@ export const useEquipmentStore = create<EquipmentState>((set, get) => ({
 
     // Update inventory
     set(s => ({
-      inventory: s.inventory.map(g => g.instanceId === instanceId ? { ...g, facet: newFacet } : g),
+      inventory: s.inventory.map(g => g.instanceId === instanceId ? { ...g, aspect: newAspect } : g),
     }));
 
-    const facetLabel = newFacet ? newFacet.name : 'Standard';
-    gameStore.addLog(`Facet re-rolled! ${template.name} is now "${facetLabel}".`, 'info');
-    return true;
-  },
-
-  rerollEnchantments: (instanceId) => {
-    const state = get();
-    const gear = state.inventory.find(g => g.instanceId === instanceId);
-    if (!gear) return false;
-
-    // Check not equipped
-    for (const eq of Object.values(state.heroEquipment)) {
-      for (const slotVal of Object.values(eq)) {
-        if (slotVal === instanceId) {
-          useGameStore.getState().addLog('Cannot re-roll enchantments on equipped gear. Unequip it first.', 'error');
-          return false;
-        }
-      }
-    }
-
-    const template = GEAR_TEMPLATES[gear.templateId];
-    if (!template) return false;
-
-    // Check rarity allows enchantments
-    const enchantCount = getEnchantSlots(gear.rarity);
-    if (enchantCount === 0) {
-      useGameStore.getState().addLog('Common gear has no enchantment slots.', 'error');
-      return false;
-    }
-
-    // Check player has Enhancement Shards
-    const gameStore = useGameStore.getState();
-    const shards = gameStore.resources['enhancement_shard'] || 0;
-    if (shards < 1) {
-      gameStore.addLog('Need an Enhancement Shard to re-roll enchantments. Craft one via Biochemistry.', 'error');
-      return false;
-    }
-
-    // Consume Enhancement Shard
-    const newResources = { ...gameStore.resources };
-    newResources['enhancement_shard'] = shards - 1;
-    useGameStore.setState({ resources: newResources });
-
-    // Roll new enchantments
-    const pool = getEnchantsForSlot(template.slot);
-    const tierMults: Record<number, number> = { 1: 0.5, 2: 0.7, 3: 0.85, 4: 1.0, 5: 1.2, 6: 1.4, 7: 1.6, 8: 1.8 };
-    const tierMult = tierMults[template.tier] || 1.0;
-    const newEnchants: Enchantment[] = [];
-    const usedGroups = new Set<string>();
-
-    for (let i = 0; i < enchantCount; i++) {
-      const available = pool.filter(e => !usedGroups.has(e.group));
-      if (available.length === 0) break;
-      const chosen = available[Math.floor(Math.random() * available.length)];
-      usedGroups.add(chosen.group);
-
-      const range = chosen.maxValue - chosen.minValue;
-      const value = Math.round((chosen.minValue + Math.random() * range) * tierMult * 10) / 10;
-      const isLegendary = Math.random() < 0.05;
-
-      newEnchants.push({
-        name: chosen.name,
-        group: chosen.group,
-        effect: { stat: chosen.stat, value, isPercentage: chosen.isPercentage },
-        isLegendary,
-        legendaryBonus: isLegendary ? chosen.legendaryBonus : undefined,
-      });
-    }
-
-    set(s => ({
-      inventory: s.inventory.map(g => g.instanceId === instanceId ? { ...g, enchantments: newEnchants } : g),
-    }));
-
-    gameStore.addLog(`Enchantments re-rolled on ${template.name}! ${newEnchants.length} new enchant(s).`, 'info');
+    const aspectLabel = newAspect ? newAspect.name : 'Standard';
+    gameStore.addLog(`Aspect re-rolled! ${template.name} is now "${aspectLabel}".`, 'info');
     return true;
   },
 

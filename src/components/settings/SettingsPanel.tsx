@@ -357,7 +357,7 @@ function AchievementsSection() {
 
 // ── Data Management ──
 
-const FULL_SAVE_VERSION = 11;
+const FULL_SAVE_VERSION = 16;
 
 function DataManagementSection() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);

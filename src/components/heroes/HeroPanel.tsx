@@ -5,8 +5,7 @@ import { useStoryStore } from '../../store/useStoryStore';
 import { useGameStore } from '../../store/useGameStore';
 import { useCombatZoneStore } from '../../store/useCombatZoneStore';
 import { COMBAT_ZONES } from '../../config/combatZones';
-import { CLASS_LIST, CLASSES } from '../../config/classes';
-import { CATEGORIES } from '../../config/categories';
+import { CLASS_LIST, CLASSES, getJob2ClassById } from '../../config/classes';
 import { GEAR_TEMPLATES } from '../../config/gear';
 import { ABILITIES, ABILITY_COLOR_HEX } from '../../config/abilities';
 import type { AbilityTome } from '../../config/abilities';
@@ -19,12 +18,11 @@ import { ProgressBar } from '../common/ProgressBar';
 import { xpForLevel } from '../../types/skills';
 import { ItemIcon } from '../../utils/itemIcons';
 
-const CATEGORY_COLORS: Record<string, string> = {
-  skirmisher: '#27ae60',
-  control: '#3498db',
-  support: '#9b59b6',
-  assault: '#e74c3c',
-  artisan: '#f39c12',
+const BASE_CLASS_COLORS: Record<string, string> = {
+  melee: '#ef4444',
+  ranger: '#22c55e',
+  demolition: '#3b82f6',
+  support: '#f59e0b',
 };
 
 const STAT_COLORS: Record<string, string> = {
@@ -35,24 +33,26 @@ const STAT_COLORS: Record<string, string> = {
   per: '#9b59b6',
   luk: '#1abc9c',
   res: '#e879f9',
+  spd: '#06b6d4',
 };
 
 const STAT_LABELS: Record<string, string> = {
-  str: 'STR', dex: 'DEX', int: 'INT', con: 'CON', per: 'PER', luk: 'LUK', res: 'RES',
+  str: 'STR', dex: 'DEX', int: 'INT', con: 'CON', per: 'PER', luk: 'LUK', res: 'RES', spd: 'SPD',
 };
 
 const STAT_FULL_NAMES: Record<string, string> = {
-  str: 'Strength', dex: 'Dexterity', int: 'Intelligence', con: 'Constitution', per: 'Perception', luk: 'Luck', res: 'Resolve',
+  str: 'Strength', dex: 'Dexterity', int: 'Intelligence', con: 'Constitution', per: 'Perception', luk: 'Luck', res: 'Resolve', spd: 'Speed',
 };
 
 const STAT_DESCRIPTIONS: Record<string, string> = {
   str: '+2 Melee Attack, +1 Defense per point',
-  dex: '+2 Ranged Attack, +0.5 Turn Speed per point',
+  dex: '+2 Ranged Attack, +0.3 Evasion per point',
   int: '+2 Blast Attack, +1% Crit Damage per point',
   con: '+10 Max HP, +1.5 Defense, +0.5 HP Regen per point',
   per: '+0.8% Accuracy, +0.5% Crit Chance per point',
   luk: '+0.5% Evasion, +0.5% Status Resist per point',
   res: '+1% Ability Power, Unlock Ability Slots per point',
+  spd: '+1 Turn Speed per point (turn gauge fill rate)',
 };
 
 export function HeroPanel() {
@@ -118,7 +118,8 @@ export function HeroPanel() {
 
 function HeroListCard({ hero, isSelected, onClick }: { hero: Hero; isSelected: boolean; onClick: () => void }) {
   const classDef = CLASSES[hero.classId];
-  const catColor = CATEGORY_COLORS[classDef?.categoryId || ''] || '#888';
+  const classColor = BASE_CLASS_COLORS[classDef?.baseClass || ''] || '#888';
+  const job2 = hero.job2ClassId ? getJob2ClassById(hero.job2ClassId) : null;
 
   return (
     <button
@@ -126,25 +127,25 @@ function HeroListCard({ hero, isSelected, onClick }: { hero: Hero; isSelected: b
       className="w-full text-left p-3 rounded border transition-all cursor-pointer"
       style={{
         backgroundColor: isSelected ? 'var(--color-bg-tertiary)' : 'var(--color-bg-secondary)',
-        borderColor: isSelected ? catColor : 'var(--color-border)',
+        borderColor: isSelected ? classColor : 'var(--color-border)',
         borderWidth: isSelected ? '2px' : '1px',
       }}
     >
       <div className="flex justify-between items-center mb-1">
         <div className="flex items-center gap-2">
-          <ItemIcon itemId={hero.classId} itemType="hero" size={28} fallbackLabel={hero.name.charAt(0)} fallbackColor={catColor} />
+          <ItemIcon itemId={hero.classId} itemType="hero" size={28} fallbackLabel={hero.name.charAt(0)} fallbackColor={classColor} />
           <span className="font-bold text-xs" style={{ color: 'var(--color-text-primary)' }}>{hero.name}</span>
         </div>
-        <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: catColor + '22', color: catColor }}>
+        <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: classColor + '22', color: classColor }}>
           Lv.{hero.level}
         </span>
       </div>
-      <div className="text-xs flex items-center gap-1" style={{ color: catColor }}>
+      <div className="text-xs flex items-center gap-1" style={{ color: classColor }}>
         {classDef?.name || hero.classId}
-        <span style={{ color: 'var(--color-text-muted)' }}> | {classDef?.heroType === 'specialist' ? 'Specialist' : 'Combat'}</span>
-        {classDef?.primaryStats?.[0] && (
-          <span style={{ color: STAT_COLORS[classDef.primaryStats[0] as keyof typeof STAT_COLORS], fontWeight: 'bold' }}>
-            {STAT_LABELS[classDef.primaryStats[0] as keyof PrimaryStats]}
+        {job2 && <span style={{ color: 'var(--color-text-muted)' }}> / {job2.name}</span>}
+        {classDef?.statEmphasis?.[0] && (
+          <span style={{ color: STAT_COLORS[classDef.statEmphasis[0] as keyof typeof STAT_COLORS], fontWeight: 'bold' }}>
+            {STAT_LABELS[classDef.statEmphasis[0] as keyof PrimaryStats]}
           </span>
         )}
       </div>
@@ -164,20 +165,21 @@ function HeroDetail({ hero }: { hero: Hero }) {
   const deployments = useCombatZoneStore(s => s.deployments);
   const recallHero = useCombatZoneStore(s => s.recallHero);
   const [dismissStep, setDismissStep] = useState(0);
+  const [pendingAlloc, setPendingAlloc] = useState<Record<string, number>>({});
   const classDef = CLASSES[hero.classId];
-  const category = CATEGORIES[classDef?.categoryId || ''];
+  const job2 = hero.job2ClassId ? getJob2ClassById(hero.job2ClassId) : null;
   const heroEquipment = useEquipmentStore(s => s.heroEquipment);
   const inventory = useEquipmentStore(s => s.inventory);
   const totalStats = getTotalStats(hero);
   const equippedGear = getEquippedGear(hero.id, heroEquipment, inventory);
   const derived = calculateDerivedStats(hero, equippedGear);
-  const catColor = CATEGORY_COLORS[classDef?.categoryId || ''] || '#888';
+  const classColor = BASE_CLASS_COLORS[classDef?.baseClass || ''] || '#888';
 
   const currentLevelXp = xpForLevel(hero.level);
   const nextLevelXp = xpForLevel(hero.level + 1);
   const xpIntoLevel = hero.xp - currentLevelXp;
   const xpNeeded = nextLevelXp - currentLevelXp;
-  const primaryStatKey = classDef?.primaryStats?.[0] as keyof PrimaryStats | undefined;
+  const primaryStatKey = classDef?.statEmphasis?.[0] as keyof PrimaryStats | undefined;
 
   // Compute base stats (no gear) vs total to build per-stat tooltips
   const baseOnly = calculateDerivedStats(hero, []);
@@ -211,15 +213,14 @@ function HeroDetail({ hero }: { hero: Hero }) {
     for (const gear of equippedGear) {
       const tmpl = GEAR_TEMPLATES[gear.templateId];
       if (!tmpl) continue;
-      const gearName = (gear.facet ? `${gear.facet.name} ` : '') + tmpl.name;
+      const gearName = (gear.aspect ? `${gear.aspect.name} ` : '') + tmpl.name;
       const slot = tmpl.slot;
       const allBonuses = [
         ...tmpl.baseStats.map(b => ({ ...b })),
         ...(tmpl.inherentDownside ? [{ stat: tmpl.inherentDownside.stat, value: tmpl.inherentDownside.value, isPercentage: tmpl.inherentDownside.isPercentage }] : []),
         ...gear.rarityBonuses.map(b => ({ ...b })),
         ...gear.rarityCurses.map(c => ({ stat: c.stat, value: -Math.abs(c.value), isPercentage: c.isPercentage })),
-        ...(gear.facet ? [gear.facet.upside, gear.facet.downside] : []),
-        ...gear.enchantments.map(e => e.effect),
+        ...(gear.aspect ? [gear.aspect.upside, gear.aspect.downside] : []),
       ];
       for (const b of allBonuses) {
         if (!b || b.stat === 'none') continue;
@@ -238,7 +239,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
       {/* ─── Compact Header ─── */}
       <div className="p-3 rounded mb-3" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
         <div className="flex items-center gap-3">
-          <ItemIcon itemId={hero.classId} itemType="hero" size={52} fallbackLabel={hero.name.charAt(0)} fallbackColor={catColor} />
+          <ItemIcon itemId={hero.classId} itemType="hero" size={52} fallbackLabel={hero.name.charAt(0)} fallbackColor={classColor} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
               <h2 className="text-lg font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>{hero.name}</h2>
@@ -247,18 +248,31 @@ function HeroDetail({ hero }: { hero: Hero }) {
               </span>
             </div>
             <div className="flex gap-1.5 items-center flex-wrap">
-              <span className="text-xs font-bold" style={{ color: catColor }}>{classDef?.name}</span>
-              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: catColor + '22', color: catColor }}>{category?.name}</span>
+              <span className="text-xs font-bold" style={{ color: classColor }}>{classDef?.name}</span>
+              {job2 && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: classColor + '22', color: classColor }}>{job2.name}</span>
+              )}
+              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: classColor + '22', color: classColor }}>
+                {classDef?.baseClass ? classDef.baseClass.charAt(0).toUpperCase() + classDef.baseClass.slice(1) : ''}
+              </span>
               {primaryStatKey && (
                 <span className="text-[11px] px-1.5 py-0.5 rounded font-bold" style={{
                   backgroundColor: STAT_COLORS[primaryStatKey] + '22',
                   color: STAT_COLORS[primaryStatKey],
                 }}>{STAT_LABELS[primaryStatKey]}</span>
               )}
-              <span className="text-[11px] px-1.5 py-0.5 rounded" style={{
-                backgroundColor: classDef?.heroType === 'specialist' ? '#f39c1222' : '#e74c3c22',
-                color: classDef?.heroType === 'specialist' ? '#f39c12' : '#e74c3c',
-              }}>{classDef?.heroType === 'specialist' ? 'Specialist' : 'Combat'}</span>
+              {hero.primaryAttribute && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded" style={{
+                  backgroundColor: STAT_COLORS[hero.primaryAttribute] + '22',
+                  color: STAT_COLORS[hero.primaryAttribute],
+                }}>Pri: {STAT_LABELS[hero.primaryAttribute]}</span>
+              )}
+              {classDef?.primaryCombatStyle && (
+                <span className="text-[11px] px-1.5 py-0.5 rounded font-bold" style={{
+                  backgroundColor: classDef.primaryCombatStyle === 'melee' ? '#ef444422' : classDef.primaryCombatStyle === 'ranger' ? '#22c55e22' : '#3b82f622',
+                  color: classDef.primaryCombatStyle === 'melee' ? '#ef4444' : classDef.primaryCombatStyle === 'ranger' ? '#22c55e' : '#3b82f6',
+                }}>{classDef.primaryCombatStyle.charAt(0).toUpperCase() + classDef.primaryCombatStyle.slice(1)}</span>
+              )}
             </div>
             {/* XP bar inline */}
             {hero.level < 100 && (
@@ -344,7 +358,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
       <div className="grid grid-cols-4 gap-2 mb-3">
         <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
           <div className="text-xs font-bold" style={{ color: '#e74c3c' }}>
-            {classDef?.primaryCombatStyle === 'melee' ? derived.meleeAttack.toFixed(0) : classDef?.primaryCombatStyle === 'ranged' ? derived.rangedAttack.toFixed(0) : derived.blastAttack.toFixed(0)}
+            {classDef?.primaryCombatStyle === 'melee' ? derived.meleeAttack.toFixed(0) : classDef?.primaryCombatStyle === 'ranger' ? derived.rangedAttack.toFixed(0) : derived.blastAttack.toFixed(0)}
           </div>
           <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Attack</div>
         </div>
@@ -368,21 +382,41 @@ function HeroDetail({ hero }: { hero: Hero }) {
         <div className="flex-1 min-w-0 space-y-3">
           {/* Primary Attributes */}
           <div className="p-2.5 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
+            {(() => {
+              const totalPending = Object.values(pendingAlloc).reduce((s, v) => s + v, 0);
+              const remainingPoints = hero.unspentPoints - totalPending;
+              const hasPending = totalPending > 0;
+
+              const addPending = (stat: string, amount: number) => {
+                const capped = Math.min(amount, remainingPoints);
+                if (capped <= 0) return;
+                setPendingAlloc(p => ({ ...p, [stat]: (p[stat] || 0) + capped }));
+              };
+
+              const confirmAlloc = () => {
+                for (const [stat, amount] of Object.entries(pendingAlloc)) {
+                  if (amount > 0) allocateMultiple(hero.id, stat as keyof PrimaryStats, amount);
+                }
+                setPendingAlloc({});
+              };
+
+              return (<>
             <div className="flex justify-between items-center mb-1.5">
               <h3 className="font-bold text-xs">Attributes</h3>
               {hero.unspentPoints > 0 && (
                 <span className="text-[11px] font-bold" style={{ color: 'var(--color-accent)' }}>
-                  {hero.unspentPoints} pts
+                  {hasPending ? `${remainingPoints}/${hero.unspentPoints}` : hero.unspentPoints} pts
                 </span>
               )}
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {(Object.keys(STAT_LABELS) as (keyof PrimaryStats)[]).map(stat => {
                 const isPrimary = stat === primaryStatKey;
+                const pending = pendingAlloc[stat] || 0;
                 return (
                   <div key={stat} className="group relative flex items-center justify-between px-2 py-1 rounded" style={{
                     backgroundColor: 'var(--color-bg-tertiary)',
-                    border: isPrimary ? `1px solid ${STAT_COLORS[stat]}` : '1px solid transparent',
+                    border: isPrimary ? `1px solid ${STAT_COLORS[stat]}` : pending > 0 ? `1px solid ${STAT_COLORS[stat]}55` : '1px solid transparent',
                     cursor: 'default',
                   }}>
                     {/* Instant tooltip */}
@@ -391,21 +425,21 @@ function HeroDetail({ hero }: { hero: Hero }) {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-[11px] font-bold w-6" style={{ color: STAT_COLORS[stat] }}>{STAT_LABELS[stat]}</span>
-                      <span className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>{totalStats[stat]}</span>
-                      <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>({hero.baseStats[stat]}+{hero.allocatedStats[stat]})</span>
+                      <span className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>{totalStats[stat] + pending}</span>
+                      <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>({hero.baseStats[stat]}+{hero.allocatedStats[stat]}{pending > 0 ? `+${pending}` : ''})</span>
                     </div>
-                    {hero.unspentPoints > 0 && (
+                    {remainingPoints > 0 && (
                       <div className="flex gap-0.5">
-                        <button onClick={() => allocateStat(hero.id, stat)}
+                        <button onClick={() => addPending(stat, 1)}
                           className="w-5 h-5 rounded text-[11px] font-bold cursor-pointer flex items-center justify-center"
                           style={{ backgroundColor: STAT_COLORS[stat], color: '#000', border: 'none' }}>+</button>
-                        {hero.unspentPoints >= 5 && (
-                          <button onClick={() => allocateMultiple(hero.id, stat, 5)}
+                        {remainingPoints >= 5 && (
+                          <button onClick={() => addPending(stat, 5)}
                             className="w-6 h-5 rounded text-[11px] font-bold cursor-pointer flex items-center justify-center"
                             style={{ backgroundColor: STAT_COLORS[stat] + 'bb', color: '#000', border: 'none' }}>+5</button>
                         )}
-                        {hero.unspentPoints > 1 && (
-                          <button onClick={() => allocateMultiple(hero.id, stat, hero.unspentPoints)}
+                        {remainingPoints > 1 && (
+                          <button onClick={() => addPending(stat, remainingPoints)}
                             className="px-1 h-5 rounded text-[11px] font-bold cursor-pointer flex items-center justify-center"
                             style={{ backgroundColor: STAT_COLORS[stat] + '66', color: '#000', border: 'none' }}>Max</button>
                         )}
@@ -415,6 +449,22 @@ function HeroDetail({ hero }: { hero: Hero }) {
                 );
               })}
             </div>
+            {hasPending && (
+              <div className="flex gap-2 mt-2">
+                <button onClick={confirmAlloc}
+                  className="flex-1 py-1.5 rounded text-xs font-bold cursor-pointer"
+                  style={{ backgroundColor: 'var(--color-accent)', color: '#000', border: 'none' }}>
+                  Confirm ({totalPending} pts)
+                </button>
+                <button onClick={() => setPendingAlloc({})}
+                  className="px-3 py-1.5 rounded text-xs font-bold cursor-pointer"
+                  style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)' }}>
+                  Cancel
+                </button>
+              </div>
+            )}
+              </>);
+            })()}
           </div>
 
           {/* Combat Stats */}
@@ -425,7 +475,7 @@ function HeroDetail({ hero }: { hero: Hero }) {
                 <div className="text-[11px] font-bold mb-0.5" style={{ color: '#e74c3c' }}>Offense</div>
                 <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 text-xs">
                   <DerivedRow label="Melee" value={derived.meleeAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'melee'} tooltip={statTipData('meleeAttack', baseOnly.meleeAttack)} />
-                  <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranged'} tooltip={statTipData('rangedAttack', baseOnly.rangedAttack)} />
+                  <DerivedRow label="Ranged" value={derived.rangedAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'ranger'} tooltip={statTipData('rangedAttack', baseOnly.rangedAttack)} />
                   <DerivedRow label="Blast" value={derived.blastAttack.toFixed(0)} highlight={classDef?.primaryCombatStyle === 'demolitions'} tooltip={statTipData('blastAttack', baseOnly.blastAttack)} />
                   <DerivedRow label="Crit" value={derived.critChance.toFixed(1) + '%'} tooltip={statTipData('critChance', baseOnly.critChance, '%')} />
                   <DerivedRow label="Crit Dmg" value={derived.critDamage.toFixed(0) + '%'} tooltip={statTipData('critDamage', baseOnly.critDamage, '%')} />
@@ -487,11 +537,12 @@ function HeroDetail({ hero }: { hero: Hero }) {
         </div>
       </div>
 
-      {/* Category Bonus */}
+      {/* Base Class Info */}
       <div className="p-2.5 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-        <h3 className="font-bold text-xs mb-1" style={{ color: catColor }}>{category?.name} Bonus</h3>
-        <div className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>{category?.decreeDescription}</div>
-        <div className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>Skirmish: {category?.skirmishDescription}</div>
+        <h3 className="font-bold text-xs mb-1" style={{ color: classColor }}>
+          {classDef?.baseClass ? classDef.baseClass.charAt(0).toUpperCase() + classDef.baseClass.slice(1) : 'Unknown'} Class
+        </h3>
+        <div className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>{classDef?.description}</div>
       </div>
     </div>
   );
@@ -504,8 +555,12 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
   const unequipItem = useEquipmentStore(s => s.unequipItem);
   const deployments = useCombatZoneStore(s => s.deployments);
   const resources = useGameStore(s => s.resources);
+  const heroes = useHeroStore(s => s.heroes);
   const [expandedSlot, setExpandedSlot] = useState<EquipmentSlot | null>(null);
 
+  const hero = heroes.find(h => h.id === heroId);
+  const classDef = hero ? CLASSES[hero.classId] : null;
+  const heroStyle = classDef?.primaryCombatStyle;
   const isDeployed = deployments.some(d => d.heroIds.includes(heroId));
   const equipped = heroEquipment[heroId] || {};
 
@@ -571,6 +626,8 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
       if (tmpl.slot !== category) return false;
       if (slot === 'ring3' && !tmpl.statFocusRing) return false;
       if ((slot === 'ring1' || slot === 'ring2') && tmpl.statFocusRing) return false;
+      // Only show weapons matching hero's combat style
+      if (tmpl.weaponType && heroStyle && tmpl.weaponType !== heroStyle) return false;
       return true;
     });
 
@@ -592,7 +649,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
             <>
               <div className="font-bold flex items-center gap-1" style={{ color: RARITY_COLORS[equippedGear.rarity], fontSize: 11 }}>
                 <ItemIcon itemId={equippedTemplate.id} itemType="equipment" gearSlot={equippedTemplate.slot} size={16} fallbackLabel={equippedTemplate.name.charAt(0)} />
-                {equippedGear.facet ? `${equippedGear.facet.name} ` : ''}{equippedTemplate.name}
+                {equippedGear.aspect ? `${equippedGear.aspect.name} ` : ''}{equippedTemplate.name}
               </div>
               <div className="flex flex-wrap gap-1 mt-0.5">
                 {equippedTemplate.baseStats.slice(0, 2).map((s, i) => (
@@ -620,18 +677,11 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                         Unequip {equippedTemplate?.name}
                       </button>
                       <div className="flex gap-1 mt-1">
-                        <button onClick={() => { useEquipmentStore.getState().rerollFacet(equippedGear.instanceId); }}
+                        <button onClick={() => { useEquipmentStore.getState().rerollAspect(equippedGear.instanceId); }}
                           className="flex-1 p-1 rounded text-xs cursor-pointer"
                           style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-info)', border: '1px solid var(--color-border)' }}>
-                          Re-roll Facet ({resources['facet_stone'] || 0})
+                          Re-roll Aspect ({resources['aspect_stone'] || 0})
                         </button>
-                        {equippedGear.rarity !== 'common' && (
-                          <button onClick={() => { useEquipmentStore.getState().rerollEnchantments(equippedGear.instanceId); }}
-                            className="flex-1 p-1 rounded text-xs cursor-pointer"
-                            style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-xp)', border: '1px solid var(--color-border)' }}>
-                            Re-roll Enchants ({resources['enhancement_shard'] || 0})
-                          </button>
-                        )}
                       </div>
                     </>
                   )}
@@ -648,7 +698,7 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                         style={{ backgroundColor: 'var(--color-bg-tertiary)', border: `1px solid ${RARITY_COLORS[gear.rarity]}44`, color: 'var(--color-text-primary)' }}>
                         <div className="font-bold flex items-center gap-1" style={{ color: RARITY_COLORS[gear.rarity] }}>
                           <ItemIcon itemId={tmpl.id} itemType="equipment" gearSlot={tmpl.slot} size={18} fallbackLabel={tmpl.name.charAt(0)} />
-                          {gear.facet ? `${gear.facet.name} ` : ''}{tmpl.name} [{RARITY_LABELS[gear.rarity]}]
+                          {gear.aspect ? `${gear.aspect.name} ` : ''}{tmpl.name} [{RARITY_LABELS[gear.rarity]}]
                         </div>
                         {tmpl.description && (
                           <div style={{ color: 'var(--color-text-muted)', fontSize: 11, fontStyle: 'italic', marginTop: '2px' }}>
@@ -672,9 +722,9 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                             </span>
                           )}
                         </div>
-                        {gear.facet && gear.facet.upside.stat !== 'none' && (
+                        {gear.aspect && gear.aspect.upside.stat !== 'none' && (
                           <div style={{ color: 'var(--color-energy)', fontSize: 11, marginTop: '2px' }}>
-                            [{gear.facet.name}] +{gear.facet.upside.value}{gear.facet.upside.isPercentage ? '%' : ''} {gear.facet.upside.stat} / {gear.facet.downside.value}{gear.facet.downside.isPercentage ? '%' : ''} {gear.facet.downside.stat}
+                            [{gear.aspect.name}] +{gear.aspect.upside.value}{gear.aspect.upside.isPercentage ? '%' : ''} {gear.aspect.upside.stat} / {gear.aspect.downside.value}{gear.aspect.downside.isPercentage ? '%' : ''} {gear.aspect.downside.stat}
                           </div>
                         )}
                         {gear.rarityBonuses.length > 0 && (
@@ -688,16 +738,6 @@ function HeroEquipmentSection({ heroId }: { heroId: string }) {
                           <div className="flex flex-wrap gap-1" style={{ marginTop: '2px' }}>
                             {gear.rarityCurses.map((c, i) => (
                               <span key={i} style={{ color: '#ff4444', fontSize: 11 }}>CURSE: {c.value}{c.isPercentage ? '%' : ''} {c.stat}</span>
-                            ))}
-                          </div>
-                        )}
-                        {gear.enchantments.length > 0 && (
-                          <div style={{ marginTop: '2px' }}>
-                            {gear.enchantments.map((e, i) => (
-                              <div key={i} style={{ color: e.isLegendary ? '#f97316' : '#60a5fa', fontSize: 11 }}>
-                                [{e.group}] {e.name}: +{e.effect.value}{e.effect.isPercentage ? '%' : ''} {e.effect.stat}
-                                {e.isLegendary && e.legendaryBonus && <span> ★ {e.legendaryBonus}</span>}
-                              </div>
                             ))}
                           </div>
                         )}
@@ -958,7 +998,7 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
         })()}
       </div>
       <div className="text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
-        Equip Ability Tomes from drops, crafting, or the market. 5 color types: Red (melee), Green (ranged), Blue (tech), Orange (passive), Purple (decree).
+        Equip Ability Tomes from drops, crafting, or the market. 6 color types: Red (melee), Green (ranger), Blue (tech), Orange (passive), Purple (decree), Gold (job2).
       </div>
     </div>
   );
@@ -1220,7 +1260,7 @@ function RecruitModal({ onClose }: { onClose: () => void }) {
   const heroes = useHeroStore(s => s.heroes);
   const isFeatureUnlocked = useStoryStore(s => s.isFeatureUnlocked);
   const playerWC = useGameStore(s => s.resources['wasteland_credits'] || 0);
-  const [filter, setFilter] = useState<'all' | 'combat' | 'specialist'>('all');
+  const [filter, setFilter] = useState<'all' | 'melee' | 'ranger' | 'demolition' | 'support'>('all');
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [justRecruited, setJustRecruited] = useState<string | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -1231,7 +1271,7 @@ function RecruitModal({ onClose }: { onClose: () => void }) {
   const canAfford = isFree || playerWC >= cost;
 
   const filtered = CLASS_LIST.filter(c =>
-    filter === 'all' ? true : filter === 'combat' ? c.heroType === 'combat' : c.heroType === 'specialist'
+    filter === 'all' ? true : c.baseClass === filter
   );
 
   // Reset selection when filter changes
@@ -1281,12 +1321,11 @@ function RecruitModal({ onClose }: { onClose: () => void }) {
     if (!cls) return [];
     const colorMap: Record<string, string[]> = {
       melee: ['red'],
-      ranged: ['green'],
+      ranger: ['green'],
       demolitions: ['blue'],
     };
     const relevantColors = colorMap[cls.primaryCombatStyle] || [];
-    if (cls.heroType === 'specialist') relevantColors.push('orange');
-    else relevantColors.push('white');
+    relevantColors.push('white');
     return Object.values(ABILITIES)
       .filter(a => relevantColors.includes(a.color) && !a.isDecree)
       .slice(0, 4);
@@ -1343,18 +1382,20 @@ function RecruitModal({ onClose }: { onClose: () => void }) {
         {/* Filter tabs */}
         {(recruitmentUnlocked || heroes.length === 0) && (
           <div className="flex gap-2" style={{ marginTop: 12 }}>
-            {(['all', 'combat', 'specialist'] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)}
-                style={{
-                  padding: '6px 18px', borderRadius: 6, fontSize: 12, fontWeight: 'bold',
-                  cursor: 'pointer', border: 'none', transition: 'all 0.15s',
-                  backgroundColor: filter === f ? 'var(--color-accent)' : 'var(--color-bg-secondary)',
-                  color: filter === f ? '#000' : 'var(--color-text-muted)',
-                }}
-              >{f === 'all' ? 'All Classes' : f === 'combat' ? 'Combat' : 'Specialist'} ({
-                CLASS_LIST.filter(c => f === 'all' ? true : f === 'combat' ? c.heroType === 'combat' : c.heroType === 'specialist').length
-              })</button>
-            ))}
+            {(['all', 'melee', 'ranger', 'demolition', 'support'] as const).map(f => {
+              const label = f === 'all' ? 'All Classes' : f.charAt(0).toUpperCase() + f.slice(1);
+              const count = CLASS_LIST.filter(c => f === 'all' ? true : c.baseClass === f).length;
+              return (
+                <button key={f} onClick={() => setFilter(f)}
+                  style={{
+                    padding: '6px 18px', borderRadius: 6, fontSize: 12, fontWeight: 'bold',
+                    cursor: 'pointer', border: 'none', transition: 'all 0.15s',
+                    backgroundColor: filter === f ? (f === 'all' ? 'var(--color-accent)' : BASE_CLASS_COLORS[f] || 'var(--color-accent)') : 'var(--color-bg-secondary)',
+                    color: filter === f ? '#000' : 'var(--color-text-muted)',
+                  }}
+                >{label} ({count})</button>
+              );
+            })}
           </div>
         )}
       </div>
@@ -1385,7 +1426,7 @@ function RecruitModal({ onClose }: { onClose: () => void }) {
               paddingRight: 4,
             }}>
               {filtered.map((cls, idx) => {
-                const catColor = CATEGORY_COLORS[cls.categoryId] || '#888';
+                const clsColor = BASE_CLASS_COLORS[cls.baseClass] || '#888';
                 const isActive = idx === selectedIdx;
                 return (
                   <button
@@ -1395,15 +1436,15 @@ function RecruitModal({ onClose }: { onClose: () => void }) {
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
                       borderRadius: 8, cursor: 'pointer', border: 'none', textAlign: 'left',
                       transition: 'all 0.15s',
-                      backgroundColor: isActive ? catColor + '22' : 'var(--color-bg-secondary)',
-                      outline: isActive ? `2px solid ${catColor}` : '2px solid transparent',
+                      backgroundColor: isActive ? clsColor + '22' : 'var(--color-bg-secondary)',
+                      outline: isActive ? `2px solid ${clsColor}` : '2px solid transparent',
                     }}
                   >
-                    <ItemIcon itemId={cls.id} itemType="hero" size={36} fallbackLabel={cls.name.charAt(0)} fallbackColor={catColor} />
+                    <ItemIcon itemId={cls.id} itemType="hero" size={36} fallbackLabel={cls.name.charAt(0)} fallbackColor={clsColor} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ color: catColor, fontWeight: 'bold', fontSize: 13 }}>{cls.name}</div>
+                      <div style={{ color: clsColor, fontWeight: 'bold', fontSize: 13 }}>{cls.name}</div>
                       <div style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
-                        {CATEGORIES[cls.categoryId]?.name} &middot; {cls.primaryCombatStyle}
+                        {cls.baseClass.charAt(0).toUpperCase() + cls.baseClass.slice(1)} &middot; {cls.primaryCombatStyle}
                       </div>
                     </div>
                     {justRecruited === cls.id && (
@@ -1442,52 +1483,50 @@ function RecruitDetailCard({ cls, abilities, cost, isFree, canAfford, justRecrui
   justRecruited: boolean;
   onRecruit: () => void;
 }) {
-  const catColor = CATEGORY_COLORS[cls.categoryId] || '#888';
-  const category = CATEGORIES[cls.categoryId];
-  const primaryStatKeys = [...new Set(cls.primaryStats || [])];
+  const clsColor = BASE_CLASS_COLORS[cls.baseClass] || '#888';
+  const primaryStatKeys = [...new Set(cls.statEmphasis || [])];
 
-  // Compute base stats for display
-  const baseStats = Object.entries(cls.baseStatRanges).map(([stat, [val]]) => ({
-    stat, val, label: STAT_LABELS[stat] || stat.toUpperCase(), color: STAT_COLORS[stat] || '#888',
-  }));
+  // All heroes start with 10 in every stat; statEmphasis gives +3/+2
+  const allStats: (keyof typeof STAT_LABELS)[] = ['str', 'dex', 'int', 'con', 'per', 'luk', 'res', 'spd'];
+  const baseStats = allStats.map(stat => {
+    let val = 10;
+    if (cls.statEmphasis?.[0] === stat) val += 3;
+    if (cls.statEmphasis?.[1] === stat) val += 2;
+    return { stat, val, label: STAT_LABELS[stat] || stat.toUpperCase(), color: STAT_COLORS[stat] || '#888' };
+  });
 
-  const combatStyleIcon: Record<string, string> = { melee: '&#9876;', ranged: '&#127993;', demolitions: '&#128163;' };
+  const combatStyleIcon: Record<string, string> = { melee: '&#9876;', ranger: '&#127993;', demolitions: '&#128163;' };
 
   return (
     <div style={{
       flex: 1, borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-      border: `2px solid ${catColor}40`,
+      border: `2px solid ${clsColor}40`,
       backgroundColor: 'var(--color-bg-primary)',
     }}>
-      {/* Card header with category color strip */}
+      {/* Card header with class color strip */}
       <div style={{
-        background: `linear-gradient(135deg, ${catColor}33, ${catColor}11)`,
-        padding: '20px 24px', borderBottom: `1px solid ${catColor}30`,
+        background: `linear-gradient(135deg, ${clsColor}33, ${clsColor}11)`,
+        padding: '20px 24px', borderBottom: `1px solid ${clsColor}30`,
       }}>
         <div className="flex items-start gap-4">
           <div style={{
             width: 64, height: 64, borderRadius: 12,
-            backgroundColor: catColor + '22', border: `2px solid ${catColor}`,
+            backgroundColor: clsColor + '22', border: `2px solid ${clsColor}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <ItemIcon itemId={cls.id} itemType="hero" size={48} fallbackLabel={cls.name.charAt(0)} fallbackColor={catColor} />
+            <ItemIcon itemId={cls.id} itemType="hero" size={48} fallbackLabel={cls.name.charAt(0)} fallbackColor={clsColor} />
           </div>
           <div style={{ flex: 1 }}>
-            <h3 style={{ color: catColor, fontSize: 20, fontWeight: 'bold', margin: 0 }}>{cls.name}</h3>
+            <h3 style={{ color: clsColor, fontSize: 20, fontWeight: 'bold', margin: 0 }}>{cls.name}</h3>
             <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
               <span style={{
                 padding: '2px 10px', borderRadius: 4, fontSize: 11, fontWeight: 'bold',
-                backgroundColor: catColor + '22', color: catColor,
-              }}>{category?.name}</span>
+                backgroundColor: clsColor + '22', color: clsColor,
+              }}>{cls.baseClass.charAt(0).toUpperCase() + cls.baseClass.slice(1)}</span>
               <span style={{
                 padding: '2px 10px', borderRadius: 4, fontSize: 11,
                 backgroundColor: 'var(--color-bg-secondary)', color: 'var(--color-text-muted)',
               }} dangerouslySetInnerHTML={{ __html: `${combatStyleIcon[cls.primaryCombatStyle] || ''} ${cls.primaryCombatStyle}` }} />
-              <span style={{
-                padding: '2px 10px', borderRadius: 4, fontSize: 11,
-                backgroundColor: cls.heroType === 'combat' ? '#e74c3c22' : '#f39c1222',
-                color: cls.heroType === 'combat' ? '#e74c3c' : '#f39c12',
-              }}>{cls.heroType === 'combat' ? 'Combat' : 'Specialist'}</span>
             </div>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 12, margin: '8px 0 0', lineHeight: 1.4 }}>
               {cls.description}
@@ -1524,26 +1563,7 @@ function RecruitDetailCard({ cls, abilities, cost, isFree, canAfford, justRecrui
             })}
           </div>
           <div style={{ color: 'var(--color-text-muted)', fontSize: 10, marginTop: 4, fontStyle: 'italic' }}>
-            ★ Primary stats &mdash; these define the hero's combat scaling
-          </div>
-        </div>
-
-        {/* Category Bonus */}
-        <div style={{ marginBottom: 16 }}>
-          <h4 style={{ color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 'bold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 }}>
-            Category Bonuses
-          </h4>
-          <div style={{
-            padding: 10, borderRadius: 6, backgroundColor: catColor + '0D',
-            border: `1px solid ${catColor}22`, fontSize: 12,
-          }}>
-            <div style={{ color: catColor, marginBottom: 4, fontWeight: 'bold' }}>
-              {category?.name}: {category?.description}
-            </div>
-            <div style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
-              <div>Squad: {category?.decreeDescription}</div>
-              <div>Skirmish: {category?.skirmishDescription}</div>
-            </div>
+            Stat emphasis &mdash; first stat gets +3, second gets +2 at recruitment
           </div>
         </div>
 
@@ -1624,7 +1644,7 @@ function RecruitDetailCard({ cls, abilities, cost, isFree, canAfford, justRecrui
             padding: '10px 32px', borderRadius: 8, fontSize: 14, fontWeight: 'bold',
             cursor: canAfford && !justRecruited ? 'pointer' : 'not-allowed',
             border: 'none', transition: 'all 0.2s',
-            backgroundColor: justRecruited ? '#27ae60' : canAfford ? catColor : '#444',
+            backgroundColor: justRecruited ? '#27ae60' : canAfford ? clsColor : '#444',
             color: justRecruited || canAfford ? '#000' : '#888',
             opacity: justRecruited ? 0.9 : 1,
           }}

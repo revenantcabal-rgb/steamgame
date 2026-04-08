@@ -1,7 +1,9 @@
+import type { Job2ClassId } from './hero';
+
 export type EquipmentSlot = 'main_hand' | 'off_hand' | 'armor' | 'legs' | 'gloves' | 'boots' | 'ring1' | 'ring2' | 'ring3' | 'earring1' | 'earring2' | 'necklace';
 export type ItemRarity = 'common' | 'rare' | 'unique' | 'plague';
 export type GearSource = 'forged' | 'salvaged' | 'scavenged' | 'issued' | 'decorated';
-export type WeaponType = 'melee' | 'ranged' | 'demolitions';
+export type WeaponType = 'melee' | 'ranger' | 'demolitions';
 export type GearSlotCategory = 'weapon' | 'shield' | 'armor' | 'legs' | 'gloves' | 'boots' | 'ring' | 'earring' | 'necklace';
 
 export const RARITY_COLORS: Record<ItemRarity, string> = {
@@ -44,20 +46,10 @@ export interface StatBonus {
   isPercentage: boolean;
 }
 
-export interface Facet {
+export interface Aspect {
   name: string;
   upside: StatBonus;
   downside: StatBonus;
-}
-
-export type EnchantGroup = 'offensive' | 'critical' | 'health' | 'utility' | 'elemental' | 'defensive' | 'resistance' | 'block' | 'counter' | 'stat' | 'survival' | 'luck' | 'misc';
-
-export interface Enchantment {
-  name: string;
-  group: EnchantGroup;
-  effect: StatBonus;
-  isLegendary: boolean;
-  legendaryBonus?: string;
 }
 
 export interface GearTemplate {
@@ -95,6 +87,8 @@ export interface GearTemplate {
   setId?: string;
   /** Crafting duration in seconds (derived from tier if not set) */
   craftTime?: number;
+  /** Job2 class requirement — only heroes with this Job2 class can equip */
+  job2ClassReq?: Job2ClassId;
 }
 
 /** Get the crafting duration for a gear template (seconds). Includes 2.5x balance multiplier. */
@@ -111,10 +105,9 @@ export interface GearInstance {
   gameId: string;
   rarity: ItemRarity;
   source: GearSource;
-  facet: Facet | null;
+  aspect: Aspect | null;
   rarityBonuses: StatBonus[];
   rarityCurses: StatBonus[]; // Plague only
-  enchantments: Enchantment[];
   /** Source power multiplier (1.0 for forged, 0.75 for salvaged, etc.) */
   sourcePowerMultiplier: number;
   createdAt: number;
@@ -156,16 +149,6 @@ export interface HeroEquipment {
 
 export function createEmptyEquipment(): HeroEquipment {
   return { main_hand: null, off_hand: null, armor: null, legs: null, gloves: null, boots: null, ring1: null, ring2: null, ring3: null, earring1: null, earring2: null, necklace: null };
-}
-
-/** Number of enchant slots by rarity */
-export function getEnchantSlots(rarity: ItemRarity): number {
-  switch (rarity) {
-    case 'common': return 0;
-    case 'rare': return 1;
-    case 'unique': return 2;
-    case 'plague': return 3;
-  }
 }
 
 /** Number of rarity bonuses by rarity */

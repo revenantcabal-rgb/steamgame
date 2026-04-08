@@ -4,8 +4,8 @@ import { useGameStore } from './useGameStore';
 import { useAchievementStore } from './useAchievementStore';
 import { useStoryStore } from './useStoryStore';
 import { useEquipmentStore } from './useEquipmentStore';
-import type { Hero, PrimaryStats } from '../types/hero';
-import { CLASSES } from '../config/classes';
+import type { Hero, PrimaryStats, Job2ClassId } from '../types/hero';
+import { CLASSES, JOB2_CLASSES } from '../config/classes';
 import { ABILITIES } from '../config/abilities';
 import { CONSUMABLES } from '../config/consumables';
 import { getPremiumBonuses } from '../engine/PremiumBonuses';
@@ -41,6 +41,9 @@ interface HeroState {
 
   equipConsumable: (heroId: string, slotIndex: number, consumableId: string) => boolean;
   unequipConsumable: (heroId: string, slotIndex: number) => void;
+
+  /** Advance a hero to Job2 at level 15+ */
+  advanceJob2: (heroId: string, job2ClassId: Job2ClassId) => boolean;
 
   /** Add a skill item drop (or add duplicate if already owned) */
   addSkillItem: (skillId: string) => void;
@@ -338,6 +341,45 @@ export const useHeroStore = create<HeroState>((set, get) => ({
     }));
   },
 
+  advanceJob2: (heroId, job2ClassId) => {
+    const state = get();
+    const hero = state.heroes.find(h => h.id === heroId);
+    if (!hero) return false;
+
+    // Must be level 15+
+    if (hero.level < 15) {
+      useGameStore.getState().addLog('Hero must be level 15 to advance.', 'error');
+      return false;
+    }
+
+    // Must not already have a Job2
+    if (hero.job2ClassId) {
+      useGameStore.getState().addLog('Hero has already advanced to a Job2 class.', 'error');
+      return false;
+    }
+
+    // Validate the Job2 class exists and matches the hero's base class
+    const job2Def = JOB2_CLASSES[job2ClassId];
+    const classDef = CLASSES[hero.classId];
+    if (!job2Def || !classDef || job2Def.parentBaseClass !== classDef.baseClass) {
+      useGameStore.getState().addLog('Invalid Job2 class for this hero.', 'error');
+      return false;
+    }
+
+    set(s => ({
+      heroes: s.heroes.map(h => {
+        if (h.id !== heroId) return h;
+        return { ...h, job2ClassId };
+      }),
+    }));
+
+    useGameStore.getState().addLog(
+      `${hero.name} has advanced to ${job2Def.name}!`,
+      'levelup',
+    );
+    return true;
+  },
+
   addSkillItem: (skillId) => {
     const state = get();
     const existing = state.ownedSkillItems.find(s => s.skillId === skillId);
@@ -398,15 +440,32 @@ export const useHeroStore = create<HeroState>((set, get) => ({
   getSerializableState: () => ({ heroes: get().heroes, ownedAbilities: get().ownedAbilities, ownedSkillItems: get().ownedSkillItems }),
 
   loadState: (saved) => {
-    // Migrate legacy heroes missing RES stat and ability fields
-    const migratedHeroes = saved.heroes.map(h => ({
-      ...h,
-      baseStats: { ...h.baseStats, res: h.baseStats.res ?? Math.floor(Math.random() * 6) + 3 },
-      allocatedStats: { ...h.allocatedStats, res: h.allocatedStats.res ?? 0 },
-      equippedAbilities: h.equippedAbilities || [null, null, null, null],
-      equippedDecree: h.equippedDecree ?? null,
-      equippedConsumables: h.equippedConsumables || [null],
-    }));
+    // Migrate legacy heroes to new Job2 system
+    const migratedHeroes = saved.heroes.map(h => {
+      const cls = CLASSES[h.classId];
+      // Assign primaryAttribute if missing (pick first from pool)
+      let primaryAttribute = (h as any).primaryAttribute;
+      if (!primaryAttribute && cls) {
+        const pool = cls.primaryAttributePool;
+        primaryAttribute = pool[Math.floor(Math.random() * pool.length)];
+      }
+      primaryAttribute = primaryAttribute || 'str';
+
+      return {
+        ...h,
+        baseStats: {
+          ...h.baseStats,
+          res: h.baseStats.res ?? Math.floor(Math.random() * 6) + 3,
+          spd: h.baseStats.spd ?? 10,
+        },
+        allocatedStats: { ...h.allocatedStats, res: h.allocatedStats.res ?? 0, spd: h.allocatedStats.spd ?? 0 },
+        equippedAbilities: h.equippedAbilities || [null, null, null, null],
+        equippedDecree: h.equippedDecree ?? null,
+        equippedConsumables: h.equippedConsumables || [null],
+        job2ClassId: (h as any).job2ClassId ?? null,
+        primaryAttribute,
+      };
+    });
     const ownedAbilities = saved.ownedAbilities || ['o_thick_skin', 'r_crushing_blow', 'g_quick_shot'];
     const ownedSkillItems = saved.ownedSkillItems || [];
     set({ heroes: migratedHeroes, selectedHeroId: null, ownedAbilities, ownedSkillItems });

@@ -5,7 +5,7 @@ import { usePopulationStore } from '../../store/usePopulationStore';
 import { useHeroStore } from '../../store/useHeroStore';
 import { BUILDINGS, BUILDING_LIST, BUILDING_CATEGORIES, getBuildCost, getBonusAtLevel, getWorkerTickInterval } from '../../config/buildings';
 import type { BuildingDefinition, BuildingCategory } from '../../config/buildings';
-import { CLASSES, SPECIALIST_CLASSES } from '../../config/classes';
+import { CLASSES } from '../../config/classes';
 import { RESOURCES } from '../../config/resources';
 import { ItemIcon } from '../../utils/itemIcons';
 
@@ -52,8 +52,7 @@ export function EncampmentPanel() {
   const heroes = useHeroStore(s => s.heroes);
   const assignedLeaderIds = new Set(Object.values(buildings).map(b => b.leaderId).filter(Boolean));
   const availableLeaders = heroes.filter(h => {
-    const cls = CLASSES[h.classId];
-    return cls?.heroType === 'specialist' && !assignedLeaderIds.has(h.id);
+    return !assignedLeaderIds.has(h.id);
   });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);

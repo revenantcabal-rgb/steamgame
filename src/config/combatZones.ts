@@ -1,4 +1,4 @@
-export type CombatStyle = 'melee' | 'ranged' | 'demolitions';
+export type CombatStyle = 'melee' | 'ranger' | 'demolitions';
 
 export interface Enemy {
   id: string;

@@ -187,12 +187,12 @@ export function CraftingPanel() {
           {/* Weapon type filter */}
           <div className="flex gap-1 items-center mb-2 flex-wrap">
             <span className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>Type:</span>
-            {(['all', 'melee', 'ranged', 'demolitions'] as const).map(wt => (
+            {(['all', 'melee', 'ranger', 'demolitions'] as const).map(wt => (
               <button key={wt} onClick={() => setFilterWeaponType(wt)}
                 className="px-2 py-0.5 rounded text-[11px] cursor-pointer"
                 style={{
                   backgroundColor: filterWeaponType === wt
-                    ? wt === 'melee' ? '#e74c3c' : wt === 'ranged' ? '#27ae60' : wt === 'demolitions' ? '#3498db' : 'var(--color-accent)'
+                    ? wt === 'melee' ? '#e74c3c' : wt === 'ranger' ? '#27ae60' : wt === 'demolitions' ? '#3498db' : 'var(--color-accent)'
                     : 'var(--color-bg-tertiary)',
                   color: filterWeaponType === wt ? '#fff' : 'var(--color-text-muted)',
                   border: 'none',
@@ -279,8 +279,8 @@ export function CraftingPanel() {
                                     <span className="px-1 py-0 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-muted)', fontSize: 11 }}>{SLOT_LABELS[t.slot] || t.slot}</span>
                                     {t.weaponType && (
                                       <span className="px-1 py-0 rounded" style={{
-                                        backgroundColor: t.weaponType === 'melee' ? '#e74c3c22' : t.weaponType === 'ranged' ? '#27ae6022' : '#3498db22',
-                                        color: t.weaponType === 'melee' ? '#e74c3c' : t.weaponType === 'ranged' ? '#27ae60' : '#3498db',
+                                        backgroundColor: t.weaponType === 'melee' ? '#e74c3c22' : t.weaponType === 'ranger' ? '#27ae6022' : '#3498db22',
+                                        color: t.weaponType === 'melee' ? '#e74c3c' : t.weaponType === 'ranger' ? '#27ae60' : '#3498db',
                                         fontSize: 11,
                                       }}>{t.weaponType}{t.isTwoHanded ? ' 2H' : ''}</span>
                                     )}
@@ -481,14 +481,14 @@ function CompactGearCard({ gear, onDiscard }: { gear: GearInstance; onDiscard: (
   if (!template) return null;
 
   const rarityColor = RARITY_COLORS[gear.rarity];
-  const facetPrefix = gear.facet ? `${gear.facet.name} ` : '';
+  const aspectPrefix = gear.aspect ? `${gear.aspect.name} ` : '';
 
   return (
     <div className="p-1.5 rounded flex items-center gap-2" style={{ backgroundColor: 'var(--color-bg-secondary)', borderLeft: `3px solid ${rarityColor}` }}>
       <ItemIcon itemId={template.id} itemType="equipment" gearSlot={template.slot} size={20} fallbackLabel={template.name.charAt(0)} />
       <div className="flex-1 min-w-0">
         <div className="text-xs font-bold truncate" style={{ color: rarityColor }}>
-          {facetPrefix}{template.name}
+          {aspectPrefix}{template.name}
         </div>
         <div className="flex gap-1">
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>T{template.tier} {template.slot}</span>
@@ -509,7 +509,7 @@ export function GearCard({ gear, onDiscard, compact }: { gear: GearInstance; onD
   if (!template) return null;
 
   const rarityColor = RARITY_COLORS[gear.rarity];
-  const facetPrefix = gear.facet ? `${gear.facet.name} ` : '';
+  const aspectPrefix = gear.aspect ? `${gear.aspect.name} ` : '';
 
   return (
     <div className="p-2 rounded" style={{ backgroundColor: 'var(--color-bg-secondary)', border: `1px solid ${rarityColor}44` }}>
@@ -517,7 +517,7 @@ export function GearCard({ gear, onDiscard, compact }: { gear: GearInstance; onD
         <div>
           <div className="font-bold text-xs flex items-center gap-1" style={{ color: rarityColor }}>
             <ItemIcon itemId={template.id} itemType="equipment" gearSlot={template.slot} size={20} fallbackLabel={template.name.charAt(0)} />
-            {facetPrefix}{template.name} [{RARITY_LABELS[gear.rarity]}]
+            {aspectPrefix}{template.name} [{RARITY_LABELS[gear.rarity]}]
           </div>
           <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             T{template.tier} {template.slot} | Lv.{template.levelReq}+

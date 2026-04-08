@@ -28,7 +28,10 @@ export interface SpawnedEnemy {
   name: string;
   maxHp: number;
   currentHp: number;
+  /** Damage per action (hit) */
   damage: number;
+  /** ATB gauge fill rate per tick (default 50) */
+  speed: number;
   xpReward: number;
   resourceDrops: { resourceId: string; chance: number; minQty: number; maxQty: number }[];
 }
@@ -45,6 +48,8 @@ function rollSweepEnemies(
   const tierMult = ZONE_TIER_MULTIPLIERS[zoneTier - 1] || ZONE_TIER_MULTIPLIERS[0];
   const count = Math.floor(Math.random() * 5) + 1; // 1-5
   const enemies: SpawnedEnemy[] = [];
+  // Enemy speed: higher zone = faster enemies (40-70 range)
+  const baseEnemySpeed = Math.min(70, 40 + Math.floor(zone.minLevel / 5));
   for (let i = 0; i < count; i++) {
     const pick = singleTargets[Math.floor(Math.random() * singleTargets.length)];
     const e = pick.enemy;
@@ -54,8 +59,8 @@ function rollSweepEnemies(
     enemies.push({
       enemyId: e.id, name: e.name,
       maxHp: scaledHp, currentHp: scaledHp,
-      damage: scaledDmg, xpReward: scaledXp,
-      resourceDrops: e.resourceDrops,
+      damage: scaledDmg, speed: (e as any).speed ?? baseEnemySpeed,
+      xpReward: scaledXp, resourceDrops: e.resourceDrops,
     });
   }
   return enemies;
@@ -75,8 +80,8 @@ function rollSingleEnemy(
   return [{
     enemyId: enemy.id, name: enemy.name,
     maxHp: scaledHp, currentHp: scaledHp,
-    damage: scaledDmg, xpReward: scaledXp,
-    resourceDrops: enemy.resourceDrops,
+    damage: scaledDmg, speed: (enemy as any).speed ?? 50,
+    xpReward: scaledXp, resourceDrops: enemy.resourceDrops,
   }];
 }
 
@@ -109,6 +114,12 @@ interface PartyDeployment {
   heroHpMap?: Record<string, number>;
   /** Transient per-fight hero SP (heroId -> current SP). Reset each fight. */
   heroSpMap?: Record<string, number>;
+  /** ATB turn gauge per hero (heroId -> gauge 0-99). Reset each fight. */
+  heroGaugeMap?: Record<string, number>;
+  /** ATB turn gauge per enemy (index -> gauge 0-99). Reset each fight. */
+  enemyGaugeMap?: number[];
+  /** Which heroes attacked this tick (heroId -> globalTick when last acted) */
+  heroLastAttackTick?: Record<string, number>;
 }
 
 interface CombatZoneState {
@@ -117,6 +128,10 @@ interface CombatZoneState {
   bossKillCounts: Record<string, number>;
   /** Global hero recovery cooldowns that persist across recalls (heroId -> seconds remaining) */
   heroRecoveryCooldowns: Record<string, number>;
+  /** Tracks recovery tier for escalating cooldowns (heroId -> tier 0/1/2) */
+  heroRecoveryTier: Record<string, number>;
+  /** Timestamp when hero finished recovering — fragile window is 3 min after this */
+  heroRecoveredAt: Record<string, number>;
   nextPartyId: number;
 
   isHeroDeployed: (heroId: string) => boolean;
@@ -136,6 +151,19 @@ export interface SerializedCombatZoneState {
   bossKillCounts: Record<string, number>;
   heroRecoveryCooldowns?: Record<string, number>;
   nextPartyId?: number;
+}
+
+/** Recovery cooldown: 7 min base, doubles if dying within 3-min fragile window, max 21 min. */
+const BASE_RECOVERY_SECS = 7 * 60; // 420s
+const MAX_RECOVERY_SECS = 21 * 60; // 1260s
+
+function getRecoveryCooldown(heroId: string, state: { heroRecoveryTier: Record<string, number>; heroRecoveredAt: Record<string, number> }): { cooldown: number; newTier: number } {
+  const recoveredAt = state.heroRecoveredAt[heroId];
+  const inFragileWindow = recoveredAt && (Date.now() - recoveredAt) < 3 * 60 * 1000;
+  const currentTier = inFragileWindow ? (state.heroRecoveryTier[heroId] || 0) : 0;
+  const newTier = inFragileWindow ? Math.min(currentTier + 1, 2) : 0;
+  const cooldown = Math.min(MAX_RECOVERY_SECS, BASE_RECOVERY_SECS * (1 + newTier));
+  return { cooldown, newTier };
 }
 
 /** Build initial HP/SP maps for a set of heroes (full health/mana). */
@@ -161,6 +189,8 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
   tierUnlocks: {},
   bossKillCounts: {},
   heroRecoveryCooldowns: {},
+  heroRecoveryTier: {},
+  heroRecoveredAt: {},
   nextPartyId: 1,
 
   isHeroDeployed: (heroId) => {
@@ -278,17 +308,29 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
     // Tick down global hero recovery cooldowns (persists across recalls)
     const updatedGlobalCooldowns = { ...state.heroRecoveryCooldowns };
     let globalCdChanged = false;
+    const newRecoveredAt = { ...state.heroRecoveredAt };
+    const newRecoveryTier = { ...state.heroRecoveryTier };
     for (const heroId of Object.keys(updatedGlobalCooldowns)) {
       if (updatedGlobalCooldowns[heroId] > 0) {
         updatedGlobalCooldowns[heroId]--;
         globalCdChanged = true;
         if (updatedGlobalCooldowns[heroId] <= 0) {
           delete updatedGlobalCooldowns[heroId];
+          // Record when hero finished recovering (for fragile window)
+          newRecoveredAt[heroId] = Date.now();
         }
       }
     }
+    // Clear fragile window + recovery tier after 3 minutes
+    const FRAGILE_WINDOW_MS = 3 * 60 * 1000;
+    for (const heroId of Object.keys(newRecoveredAt)) {
+      if (Date.now() - newRecoveredAt[heroId] > FRAGILE_WINDOW_MS) {
+        delete newRecoveredAt[heroId];
+        delete newRecoveryTier[heroId];
+      }
+    }
     if (globalCdChanged) {
-      set({ heroRecoveryCooldowns: updatedGlobalCooldowns });
+      set({ heroRecoveryCooldowns: updatedGlobalCooldowns, heroRecoveredAt: newRecoveredAt, heroRecoveryTier: newRecoveryTier });
     }
 
     if (state.deployments.length === 0) return;
@@ -383,6 +425,22 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           // Boss fight — each active hero fights the boss
           let bossWon = false;
           for (const hero of activeHeroes) {
+            // If tick-based HP reached 0, hero is dead — skip simulation
+            const tickHp = dep.heroHpMap?.[hero.id] ?? -1;
+            if (tickHp === 0) {
+              anyDied = true;
+              fightDeaths++;
+              const { cooldown: bossTickCd, newTier: bossTickTier } = getRecoveryCooldown(hero.id, state);
+              updatedCooldowns[hero.id] = bossTickCd;
+              set(s => ({
+                heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: bossTickCd },
+                heroRecoveryTier: { ...s.heroRecoveryTier, [hero.id]: bossTickTier },
+                heroRecoveredAt: { ...s.heroRecoveredAt, [hero.id]: undefined! },
+              }));
+              const cdMins = Math.floor(bossTickCd / 60);
+              gameStore.addLog(`${hero.name} was slain by ${zone.boss.name}! Recovering ${cdMins}m...`, 'error');
+              continue;
+            }
             const result = simulateBossFight(hero, dep.zoneId, dep.zoneTier, dep.waveMultiplier, difficultyMult);
 
             // Consume used consumables (1 of each per fight)
@@ -450,10 +508,15 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             if (result.heroDied) {
               anyDied = true;
               fightDeaths++;
-              updatedCooldowns[hero.id] = result.recoveryCooldown;
-              // Also set global recovery so it persists across recalls
-              set(s => ({ heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: result.recoveryCooldown } }));
-              gameStore.addLog(`${hero.name} was crushed by ${result.enemyName}! Recovering...`, 'error');
+              const { cooldown: bossCd, newTier: bossTier } = getRecoveryCooldown(hero.id, state);
+              updatedCooldowns[hero.id] = bossCd;
+              set(s => ({
+                heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: bossCd },
+                heroRecoveryTier: { ...s.heroRecoveryTier, [hero.id]: bossTier },
+                heroRecoveredAt: { ...s.heroRecoveredAt, [hero.id]: undefined! },
+              }));
+              const bossCdMins = Math.floor(bossCd / 60);
+              gameStore.addLog(`${hero.name} was crushed by ${result.enemyName}! Recovering ${bossCdMins}m...`, 'error');
             }
           }
 
@@ -509,6 +572,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
                 : undefined,
             heroHpMap: bossResetMaps.heroHpMap,
             heroSpMap: bossResetMaps.heroSpMap,
+            heroGaugeMap: {}, enemyGaugeMap: [], heroLastAttackTick: {},
           });
         } else {
           // Normal fight — build synthetic enemy from ALL currentEnemies (use maxHp, not currentHp)
@@ -523,6 +587,23 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             xpReward: allSpawned.reduce((s, e) => s + e.xpReward, 0),
           } : (target?.enemy || zone.targets[0].enemy);
           for (const hero of activeHeroes) {
+            // If tick-based HP reached 0, hero is dead — skip simulation
+            const tickHpNorm = dep.heroHpMap?.[hero.id] ?? -1;
+            if (tickHpNorm === 0) {
+              anyDied = true;
+              fightDeaths++;
+              const { cooldown: normTickCd, newTier: normTickTier } = getRecoveryCooldown(hero.id, state);
+              updatedCooldowns[hero.id] = normTickCd;
+              set(s => ({
+                heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: normTickCd },
+                heroRecoveryTier: { ...s.heroRecoveryTier, [hero.id]: normTickTier },
+                heroRecoveredAt: { ...s.heroRecoveredAt, [hero.id]: undefined! },
+              }));
+              const enemyName = target?.enemy?.name || 'enemies';
+              const normTickMins = Math.floor(normTickCd / 60);
+              gameStore.addLog(`${hero.name} was defeated by ${enemyName}! Recovering ${normTickMins}m...`, 'error');
+              continue;
+            }
             // Pass tier=1, wave=1, diff=1 since stats are already scaled in syntheticEnemy
             const result = simulateFight(hero, syntheticEnemy, 1, zone.minLevel, 1.0, 1.0);
 
@@ -582,9 +663,15 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             if (result.heroDied) {
               anyDied = true;
               fightDeaths++;
-              updatedCooldowns[hero.id] = result.recoveryCooldown;
-              set(s => ({ heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: result.recoveryCooldown } }));
-              gameStore.addLog(`${hero.name} was defeated by ${result.enemyName}! Recovering...`, 'error');
+              const { cooldown: normCd, newTier: normTier } = getRecoveryCooldown(hero.id, state);
+              updatedCooldowns[hero.id] = normCd;
+              set(s => ({
+                heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: normCd },
+                heroRecoveryTier: { ...s.heroRecoveryTier, [hero.id]: normTier },
+                heroRecoveredAt: { ...s.heroRecoveredAt, [hero.id]: undefined! },
+              }));
+              const normCdMins = Math.floor(normCd / 60);
+              gameStore.addLog(`${hero.name} was defeated by ${result.enemyName}! Recovering ${normCdMins}m...`, 'error');
             }
           }
 
@@ -629,14 +716,18 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
                 : undefined,
             heroHpMap: fightResetMaps.heroHpMap,
             heroSpMap: fightResetMaps.heroSpMap,
+            heroGaugeMap: {}, enemyGaugeMap: [], heroLastAttackTick: {},
           });
         }
       } else {
-        // Mid-fight tick: apply per-hero damage to enemies AND enemy damage to heroes
+        // ── ATB Turn Gauge mid-fight tick ──
         const updatedEnemies = dep.currentEnemies ? dep.currentEnemies.map(e => ({ ...e })) : undefined;
         const gt = (dep.globalTick || 0) + 1;
         const updatedHpMap = { ...(dep.heroHpMap || {}) };
         const updatedSpMap = { ...(dep.heroSpMap || {}) };
+        const updatedHeroGauge = { ...(dep.heroGaugeMap || {}) };
+        const updatedEnemyGauge = dep.enemyGaugeMap ? [...dep.enemyGaugeMap] : [];
+        const updatedLastAttack: Record<string, number> = { ...(dep.heroLastAttackTick || {}) };
 
         if (updatedEnemies && updatedEnemies.length > 0) {
           const eqStoreT = useEquipmentStore.getState();
@@ -645,27 +736,26 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           const encDefMultT = 1 + (encBonusesT.combat_defense || 0) / 100;
           const encHpMultT = 1 + (encBonusesT.combat_hp || 0) / 100;
 
-          // Sort heroes by turn speed (fastest first) for attack order
-          const sortedHeroes = [...activeHeroes].sort((a, b) => {
-            const gA = getEquippedGear(a.id, eqStoreT.heroEquipment, eqStoreT.inventory);
-            const gB = getEquippedGear(b.id, eqStoreT.heroEquipment, eqStoreT.inventory);
-            return calculateDerivedStats(b, gB).turnSpeed - calculateDerivedStats(a, gA).turnSpeed;
-          });
-
-          // Total enemy damage from alive enemies, split across active heroes
-          const totalEnemyDmg = updatedEnemies.reduce((s, e) => s + (e.currentHp > 0 ? e.damage : 0), 0);
-          const dmgPerHero = sortedHeroes.length > 0 ? totalEnemyDmg / sortedHeroes.length : 0;
-
-          for (let hi = 0; hi < sortedHeroes.length; hi++) {
-            const hero = sortedHeroes[hi];
+          // Pre-compute hero data
+          const heroData = activeHeroes.map(hero => {
             const gear = getEquippedGear(hero.id, eqStoreT.heroEquipment, eqStoreT.inventory);
             const derived = calculateDerivedStats(hero, gear);
+            const effectiveDefense = derived.defense * encDefMultT;
+            const defMult = Math.max(0.2, 1 - effectiveDefense / (effectiveDefense + 200))
+              * (1 - Math.min(0.5, derived.evasion / 100))
+              * (1 - (derived.blockChance / 100) * 0.5)
+              * (1 - derived.damageReduction / 100);
+            return { hero, derived, gear, defMult, maxHp: Math.round(derived.maxHp * encHpMultT) };
+          });
 
-            // ── Hero attacks enemy ──
-            const attackInterval = Math.max(1, Math.round(100 / Math.max(1, derived.turnSpeed) * 3));
-            const shouldAttack = (gt + hi) % attackInterval === 0;
+          // ── HERO ATB: Fill gauge, act when full ──
+          for (const { hero, derived } of heroData) {
+            updatedHeroGauge[hero.id] = (updatedHeroGauge[hero.id] || 0) + derived.turnSpeed;
+            let actions = 0;
+            while (updatedHeroGauge[hero.id] >= 100 && actions < 3) {
+              updatedHeroGauge[hero.id] -= 100;
+              actions++;
 
-            if (shouldAttack) {
               const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
               const cls = CLASSES[hero.classId];
               const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as CombatStyle, (target?.enemy as any)?.combatStyle);
@@ -676,56 +766,67 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               const abilityContrib = calculateAbilityContribution(hero, derived, baseDuration);
               heroDmg += abilityContrib.bonusDps;
 
-              // Apply hero damage to first alive enemy
               const firstAlive = updatedEnemies.find(e => e.currentHp > 0);
               if (firstAlive) {
                 firstAlive.currentHp = Math.max(0, firstAlive.currentHp - heroDmg);
               }
 
-              // SP consumption: deduct ability SP proportionally per attack tick
+              // SP consumption per action
               if (abilityContrib.spUsed > 0) {
-                const spPerTick = abilityContrib.spUsed / Math.max(1, baseDuration);
-                updatedSpMap[hero.id] = Math.max(0, (updatedSpMap[hero.id] ?? derived.maxSp) - spPerTick);
+                const spPerAction = abilityContrib.spUsed / Math.max(1, baseDuration);
+                updatedSpMap[hero.id] = Math.max(0, (updatedSpMap[hero.id] ?? derived.maxSp) - spPerAction);
               }
 
-              // Lifesteal healing
+              // Lifesteal healing per action
               const lifestealHeal = heroDmg * (derived.lifesteal / 100);
               if (lifestealHeal > 0) {
-                const maxHp = Math.round(derived.maxHp * encHpMultT);
-                updatedHpMap[hero.id] = Math.min(maxHp, (updatedHpMap[hero.id] ?? maxHp) + lifestealHeal);
+                updatedHpMap[hero.id] = Math.min(derived.maxHp, (updatedHpMap[hero.id] ?? derived.maxHp) + lifestealHeal);
               }
+
+              updatedLastAttack[hero.id] = gt;
             }
 
-            // ── Enemy damages hero (every tick, regardless of hero attack timing) ──
-            const effectiveDefense = derived.defense * encDefMultT;
-            const defReduction = Math.max(0.2, 1 - effectiveDefense / (effectiveDefense + 200));
-            const evaReduction = 1 - Math.min(0.5, derived.evasion / 100);
-            const blkReduction = 1 - (derived.blockChance / 100) * 0.5;
-            const drReduction = 1 - derived.damageReduction / 100;
-            const incomingDmg = dmgPerHero * defReduction * evaReduction * blkReduction * drReduction;
-
-            // Thorns: reflect a portion of incoming damage back to first alive enemy
-            if (derived.thornsDamage > 0) {
-              const thornsDmg = incomingDmg * (derived.thornsDamage / 100);
-              const thornTarget = updatedEnemies.find(e => e.currentHp > 0);
-              if (thornTarget) {
-                thornTarget.currentHp = Math.max(0, thornTarget.currentHp - thornsDmg);
-              }
-            }
-
-            const regenHeal = derived.hpRegen || 0;
-            const netDmg = Math.max(0, incomingDmg - regenHeal);
-            const maxHp = Math.round(derived.maxHp * encHpMultT);
-            updatedHpMap[hero.id] = Math.max(1, (updatedHpMap[hero.id] ?? maxHp) - netDmg);
-
-            // SP regen
+            // SP regen every tick (regardless of actions)
             updatedSpMap[hero.id] = Math.min(derived.maxSp, (updatedSpMap[hero.id] ?? derived.maxSp) + derived.spRegen);
+          }
+
+          // ── ENEMY ATB: Fill gauge, act when full ──
+          // Ensure enemy gauge array is sized
+          while (updatedEnemyGauge.length < updatedEnemies.length) updatedEnemyGauge.push(0);
+
+          for (let ei = 0; ei < updatedEnemies.length; ei++) {
+            const enemy = updatedEnemies[ei];
+            if (enemy.currentHp <= 0) continue;
+
+            updatedEnemyGauge[ei] = (updatedEnemyGauge[ei] || 0) + (enemy.speed || 50);
+            let eActions = 0;
+            while (updatedEnemyGauge[ei] >= 100 && eActions < 3) {
+              updatedEnemyGauge[ei] -= 100;
+              eActions++;
+
+              // Distribute hit across heroes
+              const dmgPerHero = enemy.damage / Math.max(1, heroData.length);
+              for (const hd of heroData) {
+                const incomingDmg = dmgPerHero * hd.defMult;
+
+                // Thorns reflect
+                if (hd.derived.thornsDamage > 0) {
+                  const thornsDmg = incomingDmg * (hd.derived.thornsDamage / 100);
+                  enemy.currentHp = Math.max(0, enemy.currentHp - thornsDmg);
+                }
+
+                const netDmg = Math.max(0, incomingDmg - (hd.derived.hpRegen || 0));
+                updatedHpMap[hd.hero.id] = Math.max(0, (updatedHpMap[hd.hero.id] ?? hd.maxHp) - netDmg);
+              }
+            }
           }
         }
         newDeployments.push({
           ...dep, fightProgress: newProgress, globalTick: gt,
           recoveryCooldowns: newCooldowns, currentEnemies: updatedEnemies,
           heroHpMap: updatedHpMap, heroSpMap: updatedSpMap,
+          heroGaugeMap: updatedHeroGauge, enemyGaugeMap: updatedEnemyGauge,
+          heroLastAttackTick: updatedLastAttack,
         });
       }
     }
@@ -745,6 +846,8 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
     tierUnlocks: get().tierUnlocks,
     bossKillCounts: get().bossKillCounts,
     heroRecoveryCooldowns: get().heroRecoveryCooldowns,
+    heroRecoveryTier: get().heroRecoveryTier,
+    heroRecoveredAt: get().heroRecoveredAt,
     nextPartyId: get().nextPartyId,
   }),
 
@@ -761,6 +864,8 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
       tierUnlocks: saved.tierUnlocks,
       bossKillCounts: saved.bossKillCounts,
       heroRecoveryCooldowns: saved.heroRecoveryCooldowns || {},
+      heroRecoveryTier: (saved as any).heroRecoveryTier || {},
+      heroRecoveredAt: (saved as any).heroRecoveredAt || {},
       nextPartyId: savedNextId + saved.deployments.length,
     });
   },

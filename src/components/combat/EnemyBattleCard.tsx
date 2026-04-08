@@ -11,9 +11,11 @@ interface EnemyBattleCardProps {
   isTarget: boolean;
   /** Unique index for floating damage positioning */
   index: number;
+  /** ATB gauge progress 0-99 */
+  gaugeProgress?: number;
 }
 
-export function EnemyBattleCard({ enemy, isTarget, index }: EnemyBattleCardProps) {
+export function EnemyBattleCard({ enemy, isTarget, index, gaugeProgress = 0 }: EnemyBattleCardProps) {
   const isDead = enemy.currentHp <= 0;
   const hpPct = enemy.maxHp > 0 ? Math.max(0, Math.min(100, (enemy.currentHp / enemy.maxHp) * 100)) : 0;
 
@@ -52,6 +54,17 @@ export function EnemyBattleCard({ enemy, isTarget, index }: EnemyBattleCardProps
           </div>
         )}
       </div>
+
+      {/* Turn gauge */}
+      {!isDead && (
+        <div style={{ width: '100%', height: 2, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 1, marginTop: 2, overflow: 'hidden' }}>
+          <div style={{
+            width: `${gaugeProgress}%`, height: '100%', borderRadius: 1,
+            transition: 'width 0.3s ease',
+            backgroundColor: gaugeProgress > 80 ? '#ef4444' : '#f59e0b',
+          }} />
+        </div>
+      )}
 
       {/* Status + ATK */}
       <div className="flex items-center justify-between w-full mt-1">

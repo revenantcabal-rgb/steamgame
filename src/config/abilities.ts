@@ -1,19 +1,21 @@
 /**
  * Ability Tome System
  *
- * 78 total abilities across 6 color-coded categories:
+ * 150 total abilities across 7 color-coded categories:
  * - Red (13): Melee combat abilities, RES required
  * - Green (13): Ranged combat abilities, RES required
  * - Blue (13): Demolitions/tech abilities, RES required
  * - White (13): Support/healing abilities, RES + CON required
  * - Orange (13): Passive abilities, RES required
  * - Purple (13): Special/Warband Decree abilities, RES + secondary stat required
+ * - Gold (72): Job2 Advancement abilities (6 per Job2 class, 12 classes)
  *
  * Heroes equip these into their 4 ability slots (gated by RES thresholds).
  * Purple abilities go into the Decree slot (RES 50+, 1 per party).
+ * Gold abilities require a specific Job2 class promotion.
  */
 
-export type AbilityColor = 'red' | 'green' | 'blue' | 'white' | 'orange' | 'purple';
+export type AbilityColor = 'red' | 'green' | 'blue' | 'white' | 'orange' | 'purple' | 'gold';
 
 export interface MechanicalEffect {
   type: 'damage' | 'buff' | 'debuff' | 'heal' | 'dot' | 'shield' | 'passive_stat';
@@ -48,6 +50,8 @@ export interface AbilityTome {
   duration: number;
   /** Mechanical effect for combat engine integration */
   mechanicalEffect: MechanicalEffect;
+  /** Job2 class requirement (only for Job2 abilities) */
+  job2ClassReq?: string;
 }
 
 export const ABILITY_COLOR_LABELS: Record<AbilityColor, string> = {
@@ -57,6 +61,7 @@ export const ABILITY_COLOR_LABELS: Record<AbilityColor, string> = {
   white: 'Silver Tome',
   orange: 'Amber Tome',
   purple: 'Violet Decree',
+  gold: 'Golden Tome',
 };
 
 export const ABILITY_COLOR_HEX: Record<AbilityColor, string> = {
@@ -66,6 +71,7 @@ export const ABILITY_COLOR_HEX: Record<AbilityColor, string> = {
   white: '#c0c0c0',
   orange: '#f97316',
   purple: '#a855f7',
+  gold: '#fbbf24',
 };
 
 export const ABILITIES: Record<string, AbilityTome> = {
@@ -634,6 +640,526 @@ export const ABILITIES: Record<string, AbilityTome> = {
     scaling: '+0.1% def per RES', source: 'Zone 5+ boss, Biochem Lv.60',
     requirements: [{ stat: 'res', value: 50 }, { stat: 'con', value: 25 }],
     spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'defense', value: 8, isPercentage: true, scaling: 0.1 } },
+
+  // =====================================================================
+  // GOLD TOMES (72) - Job2 Advancement Abilities
+  // =====================================================================
+
+  // --- SENTINEL (6) ---
+  j2_scrap_wall: { id: 'j2_scrap_wall', name: 'Scrap Wall', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Erect a barrier of salvaged scrap to absorb incoming damage.',
+    effect: 'Barrier equal to 15% max HP for 3 turns.',
+    scaling: '+0.2% barrier per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 8, duration: 3, mechanicalEffect: { type: 'shield', stat: 'maxHp', value: 15, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'sentinel' },
+
+  j2_rusted_taunt: { id: 'j2_rusted_taunt', name: 'Rusted Taunt', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Clang rusted armor to force enemies to target the Sentinel.',
+    effect: 'Force enemies to target Sentinel 2 turns, +15% def.',
+    scaling: '+0.15% def per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 10, duration: 2, mechanicalEffect: { type: 'debuff', stat: 'defense', value: 15, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'sentinel' },
+
+  j2_fortress_bash: { id: 'j2_fortress_bash', name: 'Fortress Bash', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Slam enemies with your shield in a devastating charge.',
+    effect: 'Deal 130% melee shield slam, 30% chance to stun.',
+    scaling: '+0.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 12, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 130, isPercentage: true, scaling: 0.5 }, job2ClassReq: 'sentinel' },
+
+  j2_iron_curtain: { id: 'j2_iron_curtain', name: 'Iron Curtain', color: 'gold', cooldown: 10, isPassive: false, isDecree: false,
+    description: 'Intercept all damage headed for your weakest ally.',
+    effect: 'Intercept damage for lowest-HP ally 3 turns.',
+    scaling: '+0.3% shield per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 15, duration: 3, mechanicalEffect: { type: 'shield', stat: 'maxHp', value: 20, isPercentage: true, scaling: 0.3 }, job2ClassReq: 'sentinel' },
+
+  j2_counterfort: { id: 'j2_counterfort', name: 'Counterfort', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Blocked attacks reflect damage and boost Turn Speed.',
+    effect: 'Blocked attacks reflect 20% + +5 Turn Speed.',
+    scaling: '+0.1% thorns per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'thornsDamage', value: 20, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'sentinel' },
+
+  j2_citadel_protocol: { id: 'j2_citadel_protocol', name: 'Citadel Protocol', color: 'gold', cooldown: 12, isPassive: false, isDecree: false,
+    description: 'Activate full defensive protocols for maximum fortification.',
+    effect: '+25% def, +20% block, +10% dmg reduction 4 turns.',
+    scaling: '+0.3% def per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 20, duration: 4, mechanicalEffect: { type: 'buff', stat: 'defense', value: 25, isPercentage: true, scaling: 0.3 }, job2ClassReq: 'sentinel' },
+
+  // --- BRUISER (6) ---
+  j2_jab_combo: { id: 'j2_jab_combo', name: 'Jab Combo', color: 'gold', cooldown: 5, isPassive: false, isDecree: false,
+    description: 'Unleash a rapid three-hit combo on the target.',
+    effect: '3 hits at 50% melee damage each.',
+    scaling: '+0.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 6, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 150, isPercentage: true, scaling: 0.5 }, job2ClassReq: 'bruiser' },
+
+  j2_gut_check: { id: 'j2_gut_check', name: 'Gut Check', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'A body blow that disorients and slows the target.',
+    effect: '90% melee + -15% acc, -10 Turn Speed 2 turns.',
+    scaling: '+0.1% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 8, duration: 2, mechanicalEffect: { type: 'debuff', stat: 'accuracy', value: 15, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'bruiser' },
+
+  j2_haymaker: { id: 'j2_haymaker', name: 'Haymaker', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Consume all Momentum stacks for a devastating punch.',
+    effect: 'Consume Momentum, 100%+30%/stack melee damage.',
+    scaling: '+0.8% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 12, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 250, isPercentage: true, scaling: 0.8 }, job2ClassReq: 'bruiser' },
+
+  j2_slip_counter: { id: 'j2_slip_counter', name: 'Slip Counter', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Enter a counter stance, dodging and retaliating.',
+    effect: 'Counter stance 2 turns, 50% dodge + 120% retaliate.',
+    scaling: '+0.2% evasion per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 10, duration: 2, mechanicalEffect: { type: 'buff', stat: 'evasion', value: 50, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'bruiser' },
+
+  j2_brawlers_instinct: { id: 'j2_brawlers_instinct', name: "Brawler's Instinct", color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Honed reflexes grant evasion and bonus damage after dodging.',
+    effect: '+3% evasion, post-dodge +25% dmg.',
+    scaling: '+0.05% evasion per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'evasion', value: 3, isPercentage: true, scaling: 0.05 }, job2ClassReq: 'bruiser' },
+
+  j2_annihilation_rush: { id: 'j2_annihilation_rush', name: 'Annihilation Rush', color: 'gold', cooldown: 12, isPassive: false, isDecree: false,
+    description: 'A relentless flurry of six devastating strikes.',
+    effect: '6 hits at 45% melee damage each.',
+    scaling: '+1.0% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 22, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 270, isPercentage: true, scaling: 1.0 }, job2ClassReq: 'bruiser' },
+
+  // --- CRUSHER (6) ---
+  j2_overhead_smash: { id: 'j2_overhead_smash', name: 'Overhead Smash', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Bring a massive weapon crashing down on the target.',
+    effect: 'Deal 180% melee damage, 25% chance to stagger.',
+    scaling: '+0.6% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 10, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 180, isPercentage: true, scaling: 0.6 }, job2ClassReq: 'crusher' },
+
+  j2_tremor_strike: { id: 'j2_tremor_strike', name: 'Tremor Strike', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Strike the ground to send shockwaves through all enemies.',
+    effect: '90% melee to ALL enemies, 15% stun chance.',
+    scaling: '+0.4% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 15, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 90, isPercentage: true, scaling: 0.4 }, job2ClassReq: 'crusher' },
+
+  j2_bone_splinter: { id: 'j2_bone_splinter', name: 'Bone Splinter', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Shatter enemy defenses with a brutal crushing blow.',
+    effect: '120% melee + -20% def, -15% armor 3 turns.',
+    scaling: '+0.15% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 12, duration: 3, mechanicalEffect: { type: 'debuff', stat: 'defense', value: 20, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'crusher' },
+
+  j2_momentum_swing: { id: 'j2_momentum_swing', name: 'Momentum Swing', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'A sweeping attack that chains to additional targets on kill.',
+    effect: '140% melee, chains on kill up to 2 additional targets.',
+    scaling: '+0.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 14, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 140, isPercentage: true, scaling: 0.5 }, job2ClassReq: 'crusher' },
+
+  j2_juggernaut: { id: 'j2_juggernaut', name: 'Juggernaut', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Unstoppable force grants melee power and stun immunity.',
+    effect: '+10% melee, stun immune >50% HP, -5% evasion.',
+    scaling: '+0.1% melee per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'meleeAttack', value: 10, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'crusher' },
+
+  j2_cataclysm: { id: 'j2_cataclysm', name: 'Cataclysm', color: 'gold', cooldown: 15, isPassive: false, isDecree: false,
+    description: 'Wind up for a cataclysmic strike with devastating splash.',
+    effect: 'Wind-up then 350% melee + 150% splash damage.',
+    scaling: '+1.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 25, duration: 0, mechanicalEffect: { type: 'damage', stat: 'meleeAttack', value: 350, isPercentage: true, scaling: 1.5 }, job2ClassReq: 'crusher' },
+
+  // --- SNIPER (6) ---
+  j2_steady_aim: { id: 'j2_steady_aim', name: 'Steady Aim', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Take careful aim to empower your next shot.',
+    effect: 'Next attack +60% dmg, +20% acc, -15 Turn Speed.',
+    scaling: '+0.3% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 8, duration: 1, mechanicalEffect: { type: 'buff', stat: 'rangedAttack', value: 60, isPercentage: true, scaling: 0.3 }, job2ClassReq: 'sniper' },
+
+  j2_penetrating_round: { id: 'j2_penetrating_round', name: 'Penetrating Round', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Fire a piercing round that punches through multiple targets.',
+    effect: '160% ranged, pierces 2nd enemy at 80%.',
+    scaling: '+0.6% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 14, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 160, isPercentage: true, scaling: 0.6 }, job2ClassReq: 'sniper' },
+
+  j2_suppressive_position: { id: 'j2_suppressive_position', name: 'Suppressive Position', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'Mark a target for increased vulnerability.',
+    effect: 'Mark target 3 turns: +15% dmg taken, -20% evasion.',
+    scaling: '+0.1% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 10, duration: 3, mechanicalEffect: { type: 'debuff', stat: 'evasion', value: 20, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'sniper' },
+
+  j2_collateral_shot: { id: 'j2_collateral_shot', name: 'Collateral Shot', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'Fire a fragmenting round that sprays shrapnel to nearby foes.',
+    effect: '130% ranged + shrapnel 60% to 2 adjacent enemies.',
+    scaling: '+0.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 16, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 130, isPercentage: true, scaling: 0.5 }, job2ClassReq: 'sniper' },
+
+  j2_dead_calm: { id: 'j2_dead_calm', name: 'Dead Calm', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Absolute focus sharpens critical strikes at the cost of speed.',
+    effect: '+8% crit dmg, +5% acc, -10 Turn Speed.',
+    scaling: '+0.1% crit dmg per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'critDamage', value: 8, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'sniper' },
+
+  j2_killzone: { id: 'j2_killzone', name: 'Killzone', color: 'gold', cooldown: 14, isPassive: false, isDecree: false,
+    description: 'Wind up a devastating shot that ignores enemy defenses.',
+    effect: 'Wind-up then 300% ranged ignoring 40% def.',
+    scaling: '+1.2% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 22, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 300, isPercentage: true, scaling: 1.2 }, job2ClassReq: 'sniper' },
+
+  // --- GUNSLINGER (6) ---
+  j2_fan_the_hammer: { id: 'j2_fan_the_hammer', name: 'Fan the Hammer', color: 'gold', cooldown: 5, isPassive: false, isDecree: false,
+    description: 'Rapidly fire four shots at random enemies.',
+    effect: '4 shots at 40% ranged each at random enemies.',
+    scaling: '+0.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 8, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 160, isPercentage: true, scaling: 0.5 }, job2ClassReq: 'gunslinger' },
+
+  j2_bullet_dodge: { id: 'j2_bullet_dodge', name: 'Bullet Dodge', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Deftly dodge incoming fire and power up your next attack.',
+    effect: '+30% evasion 2 turns, post-dodge +40% dmg.',
+    scaling: '+0.15% evasion per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 7, duration: 2, mechanicalEffect: { type: 'buff', stat: 'evasion', value: 30, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'gunslinger' },
+
+  j2_ricochet: { id: 'j2_ricochet', name: 'Ricochet', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Fire a trick shot that bounces between multiple targets.',
+    effect: '110% ranged, bounces to 2 more at 70%/40%.',
+    scaling: '+0.4% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 12, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 110, isPercentage: true, scaling: 0.4 }, job2ClassReq: 'gunslinger' },
+
+  j2_quickdraw: { id: 'j2_quickdraw', name: 'Quickdraw', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'Draw and fire with blinding speed, always acting first.',
+    effect: '150% ranged damage, always acts first.',
+    scaling: '+0.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 14, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 150, isPercentage: true, scaling: 0.5 }, job2ClassReq: 'gunslinger' },
+
+  j2_gunslingers_luck: { id: 'j2_gunslingers_luck', name: "Gunslinger's Luck", color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Fortune favors the quick — crits boost speed.',
+    effect: '+3% crit, +3% evasion, crits +5 Turn Speed.',
+    scaling: '+0.05% crit per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'critChance', value: 3, isPercentage: true, scaling: 0.05 }, job2ClassReq: 'gunslinger' },
+
+  j2_bullet_storm: { id: 'j2_bullet_storm', name: 'Bullet Storm', color: 'gold', cooldown: 12, isPassive: false, isDecree: false,
+    description: 'Unleash a hail of eight shots at random targets.',
+    effect: '8 shots at 30% ranged each at random targets.',
+    scaling: '+0.8% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 22, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 240, isPercentage: true, scaling: 0.8 }, job2ClassReq: 'gunslinger' },
+
+  // --- HUNTER (6) ---
+  j2_toxic_arrow: { id: 'j2_toxic_arrow', name: 'Toxic Arrow', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Loose a poison-tipped arrow that festers in the wound.',
+    effect: '80% ranged + poison 5% HP/turn 3 turns.',
+    scaling: '+0.2% poison per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 8, duration: 3, mechanicalEffect: { type: 'dot', stat: 'poisonDot', value: 5, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'hunter' },
+
+  j2_leg_trap: { id: 'j2_leg_trap', name: 'Leg Trap', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Set a hidden trap that snares and slows the next enemy.',
+    effect: 'Trap: triggers 100% ranged + -30% Turn Speed.',
+    scaling: '+0.1% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 10, duration: 2, mechanicalEffect: { type: 'debuff', stat: 'turnSpeed', value: 30, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'hunter' },
+
+  j2_mark_prey: { id: 'j2_mark_prey', name: 'Mark Prey', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Mark an enemy as prey, increasing damage and crits against it.',
+    effect: 'Mark 4 turns: +20% dmg, +10% crit vs marked.',
+    scaling: '+0.1% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 8, duration: 4, mechanicalEffect: { type: 'debuff', stat: 'damageReduction', value: 20, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'hunter' },
+
+  j2_barbed_snare: { id: 'j2_barbed_snare', name: 'Barbed Snare', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Ensnare the target with barbed wire that bleeds over time.',
+    effect: '60% ranged + bleed 4% HP/turn 4 turns.',
+    scaling: '+0.15% bleed per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 12, duration: 4, mechanicalEffect: { type: 'dot', stat: 'bleedDot', value: 4, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'hunter' },
+
+  j2_predators_patience: { id: 'j2_predators_patience', name: "Predator's Patience", color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Patient focus grants accuracy and execute damage on wounded prey.',
+    effect: '+5% acc, enemies <40% HP take +15% damage.',
+    scaling: '+0.05% acc per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'accuracy', value: 5, isPercentage: true, scaling: 0.05 }, job2ClassReq: 'hunter' },
+
+  j2_wasteland_ambush: { id: 'j2_wasteland_ambush', name: 'Wasteland Ambush', color: 'gold', cooldown: 13, isPassive: false, isDecree: false,
+    description: 'Vanish into the wastes and strike with a guaranteed critical.',
+    effect: 'Vanish then 250% ranged guaranteed crit.',
+    scaling: '+1.0% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 20, duration: 0, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 250, isPercentage: true, scaling: 1.0 }, job2ClassReq: 'hunter' },
+
+  // --- BOMBARDIER (6) ---
+  j2_cluster_charge: { id: 'j2_cluster_charge', name: 'Cluster Charge', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Lob a cluster charge that explodes with splash damage.',
+    effect: '80% blast to target, 50% splash to adjacent.',
+    scaling: '+0.4% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 10, duration: 0, mechanicalEffect: { type: 'damage', stat: 'blastAttack', value: 80, isPercentage: true, scaling: 0.4 }, job2ClassReq: 'bombardier' },
+
+  j2_minefield: { id: 'j2_minefield', name: 'Minefield', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'Deploy three mines that detonate over successive turns.',
+    effect: '3 mines at 70% blast each over 3 turns.',
+    scaling: '+0.7% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 14, duration: 3, mechanicalEffect: { type: 'damage', stat: 'blastAttack', value: 210, isPercentage: true, scaling: 0.7 }, job2ClassReq: 'bombardier' },
+
+  j2_concussive_barrage: { id: 'j2_concussive_barrage', name: 'Concussive Barrage', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Rain concussive shells that stun and disorient.',
+    effect: '3 shells 40% each, 20% stun, -15% acc.',
+    scaling: '+0.1% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 16, duration: 2, mechanicalEffect: { type: 'debuff', stat: 'accuracy', value: 15, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'bombardier' },
+
+  j2_scorched_earth: { id: 'j2_scorched_earth', name: 'Scorched Earth', color: 'gold', cooldown: 10, isPassive: false, isDecree: false,
+    description: 'Set the battlefield ablaze, burning all enemies over time.',
+    effect: 'All enemies burn 3% HP/turn 4 turns, -10% evasion.',
+    scaling: '+0.15% burn per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 12, duration: 4, mechanicalEffect: { type: 'dot', stat: 'burnDot', value: 3, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'bombardier' },
+
+  j2_blast_radius: { id: 'j2_blast_radius', name: 'Blast Radius', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Expertise with explosives increases blast power and splash.',
+    effect: '+10% blast, AoE +15% splash.',
+    scaling: '+0.1% blast per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'blastAttack', value: 10, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'bombardier' },
+
+  j2_carpet_annihilation: { id: 'j2_carpet_annihilation', name: 'Carpet Annihilation', color: 'gold', cooldown: 15, isPassive: false, isDecree: false,
+    description: 'Blanket the entire battlefield with explosives over two turns.',
+    effect: '120% blast ALL enemies 2 turns.',
+    scaling: '+1.0% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 25, duration: 2, mechanicalEffect: { type: 'damage', stat: 'blastAttack', value: 240, isPercentage: true, scaling: 1.0 }, job2ClassReq: 'bombardier' },
+
+  // --- ARSONIST (6) ---
+  j2_flame_jet: { id: 'j2_flame_jet', name: 'Flame Jet', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Spray a jet of flame that burns multiple enemies.',
+    effect: '70% blast to 3 enemies + burn 4% HP/turn 3 turns.',
+    scaling: '+0.2% burn per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 8, duration: 3, mechanicalEffect: { type: 'dot', stat: 'burnDot', value: 4, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'arsonist' },
+
+  j2_wildfire_spread: { id: 'j2_wildfire_spread', name: 'Wildfire Spread', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Spread existing burns to all enemies, refreshing duration.',
+    effect: 'Spread burn to all enemies, refresh duration.',
+    scaling: '+0.15% burn per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 12, duration: 3, mechanicalEffect: { type: 'dot', stat: 'burnDot', value: 3, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'arsonist' },
+
+  j2_panic_blaze: { id: 'j2_panic_blaze', name: 'Panic Blaze', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'Engulf the target in panic-inducing flames.',
+    effect: '5% burn + Panic: -25% acc, -15% def.',
+    scaling: '+0.15% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 14, duration: 3, mechanicalEffect: { type: 'debuff', stat: 'accuracy', value: 25, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'arsonist' },
+
+  j2_heat_shield: { id: 'j2_heat_shield', name: 'Heat Shield', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Create a heat barrier that burns melee attackers.',
+    effect: 'Barrier 12% HP, melee attackers take 8% blast.',
+    scaling: '+0.15% shield per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 10, duration: 3, mechanicalEffect: { type: 'shield', stat: 'maxHp', value: 12, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'arsonist' },
+
+  j2_pyromaniac: { id: 'j2_pyromaniac', name: 'Pyromaniac', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Obsession with fire enhances burn damage and rewards kills.',
+    effect: '+5% burn DoT, kill on burning = +10% blast 2 turns.',
+    scaling: '+0.05% burn per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'burnDot', value: 5, isPercentage: true, scaling: 0.05 }, job2ClassReq: 'arsonist' },
+
+  j2_conflagration: { id: 'j2_conflagration', name: 'Conflagration', color: 'gold', cooldown: 14, isPassive: false, isDecree: false,
+    description: 'Engulf the entire battlefield in an inferno.',
+    effect: 'All enemies: 60% blast + burn 6% HP/turn 4 turns.',
+    scaling: '+0.3% burn per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 24, duration: 4, mechanicalEffect: { type: 'dot', stat: 'burnDot', value: 6, isPercentage: true, scaling: 0.3 }, job2ClassReq: 'arsonist' },
+
+  // --- CHEMIST (6) ---
+  j2_acid_flask: { id: 'j2_acid_flask', name: 'Acid Flask', color: 'gold', cooldown: 6, isPassive: false, isDecree: false,
+    description: 'Hurl a flask of corrosive acid that eats through armor.',
+    effect: '80% blast + corrosion -10% def/turn 3 turns.',
+    scaling: '+0.15% corrosion per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 8, duration: 3, mechanicalEffect: { type: 'dot', stat: 'poisonDot', value: 3, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'chemist' },
+
+  j2_smoke_canister: { id: 'j2_smoke_canister', name: 'Smoke Canister', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Deploy a smoke canister that blinds enemies and covers allies.',
+    effect: 'All enemies -25% acc 3 turns, allies +10% evasion.',
+    scaling: '+0.1% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 10, duration: 3, mechanicalEffect: { type: 'debuff', stat: 'accuracy', value: 25, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'chemist' },
+
+  j2_neurotoxin_vial: { id: 'j2_neurotoxin_vial', name: 'Neurotoxin Vial', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Inject a potent neurotoxin that slows and weakens.',
+    effect: 'Poison 3% HP/turn + -20% Turn Speed, -15% crit.',
+    scaling: '+0.1% debuff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 12, duration: 3, mechanicalEffect: { type: 'debuff', stat: 'turnSpeed', value: 20, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'chemist' },
+
+  j2_volatile_mixture: { id: 'j2_volatile_mixture', name: 'Volatile Mixture', color: 'gold', cooldown: 10, isPassive: false, isDecree: false,
+    description: 'Hurl an unstable concoction that detonates active DoTs.',
+    effect: '150% blast, detonates DoTs on target.',
+    scaling: '+0.6% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 16, duration: 0, mechanicalEffect: { type: 'damage', stat: 'blastAttack', value: 150, isPercentage: true, scaling: 0.6 }, job2ClassReq: 'chemist' },
+
+  j2_chemical_expertise: { id: 'j2_chemical_expertise', name: 'Chemical Expertise', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Mastery of chemicals enhances DoT damage and debuff duration.',
+    effect: '+10% DoT dmg, debuffs +1 turn.',
+    scaling: '+0.1% DoT per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'poisonDot', value: 10, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'chemist' },
+
+  j2_plague_bomb: { id: 'j2_plague_bomb', name: 'Plague Bomb', color: 'gold', cooldown: 13, isPassive: false, isDecree: false,
+    description: 'Unleash a plague bomb that poisons all enemies.',
+    effect: 'All enemies: 50% blast + poison 4% HP/turn 4 turns.',
+    scaling: '+0.2% poison per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 22, duration: 4, mechanicalEffect: { type: 'dot', stat: 'poisonDot', value: 4, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'chemist' },
+
+  // --- MEDIC (6) ---
+  j2_triage: { id: 'j2_triage', name: 'Triage', color: 'gold', cooldown: 5, isPassive: false, isDecree: false,
+    description: 'Emergency healing on the most wounded ally.',
+    effect: 'Heal lowest-HP ally 20% max HP (30% if <30%).',
+    scaling: '+0.3% heal per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 8, duration: 0, mechanicalEffect: { type: 'heal', stat: 'maxHp', value: 20, isPercentage: true, scaling: 0.3 }, job2ClassReq: 'medic' },
+
+  j2_purify: { id: 'j2_purify', name: 'Purify', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Cleanse an ally of all debuffs and restore health.',
+    effect: 'Remove debuffs + 10% HP + +10% status resist.',
+    scaling: '+0.15% heal per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 10, duration: 0, mechanicalEffect: { type: 'heal', stat: 'maxHp', value: 10, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'medic' },
+
+  j2_resuscitate: { id: 'j2_resuscitate', name: 'Resuscitate', color: 'gold', cooldown: 99, isPassive: false, isDecree: false,
+    description: 'Revive a knocked-out ally back into the fight. Once per battle.',
+    effect: "Revive KO'd ally at 25% HP. Once per fight.",
+    scaling: '+0.2% revive HP per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 18, duration: 0, mechanicalEffect: { type: 'heal', stat: 'maxHp', value: 25, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'medic' },
+
+  j2_field_dressing: { id: 'j2_field_dressing', name: 'Field Dressing', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Apply a field dressing that heals over time with regen.',
+    effect: 'HoT +5% HP/turn 4 turns + +2 regen.',
+    scaling: '+0.2% heal per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 10, duration: 4, mechanicalEffect: { type: 'heal', stat: 'hpRegen', value: 5, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'medic' },
+
+  j2_medical_mastery: { id: 'j2_medical_mastery', name: 'Medical Mastery', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Deep medical knowledge enhances all healing, especially on critical patients.',
+    effect: '+10% healing, heals on <25% HP +15%.',
+    scaling: '+0.1% heal per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'hpRegen', value: 10, isPercentage: true, scaling: 0.1 }, job2ClassReq: 'medic' },
+
+  j2_miracle_drug: { id: 'j2_miracle_drug', name: 'Miracle Drug', color: 'gold', cooldown: 14, isPassive: false, isDecree: false,
+    description: 'Administer a powerful drug that heals and empowers all allies.',
+    effect: 'All allies: 15% HP + remove debuffs + +10% stats 2 turns.',
+    scaling: '+0.3% heal per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 24, duration: 2, mechanicalEffect: { type: 'heal', stat: 'maxHp', value: 15, isPercentage: true, scaling: 0.3 }, job2ClassReq: 'medic' },
+
+  // --- TACTICIAN (6) ---
+  j2_rally_standard: { id: 'j2_rally_standard', name: 'Rally Standard', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Raise the rally standard to boost all allies.',
+    effect: 'All allies +10% attack, +5% def 3 turns.',
+    scaling: '+0.15% buff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 10, duration: 3, mechanicalEffect: { type: 'buff', stat: 'meleeAttack', value: 10, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'tactician' },
+
+  j2_defensive_formation: { id: 'j2_defensive_formation', name: 'Defensive Formation', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Order allies into a defensive formation for increased protection.',
+    effect: 'All allies +15% def, +10% block.',
+    scaling: '+0.2% def per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 12, duration: 3, mechanicalEffect: { type: 'buff', stat: 'defense', value: 15, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'tactician' },
+
+  j2_war_cry: { id: 'j2_war_cry', name: 'War Cry', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'A thunderous war cry that emboldens allies to strike true.',
+    effect: 'All allies +15% crit chance, +10% crit dmg 2 turns.',
+    scaling: '+0.15% crit per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 14, duration: 2, mechanicalEffect: { type: 'buff', stat: 'critChance', value: 15, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'tactician' },
+
+  j2_coordinated_assault: { id: 'j2_coordinated_assault', name: 'Coordinated Assault', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Mark an enemy for coordinated focus fire.',
+    effect: 'Mark enemy: allies deal +25% dmg 3 turns.',
+    scaling: '+0.2% buff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 12, duration: 3, mechanicalEffect: { type: 'buff', stat: 'meleeAttack', value: 25, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'tactician' },
+
+  j2_inspiring_presence: { id: 'j2_inspiring_presence', name: 'Inspiring Presence', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Your mere presence inspires allies to fight harder.',
+    effect: '+5% all stats for allies, +3% def per ally.',
+    scaling: '+0.05% stats per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'defense', value: 5, isPercentage: true, scaling: 0.05 }, job2ClassReq: 'tactician' },
+
+  j2_supreme_command: { id: 'j2_supreme_command', name: 'Supreme Command', color: 'gold', cooldown: 15, isPassive: false, isDecree: false,
+    description: 'Issue a supreme command that massively empowers all allies.',
+    effect: 'All allies: +20% atk, +15% def, +10% crit, +10 Turn Speed 3 turns.',
+    scaling: '+0.3% buff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 25, duration: 3, mechanicalEffect: { type: 'buff', stat: 'meleeAttack', value: 20, isPercentage: true, scaling: 0.3 }, job2ClassReq: 'tactician' },
+
+  // --- ENGINEER (6) ---
+  j2_deploy_turret: { id: 'j2_deploy_turret', name: 'Deploy Turret', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Deploy an automated turret that fires each turn.',
+    effect: 'Turret fires 50% ranged/turn 4 turns.',
+    scaling: '+0.5% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 1 }],
+    spCost: 10, duration: 4, mechanicalEffect: { type: 'damage', stat: 'rangedAttack', value: 200, isPercentage: true, scaling: 0.5 }, job2ClassReq: 'engineer' },
+
+  j2_energy_barrier: { id: 'j2_energy_barrier', name: 'Energy Barrier', color: 'gold', cooldown: 7, isPassive: false, isDecree: false,
+    description: 'Project an energy barrier on an ally that reflects damage.',
+    effect: 'Ally barrier 20% HP 3 turns, reflects 10%.',
+    scaling: '+0.2% shield per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 5 }],
+    spCost: 10, duration: 3, mechanicalEffect: { type: 'shield', stat: 'maxHp', value: 20, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'engineer' },
+
+  j2_repair_drone: { id: 'j2_repair_drone', name: 'Repair Drone', color: 'gold', cooldown: 8, isPassive: false, isDecree: false,
+    description: 'Deploy a repair drone that heals the most damaged ally.',
+    effect: 'Drone heals lowest-HP ally 8% HP/turn 3 turns.',
+    scaling: '+0.15% heal per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 10 }],
+    spCost: 12, duration: 3, mechanicalEffect: { type: 'heal', stat: 'maxHp', value: 8, isPercentage: true, scaling: 0.15 }, job2ClassReq: 'engineer' },
+
+  j2_overclock: { id: 'j2_overclock', name: 'Overclock', color: 'gold', cooldown: 9, isPassive: false, isDecree: false,
+    description: 'Overclock an ally to dramatically boost their combat output.',
+    effect: 'One ally: +20% atk, +15 Turn Speed, +10% crit 3 turns.',
+    scaling: '+0.2% buff per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 20 }],
+    spCost: 14, duration: 3, mechanicalEffect: { type: 'buff', stat: 'meleeAttack', value: 20, isPercentage: true, scaling: 0.2 }, job2ClassReq: 'engineer' },
+
+  j2_adaptive_plating: { id: 'j2_adaptive_plating', name: 'Adaptive Plating', color: 'gold', cooldown: 0, isPassive: true, isDecree: false,
+    description: 'Adaptive plating enhances defenses, shields, and deployables.',
+    effect: '+5% def, shields +15% durability, turrets +10%.',
+    scaling: '+0.05% def per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 30 }],
+    spCost: 0, duration: 0, mechanicalEffect: { type: 'passive_stat', stat: 'defense', value: 5, isPercentage: true, scaling: 0.05 }, job2ClassReq: 'engineer' },
+
+  j2_siege_platform: { id: 'j2_siege_platform', name: 'Siege Platform', color: 'gold', cooldown: 14, isPassive: false, isDecree: false,
+    description: 'Deploy a heavy siege platform that bombards all enemies.',
+    effect: 'Heavy platform fires 70% blast all enemies/turn 3 turns.',
+    scaling: '+0.8% damage per RES', source: 'Job2 Advancement',
+    requirements: [{ stat: 'res', value: 40 }],
+    spCost: 24, duration: 3, mechanicalEffect: { type: 'damage', stat: 'blastAttack', value: 210, isPercentage: true, scaling: 0.8 }, job2ClassReq: 'engineer' },
 };
 
 export const ABILITY_LIST = Object.values(ABILITIES);
@@ -642,6 +1168,7 @@ export const GREEN_ABILITIES = ABILITY_LIST.filter(a => a.color === 'green');
 export const BLUE_ABILITIES = ABILITY_LIST.filter(a => a.color === 'blue');
 export const ORANGE_ABILITIES = ABILITY_LIST.filter(a => a.color === 'orange');
 export const PURPLE_ABILITIES = ABILITY_LIST.filter(a => a.color === 'purple');
+export const GOLD_ABILITIES = ABILITY_LIST.filter(a => a.color === 'gold');
 
 export function getAbilityById(id: string): AbilityTome | undefined {
   return ABILITIES[id];

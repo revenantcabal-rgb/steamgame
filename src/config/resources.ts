@@ -98,8 +98,7 @@ export const RESOURCES: Record<string, Resource> = {
   // =============================================
   // ENHANCEMENT MATERIALS
   // =============================================
-  facet_stone: { id: 'facet_stone', name: 'Facet Stone', description: 'A rare crystalline stone that can re-roll the facet on a piece of gear. Craft via Tinkering.', sourceSkillId: 'tinkering', sellValue: 75 },
-  enhancement_shard: { id: 'enhancement_shard', name: 'Enhancement Shard', description: 'A glowing shard that can re-roll enchantments on gear. Craft via Biochemistry.', sourceSkillId: 'biochemistry', sellValue: 100 },
+  aspect_stone: { id: 'aspect_stone', name: 'Aspect Stone', description: 'A rare crystalline stone that can re-roll the aspect on a piece of gear. Craft via Tinkering.', sourceSkillId: 'tinkering', sellValue: 75 },
 };
 
 export function getResourceById(id: string): Resource | undefined {

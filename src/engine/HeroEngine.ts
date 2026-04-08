@@ -3,36 +3,33 @@ import { GEAR_TEMPLATES, EQUIPMENT_SETS } from '../config/gear';
 import { ABILITIES } from '../config/abilities';
 import { levelFromXp } from '../types/skills';
 import type { Hero, PrimaryStats, DerivedStats } from '../types/hero';
-import { rollStat, generateHeroName, STAT_POINTS_PER_LEVEL } from '../types/hero';
+import { rollStat, generateHeroName, STAT_POINTS_PER_LEVEL, PRIMARY_ATTR_SPD_BONUS } from '../types/hero';
 import type { GearInstance, StatBonus } from '../types/equipment';
 import { useStarlightStore } from '../store/useStarlightStore';
 
 /**
  * Create a new hero of a given class with flat base stats.
- * All stats start at 10. Primary stat based on combat style starts at 13.
- * Support category heroes get CON 13 instead of combat style stat.
+ * All stats start at 10. statEmphasis[0] gets +3, statEmphasis[1] gets +2.
+ * If both emphasis stats are the same, that stat gets +5 (15 total).
+ * primaryAttribute is randomly assigned from the class's primaryAttributePool.
  */
 export function recruitHero(classId: string): Hero | null {
   const classDef = CLASSES[classId];
   if (!classDef) return null;
 
-  // Determine which stat gets the 13 bonus
-  const isSupport = classDef.categoryId === 'support';
-  const primaryStat: keyof PrimaryStats = isSupport
-    ? 'con'
-    : classDef.primaryCombatStyle === 'melee' ? 'str'
-    : classDef.primaryCombatStyle === 'ranged' ? 'dex'
-    : 'int'; // demolitions
-
+  // All stats start at 10
   const baseStats: PrimaryStats = {
-    str: primaryStat === 'str' ? 13 : 10,
-    dex: primaryStat === 'dex' ? 13 : 10,
-    int: primaryStat === 'int' ? 13 : 10,
-    con: primaryStat === 'con' ? 13 : 10,
-    per: 10,
-    luk: 10,
-    res: 10,
+    str: 10, dex: 10, int: 10, con: 10, per: 10, luk: 10, res: 10, spd: 10,
   };
+
+  // Apply stat emphasis: first gets +3, second gets +2
+  const [emphasis1, emphasis2] = classDef.statEmphasis;
+  baseStats[emphasis1] += 3;
+  baseStats[emphasis2] += 2;
+
+  // Randomly assign primary attribute from the class pool
+  const pool = classDef.primaryAttributePool;
+  const primaryAttribute = pool[Math.floor(Math.random() * pool.length)];
 
   return {
     id: `hero_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -41,12 +38,14 @@ export function recruitHero(classId: string): Hero | null {
     level: 1,
     xp: 0,
     baseStats,
-    allocatedStats: { str: 0, dex: 0, int: 0, con: 0, per: 0, luk: 0, res: 0 },
+    allocatedStats: { str: 0, dex: 0, int: 0, con: 0, per: 0, luk: 0, res: 0, spd: 0 },
     unspentPoints: 0,
     recruitedAt: Date.now(),
     equippedAbilities: [null, null, null, null],
     equippedDecree: null,
     equippedConsumables: [null],
+    job2ClassId: null,
+    primaryAttribute,
   };
 }
 
@@ -62,6 +61,7 @@ export function getTotalStats(hero: Hero): PrimaryStats {
     per: hero.baseStats.per + hero.allocatedStats.per,
     luk: hero.baseStats.luk + hero.allocatedStats.luk,
     res: (hero.baseStats.res || 0) + (hero.allocatedStats.res || 0),
+    spd: (hero.baseStats.spd || 10) + (hero.allocatedStats.spd || 0),
   };
 }
 
@@ -70,18 +70,16 @@ export function getTotalStats(hero: Hero): PrimaryStats {
  *
  * STAT CONTRIBUTIONS:
  *   STR  +2 Melee Attack, +1 Defense per point
- *   DEX  +2 Ranged Attack, +0.5 Turn Speed per point
+ *   DEX  +2 Ranged Attack, +0.3 Evasion per point
  *   INT  +2 Blast Attack, +1% Crit Damage per point
  *   CON  +10 Max HP, +1.5 Defense, +0.5 HP Regen per point
  *   PER  +0.8% Accuracy, +0.5% Crit Chance per point
  *   LUK  +0.5% Evasion, +0.5% Status Resistance per point
  *   RES  +1% Ability Power per point, Unlock Ability Slots
+ *   SPD  +1 Turn Speed per point (ATB gauge fill rate)
  */
 export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[]): DerivedStats {
   const stats = getTotalStats(hero);
-  const classDef = CLASSES[hero.classId];
-  const isSpecialist = classDef?.heroType === 'specialist';
-  const combatPenalty = isSpecialist ? 0.8 : 1.0;
 
   // Ability slots based on RES thresholds
   let abilitySlots = 1; // Always have 1
@@ -89,18 +87,22 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
   else if (stats.res >= 60) abilitySlots = 3;
   else if (stats.res >= 30) abilitySlots = 2;
 
+  // Primary attribute SPD bonus
+  const primaryAttrPoints = hero.allocatedStats[hero.primaryAttribute];
+  const primarySpdBonus = primaryAttrPoints * PRIMARY_ATTR_SPD_BONUS;
+
   // Base derived stats from primary stats
   const derived: DerivedStats = {
     maxHp: 100 + stats.con * 8,
-    meleeAttack: Math.floor((5 + stats.str * 2) * combatPenalty),
-    rangedAttack: Math.floor((5 + stats.dex * 2) * combatPenalty),
-    blastAttack: Math.floor((5 + stats.int * 2) * combatPenalty),
+    meleeAttack: Math.floor(5 + stats.str * 2),
+    rangedAttack: Math.floor(5 + stats.dex * 2),
+    blastAttack: Math.floor(5 + stats.int * 2),
     defense: Math.floor(stats.str * 1 + stats.con * 1.5),
     evasion: Math.min(50, 5 + stats.dex * 0.3 + stats.luk * 0.5),
     accuracy: Math.min(99, 80 + stats.per * 0.8),
     critChance: Math.min(60, 5 + stats.per * 0.4),
     critDamage: 150 + stats.int * 1,
-    turnSpeed: 100 + stats.dex * 0.5,
+    turnSpeed: 100 + stats.spd * 1.0 + primarySpdBonus,
     hpRegen: 1 + stats.con * 0.5,
     statusResist: Math.min(80, stats.luk * 0.5),
     abilityPower: stats.res * 1,
@@ -160,15 +162,10 @@ export function calculateDerivedStats(hero: Hero, equippedGear?: GearInstance[])
         applyBonus(derived, { stat: curse.stat, value: -Math.abs(curse.value), isPercentage: curse.isPercentage });
       }
 
-      // 5. Facet (upside + downside)
-      if (gear.facet) {
-        applyBonus(derived, gear.facet.upside);
-        applyBonus(derived, gear.facet.downside);
-      }
-
-      // 6. Enchantments
-      for (const enchant of gear.enchantments) {
-        applyBonus(derived, enchant.effect);
+      // 5. Aspect (upside + downside)
+      if (gear.aspect) {
+        applyBonus(derived, gear.aspect.upside);
+        applyBonus(derived, gear.aspect.downside);
       }
     }
 
@@ -381,5 +378,6 @@ export function allocateStatPoint(hero: Hero, stat: keyof PrimaryStats): Hero | 
  */
 export function getBaseStatTotal(hero: Hero): number {
   return hero.baseStats.str + hero.baseStats.dex + hero.baseStats.int +
-         hero.baseStats.con + hero.baseStats.per + hero.baseStats.luk;
+         hero.baseStats.con + hero.baseStats.per + hero.baseStats.luk +
+         (hero.baseStats.spd || 10);
 }

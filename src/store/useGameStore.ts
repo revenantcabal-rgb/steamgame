@@ -368,9 +368,9 @@ export const useGameStore = create<GameState>((set, get) => ({
             useEquipmentStore.setState({ inventory: newInv });
 
             const rarityLabel = gear.rarity.charAt(0).toUpperCase() + gear.rarity.slice(1);
-            const facetPrefix = gear.facet ? `${gear.facet.name} ` : '';
+            const aspectPrefix = gear.aspect ? `${gear.aspect.name} ` : '';
             get().addLog(
-              `Crafted [${rarityLabel}] ${facetPrefix}${template?.name || activity.gearTemplateId}!`,
+              `Crafted [${rarityLabel}] ${aspectPrefix}${template?.name || activity.gearTemplateId}!`,
               gear.rarity === 'plague' || gear.rarity === 'unique' ? 'levelup' : 'drop',
             );
 

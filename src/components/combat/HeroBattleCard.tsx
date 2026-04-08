@@ -19,6 +19,7 @@ export interface HeroBattleStats {
   currentSp: number;
   justAttacked: boolean;
   colorIndex: number;
+  gaugeProgress: number;
   isRecovering: boolean;
   recoverySecs: number;
 }
@@ -29,7 +30,7 @@ interface HeroBattleCardProps {
 }
 
 export function HeroBattleCard({ stats, onRecall }: HeroBattleCardProps) {
-  const { hero, dps, maxHp, currentHp, maxSp, currentSp, justAttacked, colorIndex, isRecovering, recoverySecs } = stats;
+  const { hero, dps, maxHp, currentHp, maxSp, currentSp, justAttacked, colorIndex, gaugeProgress, isRecovering, recoverySecs } = stats;
   const heroColor = HERO_COLORS[colorIndex] || HERO_COLORS[0];
   const hpPct = maxHp > 0 ? Math.max(0, Math.min(100, (currentHp / maxHp) * 100)) : 0;
   const spPct = maxSp > 0 ? Math.max(0, Math.min(100, (currentSp / maxSp) * 100)) : 0;
@@ -102,6 +103,16 @@ export function HeroBattleCard({ stats, onRecall }: HeroBattleCardProps) {
         }} />
       </div>
       <div className="text-[9px] font-data" style={{ color: '#3b82f6' }}>{Math.round(currentSp)}/{maxSp}</div>
+
+      {/* Turn gauge */}
+      <div style={{ width: '100%', height: 3, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 2, marginTop: 2, overflow: 'hidden' }}>
+        <div style={{
+          width: `${gaugeProgress}%`, height: '100%', borderRadius: 2,
+          transition: 'width 0.3s ease',
+          backgroundColor: justAttacked ? heroColor : '#d4a843',
+          boxShadow: gaugeProgress > 80 ? '0 0 4px #d4a843' : undefined,
+        }} />
+      </div>
 
       {/* DPS + attack state */}
       <div className="flex items-center justify-between w-full mt-1">

@@ -182,8 +182,8 @@ export const useEncampmentStore = create<EncampmentState & EncampmentActions>((s
     const hero = heroStore.heroes.find(h => h.id === heroId);
     if (!hero) return false;
     const cls = CLASSES[hero.classId];
-    if (!cls || cls.heroType !== 'specialist') {
-      useGameStore.getState().addLog('Only specialist heroes can serve as building leaders.', 'error');
+    if (!cls) {
+      useGameStore.getState().addLog('Invalid hero class.', 'error');
       return false;
     }
 

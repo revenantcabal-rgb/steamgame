@@ -19,7 +19,7 @@ import { syncSave, flushPendingWrites } from '../lib/saveService';
 const TICK_INTERVAL_MS = 1000;
 const SAVE_INTERVAL_MS = 30_000;
 
-const FULL_SAVE_VERSION = 15;
+const FULL_SAVE_VERSION = 16;
 
 export function useGameTick() {
   const gameTick = useGameStore(s => s.tick);

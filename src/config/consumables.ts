@@ -274,19 +274,12 @@ export const CONSUMABLES: Record<string, Consumable> = {
   // ============================
   // ENHANCEMENT MATERIALS (crafted but not equipped in combat bag)
   // ============================
-  facet_stone: {
-    id: 'facet_stone', name: 'Facet Stone', type: 'chemical',
-    description: 'A crystalline stone that can re-roll the facet prefix on a piece of gear.',
-    effect: 'Re-rolls gear facet (use from equipment panel)', duration: 0, cooldown: 0, sellValue: 75,
+  aspect_stone: {
+    id: 'aspect_stone', name: 'Aspect Stone', type: 'chemical',
+    description: 'A crystalline stone that can re-roll the aspect prefix on a piece of gear.',
+    effect: 'Re-rolls gear aspect (use from equipment panel)', duration: 0, cooldown: 0, sellValue: 75,
     craftSkillId: 'biochemistry', craftSkillLevel: 40,
     craftingInputs: [{ resourceId: 'electronic_components', quantity: 8 }, { resourceId: 'chemical_fluids', quantity: 6 }, { resourceId: 'copper_ore', quantity: 5 }],
-  },
-  enhancement_shard: {
-    id: 'enhancement_shard', name: 'Enhancement Shard', type: 'chemical',
-    description: 'A glowing shard that can re-roll all enchantments on a piece of gear.',
-    effect: 'Re-rolls gear enchantments (use from equipment panel)', duration: 0, cooldown: 0, sellValue: 100,
-    craftSkillId: 'biochemistry', craftSkillLevel: 45,
-    craftingInputs: [{ resourceId: 'chemical_fluids', quantity: 10 }, { resourceId: 'wild_herbs', quantity: 6 }, { resourceId: 'iron_ore', quantity: 5 }],
   },
 };
 

@@ -1,6 +1,6 @@
-import { GEAR_TEMPLATES, getFacetsForSlot, getEnchantsForSlot, getBonusPoolForSlot, getDownsidePoolForSlot } from '../config/gear';
-import type { GearInstance, GearSource, ItemRarity, StatBonus, Facet, Enchantment } from '../types/equipment';
-import { getEnchantSlots, getRarityBonusCount, getRarityCurseCount, getRarityPowerMultiplier } from '../types/equipment';
+import { GEAR_TEMPLATES, getAspectsForSlot, getBonusPoolForSlot, getDownsidePoolForSlot } from '../config/gear';
+import type { GearInstance, GearSource, ItemRarity, StatBonus, Aspect } from '../types/equipment';
+import { getRarityBonusCount, getRarityCurseCount, getRarityPowerMultiplier } from '../types/equipment';
 import { generateGameId } from './AnticheatEngine';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -46,9 +46,9 @@ export function rollBossDropRarity(zoneTier: number): ItemRarity {
   return 'common';
 }
 
-/** Roll a random facet for a gear slot */
-function rollFacet(slotCategory: string, tier: number, weaponType?: string): Facet | null {
-  const pool = getFacetsForSlot(slotCategory, weaponType);
+/** Roll a random aspect for a gear slot */
+function rollAspect(slotCategory: string, tier: number, weaponType?: string): Aspect | null {
+  const pool = getAspectsForSlot(slotCategory, weaponType);
   if (pool.length === 0) return null;
   const template = pool[Math.floor(Math.random() * pool.length)];
   const mult = getFacetTierMultiplier(tier);
@@ -112,40 +112,6 @@ function rollCurses(slotCategory: string, inherentDownsideStat?: string): StatBo
   return curses;
 }
 
-/** Roll enchantments (grouped - max 1 per group) */
-function rollEnchantments(slotCategory: string, rarity: ItemRarity, tier: number): Enchantment[] {
-  const count = getEnchantSlots(rarity);
-  if (count === 0) return [];
-
-  const pool = getEnchantsForSlot(slotCategory);
-  if (pool.length === 0) return [];
-
-  const enchants: Enchantment[] = [];
-  const usedGroups = new Set<string>();
-  const tierMult = getFacetTierMultiplier(tier);
-
-  for (let i = 0; i < count; i++) {
-    const available = pool.filter(e => !usedGroups.has(e.group));
-    if (available.length === 0) break;
-    const chosen = available[Math.floor(Math.random() * available.length)];
-    usedGroups.add(chosen.group);
-
-    const range = chosen.maxValue - chosen.minValue;
-    const value = Math.round((chosen.minValue + Math.random() * range) * tierMult * 10) / 10;
-    const isLegendary = Math.random() < 0.05;
-
-    enchants.push({
-      name: chosen.name,
-      group: chosen.group,
-      effect: { stat: chosen.stat, value, isPercentage: chosen.isPercentage },
-      isLegendary,
-      legendaryBonus: isLegendary ? chosen.legendaryBonus : undefined,
-    });
-  }
-
-  return enchants;
-}
-
 /**
  * Create a gear instance from a template.
  */
@@ -158,10 +124,9 @@ export function createGearInstance(
   if (!template) return null;
 
   const sourceMult = getSourceMultiplier(source);
-  const facet = rollFacet(template.slot, template.tier, template.weaponType);
+  const aspect = rollAspect(template.slot, template.tier, template.weaponType);
   const bonuses = rollRarityBonuses(template.slot, rarity, sourceMult);
   const curses = rarity === 'plague' ? rollCurses(template.slot, template.inherentDownside?.stat) : [];
-  const enchants = rollEnchantments(template.slot, rarity, template.tier);
 
   const userId = useAuthStore.getState().user?.id || 'system';
 
@@ -171,10 +136,9 @@ export function createGearInstance(
     gameId: generateGameId('gear', userId),
     rarity,
     source,
-    facet,
+    aspect,
     rarityBonuses: bonuses,
     rarityCurses: curses,
-    enchantments: enchants,
     sourcePowerMultiplier: sourceMult,
     createdAt: Date.now(),
   };

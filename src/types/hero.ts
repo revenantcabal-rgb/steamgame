@@ -1,6 +1,15 @@
-export type CombatStyle = 'melee' | 'ranged' | 'demolitions';
-export type HeroType = 'combat' | 'specialist';
-export type CategoryId = 'skirmisher' | 'control' | 'support' | 'assault' | 'artisan';
+export type CombatStyle = 'melee' | 'ranger' | 'demolitions';
+export type BaseClass = 'melee' | 'ranger' | 'demolition' | 'support';
+
+export type Job2ClassId =
+  // Melee branches
+  | 'sentinel' | 'bruiser' | 'crusher'
+  // Ranger branches
+  | 'sniper' | 'gunslinger' | 'hunter'
+  // Demolition branches
+  | 'bombardier' | 'arsonist' | 'chemist'
+  // Support branches
+  | 'medic' | 'tactician' | 'engineer';
 
 export interface PrimaryStats {
   str: number;
@@ -10,6 +19,7 @@ export interface PrimaryStats {
   per: number;
   luk: number;
   res: number;
+  spd: number;
 }
 
 export interface DerivedStats {
@@ -61,23 +71,22 @@ export interface ClassDefinition {
   id: string;
   name: string;
   description: string;
-  categoryId: CategoryId;
-  heroType: HeroType;
+  baseClass: BaseClass;
   primaryCombatStyle: CombatStyle;
-  /** Primary + secondary stat focus */
-  primaryStats: [keyof PrimaryStats, keyof PrimaryStats];
-  /** Base stat roll ranges at recruitment */
-  baseStatRanges: Record<keyof PrimaryStats, [number, number]>;
+  /** Primary + secondary stat emphasis (first gets +3, second gets +2 at recruitment) */
+  statEmphasis: [keyof PrimaryStats, keyof PrimaryStats];
+  /** Primary attribute pool for this hero (randomly assigned at recruitment) */
+  primaryAttributePool: (keyof PrimaryStats)[];
 }
 
-export interface CategoryDefinition {
-  id: CategoryId;
+export interface Job2ClassDefinition {
+  id: Job2ClassId;
   name: string;
+  parentBaseClass: BaseClass;
   description: string;
-  /** Team decree per hero of this category in squad */
-  decreeDescription: string;
-  /** Skirmish bonus when assigned to population */
-  skirmishDescription: string;
+  signatureWeaponType: string;
+  /** Primary attribute pool (used if different from base class) */
+  primaryAttributePool: (keyof PrimaryStats)[];
 }
 
 export interface Hero {
@@ -100,10 +109,17 @@ export interface Hero {
   equippedDecree: string | null;
   /** Consumable slots (consumable IDs) */
   equippedConsumables: (string | null)[];
+  /** Job2 class chosen at level 15 (null before advancement) */
+  job2ClassId: Job2ClassId | null;
+  /** Randomly assigned primary attribute from class pool */
+  primaryAttribute: keyof PrimaryStats;
 }
 
 /** Stat points per hero level */
 export const STAT_POINTS_PER_LEVEL = 6;
+
+/** SPD bonus per point invested in hero's primary attribute */
+export const PRIMARY_ATTR_SPD_BONUS = 0.35;
 
 /** Roll a random stat within a range */
 export function rollStat(min: number, max: number): number {

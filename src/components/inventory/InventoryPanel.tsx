@@ -226,7 +226,7 @@ function ConsumablesGrid({ consumables }: { consumables: { id: string; name: str
 
 // ── Equipment tab ──
 
-function EquipmentGrid({ items }: { items: { instanceId: string; rarity: string; facet: any; enchantments?: any[]; template: { id: string; name: string; slot: string; tier: number; baseStats: { stat: string; value: number; isPercentage: boolean }[] } }[] }) {
+function EquipmentGrid({ items }: { items: { instanceId: string; rarity: string; aspect: any; template: { id: string; name: string; slot: string; tier: number; baseStats: { stat: string; value: number; isPercentage: boolean }[] } }[] }) {
   if (items.length === 0) {
     return <EmptyState text="No equipment yet. Defeat bosses or craft gear." />;
   }
@@ -247,7 +247,7 @@ function EquipmentGrid({ items }: { items: { instanceId: string; rarity: string;
               <ItemIcon itemId={item.template.id} itemType="equipment" gearSlot={item.template.slot as any} size={28} fallbackLabel={item.template.name.charAt(0)} />
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-bold truncate" style={{ color: rarityColor }}>
-                  {item.facet ? `${item.facet.name} ` : ''}{item.template.name}
+                  {item.aspect ? `${item.aspect.name} ` : ''}{item.template.name}
                 </div>
                 <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
                   T{item.template.tier} {item.template.slot} | {RARITY_LABELS[item.rarity as keyof typeof RARITY_LABELS] || item.rarity}
@@ -259,13 +259,11 @@ function EquipmentGrid({ items }: { items: { instanceId: string; rarity: string;
                 <span key={i} className="text-[11px]" style={{ color: 'var(--color-success)' }}>+{s.value} {s.stat}{s.isPercentage ? '%' : ''}</span>
               ))}
             </div>
-            {item.enchantments && item.enchantments.length > 0 && (
+            {item.aspect && (
               <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
-                {item.enchantments.map((e: any, i: number) => (
-                  <span key={i} className="text-[11px]" style={{ color: '#a78bfa' }}>
-                    +{e.effect?.value}{e.effect?.isPercentage ? '%' : ''} {e.effect?.stat}
-                  </span>
-                ))}
+                <span className="text-[11px]" style={{ color: '#a78bfa' }}>
+                  [{item.aspect.name}] +{item.aspect.upside?.value}{item.aspect.upside?.isPercentage ? '%' : ''} {item.aspect.upside?.stat}
+                </span>
               </div>
             )}
           </div>

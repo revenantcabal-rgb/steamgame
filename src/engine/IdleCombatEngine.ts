@@ -16,16 +16,16 @@ import { CLASSES } from '../config/classes';
 import type { Enemy, CombatStyle } from '../config/combatZones';
 
 /**
- * Combat Triangle: STR (melee) > INT (demolitions) > DEX (ranged) > STR (melee)
+ * Combat Triangle: STR (melee) > INT (demolitions) > DEX (ranger) > STR (melee)
  * Returns a damage multiplier: 1.10 for advantage, 0.90 for disadvantage, 1.0 for neutral.
  */
 export function getCombatTriangleMultiplier(attackerStyle: CombatStyle | undefined, defenderStyle: CombatStyle | undefined): number {
   if (!attackerStyle || !defenderStyle || attackerStyle === defenderStyle) return 1.0;
-  // melee beats demolitions, demolitions beats ranged, ranged beats melee
+  // melee beats demolitions, demolitions beats ranger, ranger beats melee
   if (
     (attackerStyle === 'melee' && defenderStyle === 'demolitions') ||
-    (attackerStyle === 'demolitions' && defenderStyle === 'ranged') ||
-    (attackerStyle === 'ranged' && defenderStyle === 'melee')
+    (attackerStyle === 'demolitions' && defenderStyle === 'ranger') ||
+    (attackerStyle === 'ranger' && defenderStyle === 'melee')
   ) {
     return 1.10;
   }
@@ -298,12 +298,21 @@ export function simulateFight(
         resourceDrops.push({ resourceId: drop.resourceId, quantity: qty });
       }
     }
+    // Wasteland Credits drop — scales with zone tier and wave
+    const wcBaseChance = 0.35;
+    const wcMinByTier = [1000, 2000, 4000, 8000, 15000, 25000];
+    const wcMaxByTier = [2000, 4000, 8000, 16000, 30000, 50000];
+    const ti = Math.min(zoneTier - 1, wcMinByTier.length - 1);
+    if (Math.random() < wcBaseChance) {
+      const wcQty = Math.floor(Math.random() * (wcMaxByTier[ti] - wcMinByTier[ti] + 1)) + wcMinByTier[ti];
+      resourceDrops.push({ resourceId: 'wasteland_credits', quantity: wcQty });
+    }
   }
 
   return {
     enemyName: enemy.name,
     won,
-    xpGained: won ? scaledXp : Math.floor(scaledXp * 0.2),
+    xpGained: won ? scaledXp * 10 : Math.floor(scaledXp * 0.2) * 10,
     resourceDrops,
     heroDied,
     recoveryCooldown: heroDied ? Math.floor(Math.min(180, (scaledEnemyHp > 5000 ? 180 : scaledEnemyHp > 1000 ? 120 : 60)) * Math.max(0.3, 1 - derived.statusResist / 200)) : 0,
