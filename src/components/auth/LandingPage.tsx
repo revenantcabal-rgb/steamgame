@@ -265,7 +265,7 @@ export function LandingPage() {
     { icon: '\uD83C\uDFD7\uFE0F', title: 'Build Your Encampment', description: '20 buildings providing passive bonuses. Assign workers, upgrade structures, and grow your settlement.' },
     { icon: '\uD83D\uDC80', title: 'Idle Combat', description: 'Deploy heroes to combat zones. Auto-battle enemies, defeat bosses, and collect rare loot drops.' },
     { icon: '\uD83D\uDC65', title: 'Worker Population', description: 'Individual workers with stats, ranks, and specializations. From Recruit to Legend \u2014 each worker is unique.' },
-    { icon: '\uD83C\uDFEA', title: 'Trade & Progress', description: 'Local marketplace, Starlight ascension tree, and deep progression systems.' },
+    { icon: '\uD83C\uDFEA', title: 'Trade & Progress', description: 'Local Trade Post, Starlight ascension tree, and deep progression systems.' },
   ];
 
   const stats = [

@@ -25,7 +25,7 @@ const BONUS_LABELS: Record<string, string> = {
   worker_capacity: 'Population Cap',
   hero_xp: 'Hero XP Gain',
   hero_combat_damage: 'Hero Combat Damage',
-  marketplace_sell_bonus: 'Marketplace Sell Value',
+  marketplace_sell_bonus: 'Trade Post Sell Value',
   rare_drop_chance: 'Rare Drop Chance',
   worker_respawn_speed: 'Worker Respawn Speed',
   expedition_reward: 'Expedition Rewards',

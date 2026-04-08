@@ -40,7 +40,7 @@ type ActiveView =
   | 'story'
   | 'heroes'
   | 'population'
-  | 'marketplace'
+  | 'tradepost'
   | 'expedition'
   | 'starlight'
   | 'loot'
@@ -168,7 +168,7 @@ function App() {
           {activeView === 'combat' && <CombatZonePanel initialZoneId={activeCombatZoneId} />}
           {activeView === 'heroes' && <HeroPanel />}
           {activeView === 'population' && <PopulationPanel />}
-          {activeView === 'marketplace' && <MarketplacePanel />}
+          {activeView === 'tradepost' && <MarketplacePanel />}
           {activeView === 'expedition' && <ExpeditionPanel />}
           {activeView === 'starlight' && <StarlightPanel />}
           {activeView === 'inventory' && <InventoryPanel />}

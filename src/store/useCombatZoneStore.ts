@@ -16,6 +16,7 @@ import { usePopulationStore } from './usePopulationStore';
 import { useLootTrackerStore } from './useLootTrackerStore';
 import { getPremiumBonuses } from '../engine/PremiumBonuses';
 import { getEncampmentBonuses } from '../engine/EncampmentBonuses';
+import { useScanTowerStore } from './useScanTowerStore';
 
 const BOSS_EVERY_N_FIGHTS = 50;
 const ENEMY_SCALE_EVERY_N = 10;
@@ -735,6 +736,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           const encBonusesT = getEncampmentBonuses();
           const encDefMultT = 1 + (encBonusesT.combat_defense || 0) / 100;
           const encHpMultT = 1 + (encBonusesT.combat_hp || 0) / 100;
+          const scanTurnSpeedBonus = useScanTowerStore.getState().getScanBuffBonuses().turnSpeedBonus;
 
           // Pre-compute hero data
           const heroData = activeHeroes.map(hero => {
@@ -750,7 +752,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
           // ── HERO ATB: Fill gauge, act when full ──
           for (const { hero, derived } of heroData) {
-            updatedHeroGauge[hero.id] = (updatedHeroGauge[hero.id] || 0) + derived.turnSpeed;
+            updatedHeroGauge[hero.id] = (updatedHeroGauge[hero.id] || 0) + derived.turnSpeed + scanTurnSpeedBonus;
             let actions = 0;
             while (updatedHeroGauge[hero.id] >= 100 && actions < 3) {
               updatedHeroGauge[hero.id] -= 100;

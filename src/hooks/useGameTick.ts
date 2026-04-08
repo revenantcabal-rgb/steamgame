@@ -14,12 +14,13 @@ import { useStarlightStore } from '../store/useStarlightStore';
 import { useLootTrackerStore } from '../store/useLootTrackerStore';
 import { useGoldenCapStore } from '../store/useGoldenCapStore';
 import { useEncampmentStore } from '../store/useEncampmentStore';
+import { useScanTowerStore } from '../store/useScanTowerStore';
 import { syncSave, flushPendingWrites } from '../lib/saveService';
 
 const TICK_INTERVAL_MS = 1000;
 const SAVE_INTERVAL_MS = 30_000;
 
-const FULL_SAVE_VERSION = 16;
+const FULL_SAVE_VERSION = 17;
 
 export function useGameTick() {
   const gameTick = useGameStore(s => s.tick);
@@ -67,7 +68,27 @@ export function useGameTick() {
           if (parsed.lootTracker) useLootTrackerStore.getState().loadState(parsed.lootTracker);
           if (parsed.goldenCap) useGoldenCapStore.getState().loadState(parsed.goldenCap);
           if (parsed.encampment) useEncampmentStore.getState().loadState(parsed.encampment);
+          if (parsed.scanTower) useScanTowerStore.getState().loadState(parsed.scanTower);
           gameStore.addLog('Save data loaded.', 'system');
+          setTimeout(() => useGameStore.getState().processOfflineProgress(), 100);
+        } else if (parsed.version === 16) {
+          // Migrate v16 → v17: add Scan Tower system
+          gameStore.loadState(parsed.game);
+          usePopulationStore.getState().loadState(parsed.population);
+          if (parsed.heroes) useHeroStore.getState().loadState(parsed.heroes);
+          if (parsed.equipment) useEquipmentStore.getState().loadState(parsed.equipment);
+          if (parsed.combat) useCombatZoneStore.getState().loadState(parsed.combat);
+          if (parsed.expedition) useExpeditionStore.getState().loadState(parsed.expedition);
+          if (parsed.market) useMarketStore.getState().loadState(parsed.market);
+          if (parsed.anticheat) useAnticheatStore.getState().loadState(parsed.anticheat);
+          if (parsed.achievements) useAchievementStore.getState().loadState(parsed.achievements);
+          if (parsed.story) useStoryStore.getState().loadState(parsed.story);
+          if (parsed.starlight) useStarlightStore.getState().loadState(parsed.starlight);
+          if (parsed.lootTracker) useLootTrackerStore.getState().loadState(parsed.lootTracker);
+          if (parsed.goldenCap) useGoldenCapStore.getState().loadState(parsed.goldenCap);
+          if (parsed.encampment) useEncampmentStore.getState().loadState(parsed.encampment);
+          // Scan tower store starts fresh (no data to migrate)
+          gameStore.addLog('Save data migrated from v16 to v17 (Scan Tower system added).', 'system');
           setTimeout(() => useGameStore.getState().processOfflineProgress(), 100);
         } else if (parsed.version === 14) {
           // Migrate v14 → v15: add Encampment system + individual workers
@@ -128,7 +149,7 @@ export function useGameTick() {
               currentPartIndex: 0,
               completedStories: [1, 2, 3],
               partProgress: {},
-              unlockedFeatures: ['marketplace', 'accessories', 'hero_recruitment'],
+              unlockedFeatures: ['tradepost', 'accessories', 'hero_recruitment'],
               totalWcEarned: 0,
               totalKills: 0,
               bossesDefeated: [],
@@ -140,7 +161,7 @@ export function useGameTick() {
               // Also auto-complete story 4
               autoState.currentStoryNumber = 5;
               autoState.completedStories = [1, 2, 3, 4];
-              autoState.unlockedFeatures = ['marketplace', 'accessories', 'hero_recruitment', 'guild'];
+              autoState.unlockedFeatures = ['tradepost', 'accessories', 'hero_recruitment', 'guild'];
             }
 
             useStoryStore.getState().loadState(autoState);
@@ -248,6 +269,7 @@ export function useGameTick() {
       expeditionTick();
       craftTick();
       encampmentTick();
+      useScanTowerStore.getState().scanTick();
       useGoldenCapStore.getState().checkExpiry();
     }, TICK_INTERVAL_MS);
     return () => clearInterval(interval);
@@ -284,6 +306,7 @@ export function useGameTick() {
           lootTracker: useLootTrackerStore.getState().getSerializableState(),
           goldenCap: useGoldenCapStore.getState().getSerializableState(),
           encampment: useEncampmentStore.getState().getSerializableState(),
+          scanTower: useScanTowerStore.getState().getSerializableState(),
           version: FULL_SAVE_VERSION,
         };
         const serialized = JSON.stringify(fullSave);

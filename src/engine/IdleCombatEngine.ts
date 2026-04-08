@@ -10,6 +10,7 @@ import type { DerivedStats } from '../types/hero';
 import type { GearInstance } from '../types/equipment';
 import { getPremiumBonuses } from './PremiumBonuses';
 import { getEncampmentBonuses, getCombatDamageBonus } from './EncampmentBonuses';
+import { useScanTowerStore } from '../store/useScanTowerStore';
 import { useEquipmentStore } from '../store/useEquipmentStore';
 import { useGameStore } from '../store/useGameStore';
 import { CLASSES } from '../config/classes';
@@ -292,7 +293,8 @@ export function simulateFight(
   const resourceDrops: { resourceId: string; quantity: number }[] = [];
   if (won) {
     for (const drop of enemy.resourceDrops) {
-      const adjustedChance = Math.min(1, drop.chance * (1 + (derived.dropChance + getPremiumBonuses().dropChanceBonus + (encampmentBonuses.rare_drop_chance || 0)) / 100));
+      const scanDropBonus = useScanTowerStore.getState().getScanBuffBonuses().dropChanceBonus;
+      const adjustedChance = Math.min(1, drop.chance * (1 + (derived.dropChance + getPremiumBonuses().dropChanceBonus + (encampmentBonuses.rare_drop_chance || 0) + scanDropBonus) / 100));
       if (Math.random() < adjustedChance) {
         const qty = Math.floor(Math.random() * (drop.maxQty - drop.minQty + 1)) + drop.minQty;
         resourceDrops.push({ resourceId: drop.resourceId, quantity: qty });

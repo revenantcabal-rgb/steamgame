@@ -21,7 +21,7 @@ export type NavTarget =
   | 'encampment'
   | 'workshop'
   | 'population'
-  | 'marketplace'
+  | 'tradepost'
   | 'expedition'
   | 'starlight'
   | 'loot'
@@ -48,7 +48,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'workshop',   label: 'Workshop',   icon: '\u2692\uFE0F', featureKey: null },
   { id: 'scan',       label: 'Scan',       icon: '\uD83D\uDCE1', featureKey: null },
   { id: 'inventory',  label: 'Inventory',  icon: '\uD83C\uDF92', featureKey: null },
-  { id: 'marketplace',label: 'Market',     icon: '\uD83C\uDFEA', featureKey: 'marketplace' },
+  { id: 'tradepost',  label: 'Trade Post',  icon: '\uD83C\uDFEA', featureKey: 'tradepost' },
   { id: 'expedition', label: 'Expedition', icon: '\uD83C\uDFF0', featureKey: 'expedition' },
   { id: 'settings',   label: 'Settings',   icon: '\u2699\uFE0F', featureKey: null },
 ];

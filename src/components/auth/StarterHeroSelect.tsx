@@ -6,35 +6,28 @@ import { ItemIcon } from '../../utils/itemIcons';
 
 const STARTER_CLASSES = [
   {
-    classId: 'blade_dancer',
+    classId: 'iron_fist',
     combatStyle: 'Melee',
     icon: '\u2694\uFE0F', // swords
     accentColor: '#e74c3c',
     primaryStat: 'STR',
   },
   {
-    classId: 'sharpshooter',
-    combatStyle: 'Ranged',
+    classId: 'dead_shot',
+    combatStyle: 'Ranger',
     icon: '\uD83C\uDFF9', // bow
     accentColor: '#27ae60',
     primaryStat: 'DEX',
   },
   {
-    classId: 'demolisher',
-    combatStyle: 'Demolitions',
+    classId: 'blast_core',
+    combatStyle: 'Demolition',
     icon: '\uD83D\uDCA3', // bomb
     accentColor: '#3498db',
     primaryStat: 'INT',
   },
   {
-    classId: 'guardian',
-    combatStyle: 'Tank',
-    icon: '\uD83D\uDEE1\uFE0F', // shield
-    accentColor: '#f39c12',
-    primaryStat: 'CON',
-  },
-  {
-    classId: 'field_medic',
+    classId: 'patch_work',
     combatStyle: 'Support',
     icon: '\u2695\uFE0F', // medical
     accentColor: '#9b59b6',

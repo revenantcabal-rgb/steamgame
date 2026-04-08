@@ -51,7 +51,7 @@ export interface StoryChapter {
 
 export const STORY_CHAPTERS: StoryChapter[] = [
   // ──────────────────────────────────────────────
-  // CHAPTER 1: Survival Basics → Unlocks Marketplace
+  // CHAPTER 1: Survival Basics → Unlocks Trade Post
   // ──────────────────────────────────────────────
   {
     id: 'story_1',
@@ -124,7 +124,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
       },
     ],
     completionReward: [{ type: 'wc', quantity: 100 }],
-    unlocks: 'marketplace',
+    unlocks: 'tradepost',
   },
 
   // ──────────────────────────────────────────────
@@ -266,7 +266,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         flavor: 'Credits are the lifeblood of trade. Save enough and doors open.',
         objective: { type: 'earn_currency', target: 'wc', count: 500, description: 'Accumulate 500 total WC' },
         rewards: [{ type: 'wc', quantity: 200 }],
-        hint: 'Earn WC from story rewards, combat drops, and selling on the market.',
+        hint: 'Earn WC from story rewards, combat drops, and selling at the Trade Post.',
       },
       {
         id: 's3_p6',
@@ -505,7 +505,7 @@ export const STORY_CHAPTERS: StoryChapter[] = [
         flavor: 'Resources win wars. Build your war chest for the expedition ahead.',
         objective: { type: 'earn_currency', target: 'wc', count: 2000, description: 'Earn 2000 WC total' },
         rewards: [{ type: 'wc', quantity: 500 }],
-        hint: 'Complete story objectives, sell items at the marketplace, and keep earning.',
+        hint: 'Complete story objectives, sell items at the Trade Post, and keep earning.',
       },
     ],
     completionReward: [{ type: 'wc', quantity: 500 }],

@@ -331,7 +331,7 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
   trading_post: {
     id: 'trading_post',
     name: 'Trading Post',
-    description: 'Increases marketplace sell value for all items.',
+    description: 'Increases Trade Post sell value for all items.',
     flavor: 'A counter and lockbox — the hub of wasteland commerce.',
     category: 'economy',
     bonusType: 'marketplace_sell_bonus',

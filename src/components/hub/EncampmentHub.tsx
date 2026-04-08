@@ -31,7 +31,7 @@ export type HubTarget =
   | 'encampment'
   | 'population'
   | 'heroes'
-  | 'marketplace'
+  | 'tradepost'
   | 'expedition'
   | 'combat'
   | 'scan'
@@ -251,10 +251,10 @@ export function EncampmentHub({ onNavigate }: EncampmentHubProps) {
               icon={"\uD83C\uDFEA"}
               assetId="trading_post" assetType="building"
               description="Buy and sell on the local market. Manage listings and orders."
-              flavor="Marketplace and commerce."
-              locked={!isFeatureUnlocked('marketplace')}
+              flavor="Trade Post and commerce."
+              locked={!isFeatureUnlocked('tradepost')}
               tint="#1abc9c"
-              onClick={() => onNavigate('marketplace')}
+              onClick={() => onNavigate('tradepost')}
             />
           </div>
         </div>

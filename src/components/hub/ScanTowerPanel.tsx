@@ -6,16 +6,23 @@
  * district/site with intel: danger, loot, survivor activity, and
  * recommended squad composition.
  *
- * Architected so real multiplayer districts/contested zones can
- * plug in later via the ScanResult interface.
+ * Features:
+ * - Manual scan with 3h cooldown (auto-scan with Gold Pass)
+ * - Scan buff: +15% drop chance, +10 turn speed
+ * - Tower upgrades (levels 1-3) for placement buff scaling
+ * - Placement buffs by zone signal level when scan active
  */
 
+import { useState, useEffect } from 'react';
 import { useHeroStore } from '../../store/useHeroStore';
 import { useCombatZoneStore } from '../../store/useCombatZoneStore';
 import { useStoryStore } from '../../store/useStoryStore';
 import { useEncampmentStore } from '../../store/useEncampmentStore';
+import { useGameStore } from '../../store/useGameStore';
+import { useScanTowerStore, getUpgradeCosts } from '../../store/useScanTowerStore';
+import { useGoldenCapStore } from '../../store/useGoldenCapStore';
 import { COMBAT_ZONE_LIST } from '../../config/combatZones';
-import { CLASSES } from '../../config/classes';
+import { RESOURCES } from '../../config/resources';
 
 // ── Scan result interface — future-ready for server-pushed data ──
 interface ScanResult {
@@ -99,6 +106,18 @@ function generateScanResults(
   });
 }
 
+/** Format milliseconds as "Xh Ym Zs" */
+function formatMs(ms: number): string {
+  if (ms <= 0) return '0s';
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (h > 0) return `${h}h ${m}m ${s}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 interface ScanTowerPanelProps {
   onNavigateToCombat: (zoneId: string) => void;
   onNavigateToExpedition: () => void;
@@ -109,6 +128,33 @@ export function ScanTowerPanel({ onNavigateToCombat, onNavigateToExpedition }: S
   const deployments = useCombatZoneStore(s => s.deployments);
   const isFeatureUnlocked = useStoryStore(s => s.isFeatureUnlocked);
   const buildings = useEncampmentStore(s => s.buildings);
+  const resources = useGameStore(s => s.resources);
+
+  // Scan tower state
+  const towerLevel = useScanTowerStore(s => s.towerLevel);
+  const scanBuffExpiresAt = useScanTowerStore(s => s.scanBuffExpiresAt);
+  const performScan = useScanTowerStore(s => s.performScan);
+  const upgradeTower = useScanTowerStore(s => s.upgradeTower);
+  const isScanBuffActive = useScanTowerStore(s => s.isScanBuffActive);
+  const getScanCooldownRemaining = useScanTowerStore(s => s.getScanCooldownRemaining);
+  const getPlacementBuff = useScanTowerStore(s => s.getPlacementBuff);
+  const getScanBuffBonuses = useScanTowerStore(s => s.getScanBuffBonuses);
+
+  const isGoldPass = useGoldenCapStore(s => s.isActive)();
+
+  const [showUpgradePanel, setShowUpgradePanel] = useState(false);
+
+  // Force re-render every second for countdown timers
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const buffActive = isScanBuffActive();
+  const cooldownMs = getScanCooldownRemaining();
+  const buffBonuses = getScanBuffBonuses();
+  const buffRemainingMs = scanBuffExpiresAt ? Math.max(0, scanBuffExpiresAt - Date.now()) : 0;
 
   const avgLevel = heroes.length > 0 ? Math.round(heroes.reduce((s, h) => s + h.level, 0) / heroes.length) : 0;
   const deployedHeroCount = deployments.reduce((s, d) => s + d.heroIds.length, 0);
@@ -127,6 +173,13 @@ export function ScanTowerPanel({ onNavigateToCombat, onNavigateToExpedition }: S
       ? `${deployedHeroCount} hero${deployedHeroCount !== 1 ? 'es' : ''} in field across ${activeZoneIds.size} zone${activeZoneIds.size !== 1 ? 's' : ''}. Monitor for boss encounters.`
       : 'No deployments and no viable targets. Level up your squad.';
 
+  // Upgrade costs
+  const upgradeCosts = getUpgradeCosts(towerLevel);
+  const canAffordUpgrade = upgradeCosts ? upgradeCosts.every(c => (resources[c.resourceId] || 0) >= c.quantity) : false;
+
+  // Placement buff labels
+  const placementLabels = ['Low', 'Moderate', 'High', 'Severe', 'Extreme'];
+
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 space-y-4">
@@ -144,7 +197,7 @@ export function ScanTowerPanel({ onNavigateToCombat, onNavigateToExpedition }: S
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-info)', boxShadow: '0 0 6px var(--color-info)', animation: 'hub-signal 2s ease-in-out infinite' }} />
               <span className="text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--color-info)' }}>
-                Scan Tower — {hasRadioTower ? 'Enhanced Signal' : 'Standard Sweep'}
+                Scan Tower Lv.{towerLevel} — {hasRadioTower ? 'Enhanced Signal' : 'Standard Sweep'}
               </span>
             </div>
             <span className="flex items-center gap-1.5">
@@ -169,6 +222,213 @@ export function ScanTowerPanel({ onNavigateToCombat, onNavigateToExpedition }: S
             </div>
           </div>
         </div>
+
+        {/* ─── Scan Controls ─── */}
+        <div
+          className="rounded-lg overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, rgba(22, 19, 15, 0.9) 0%, rgba(12, 10, 8, 0.95) 100%)',
+            border: buffActive ? '1px solid rgba(75, 163, 212, 0.4)' : '1px solid rgba(62, 54, 40, 0.3)',
+            boxShadow: buffActive ? '0 0 12px rgba(75, 163, 212, 0.15)' : 'none',
+          }}
+        >
+          <div className="px-4 py-3 space-y-3">
+            {/* Scan button row */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {isGoldPass ? (
+                <div
+                  className="px-4 py-2 rounded text-xs font-bold uppercase tracking-widest"
+                  style={{
+                    background: 'linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%)',
+                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                    color: '#d4af37',
+                  }}
+                >
+                  AUTO-SCAN ACTIVE
+                </div>
+              ) : (
+                <button
+                  onClick={() => performScan()}
+                  disabled={cooldownMs > 0}
+                  className="px-5 py-2.5 rounded font-bold uppercase tracking-wider text-xs transition-all"
+                  style={{
+                    backgroundColor: cooldownMs > 0 ? 'rgba(62, 54, 40, 0.3)' : 'rgba(75, 163, 212, 0.15)',
+                    border: cooldownMs > 0 ? '1px solid rgba(62, 54, 40, 0.3)' : '1px solid rgba(75, 163, 212, 0.5)',
+                    color: cooldownMs > 0 ? 'var(--color-text-muted)' : 'var(--color-info)',
+                    cursor: cooldownMs > 0 ? 'not-allowed' : 'pointer',
+                    opacity: cooldownMs > 0 ? 0.6 : 1,
+                  }}
+                >
+                  {cooldownMs > 0 ? `SCAN (${formatMs(cooldownMs)})` : 'SCAN'}
+                </button>
+              )}
+
+              {/* Tower level + upgrade toggle */}
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--color-text-muted)' }}>
+                  Tower Level {towerLevel}/3
+                </span>
+                {towerLevel < 3 ? (
+                  <button
+                    onClick={() => setShowUpgradePanel(!showUpgradePanel)}
+                    className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                    style={{
+                      backgroundColor: 'rgba(75, 163, 212, 0.08)',
+                      border: '1px solid rgba(75, 163, 212, 0.25)',
+                      color: 'var(--color-info)',
+                    }}
+                  >
+                    {showUpgradePanel ? 'CLOSE' : 'UPGRADE'}
+                  </button>
+                ) : (
+                  <span
+                    className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider"
+                    style={{
+                      backgroundColor: 'rgba(212, 175, 55, 0.1)',
+                      border: '1px solid rgba(212, 175, 55, 0.3)',
+                      color: '#d4af37',
+                    }}
+                  >
+                    MAX LEVEL
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Buff status */}
+            {buffActive && (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded"
+                style={{
+                  background: 'linear-gradient(90deg, rgba(75, 163, 212, 0.1) 0%, rgba(75, 163, 212, 0.03) 100%)',
+                  border: '1px solid rgba(75, 163, 212, 0.25)',
+                  animation: 'hub-signal 3s ease-in-out infinite',
+                }}
+              >
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-info)', boxShadow: '0 0 8px var(--color-info)' }} />
+                <span className="text-xs font-bold" style={{ color: 'var(--color-info)' }}>
+                  SCAN ACTIVE
+                </span>
+                <span className="text-[10px] font-data" style={{ color: 'var(--color-text-secondary)' }}>
+                  {formatMs(buffRemainingMs)} remaining
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ─── Buff Display ─── */}
+        {buffActive && (
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(22, 19, 15, 0.9) 0%, rgba(12, 10, 8, 0.95) 100%)',
+              border: '1px solid rgba(75, 163, 212, 0.2)',
+            }}
+          >
+            <div className="px-4 py-3 space-y-2">
+              <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-info)' }}>
+                Active Scan Buffs
+              </div>
+
+              {/* Combat bonuses */}
+              <div className="flex flex-wrap gap-3">
+                <div className="px-2.5 py-1.5 rounded" style={{ backgroundColor: 'rgba(75, 163, 212, 0.06)', border: '1px solid rgba(75, 163, 212, 0.15)' }}>
+                  <span className="text-[10px] font-bold" style={{ color: 'var(--color-success)' }}>+{buffBonuses.dropChanceBonus}%</span>
+                  <span className="text-[10px] ml-1" style={{ color: 'var(--color-text-muted)' }}>Drop Rate</span>
+                </div>
+                <div className="px-2.5 py-1.5 rounded" style={{ backgroundColor: 'rgba(75, 163, 212, 0.06)', border: '1px solid rgba(75, 163, 212, 0.15)' }}>
+                  <span className="text-[10px] font-bold" style={{ color: 'var(--color-energy)' }}>+{buffBonuses.turnSpeedBonus}</span>
+                  <span className="text-[10px] ml-1" style={{ color: 'var(--color-text-muted)' }}>Turn Speed</span>
+                </div>
+              </div>
+
+              {/* Placement buffs by signal level */}
+              <div>
+                <div className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--color-text-muted)' }}>
+                  Placement Buffs (All Stats)
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {placementLabels.map(label => {
+                    const buff = getPlacementBuff(label);
+                    return (
+                      <span key={label} className="text-[10px] px-1.5 py-0.5 rounded" style={{
+                        backgroundColor: 'rgba(62, 54, 40, 0.3)',
+                        border: '1px solid rgba(62, 54, 40, 0.2)',
+                      }}>
+                        <span style={{ color: 'var(--color-text-muted)' }}>{label} </span>
+                        <span style={{ color: 'var(--color-success)' }}>+{buff}%</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Tower Upgrade Panel (collapsible) ─── */}
+        {showUpgradePanel && towerLevel < 3 && upgradeCosts && (
+          <div
+            className="rounded-lg overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, rgba(22, 19, 15, 0.9) 0%, rgba(12, 10, 8, 0.95) 100%)',
+              border: '1px solid rgba(62, 54, 40, 0.3)',
+            }}
+          >
+            <div className="px-4 py-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-energy)' }}>
+                  Upgrade: Level {towerLevel} &rarr; {towerLevel + 1}
+                </div>
+              </div>
+
+              {/* Material costs */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {upgradeCosts.map(c => {
+                  const have = resources[c.resourceId] || 0;
+                  const enough = have >= c.quantity;
+                  const resName = RESOURCES[c.resourceId]?.name || c.resourceId;
+                  return (
+                    <div key={c.resourceId} className="flex items-center gap-2 px-2 py-1.5 rounded" style={{
+                      backgroundColor: 'rgba(62, 54, 40, 0.2)',
+                      border: enough ? '1px solid rgba(62, 54, 40, 0.2)' : '1px solid rgba(224, 85, 69, 0.2)',
+                    }}>
+                      <div className="flex-1">
+                        <div className="text-[10px] font-bold" style={{ color: 'var(--color-text-secondary)' }}>{resName}</div>
+                        <div className="text-[10px] font-data">
+                          <span style={{ color: enough ? 'var(--color-success)' : 'var(--color-danger)' }}>{have}</span>
+                          <span style={{ color: 'var(--color-text-muted)' }}> / {c.quantity}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Upgrade button */}
+              <button
+                onClick={() => upgradeTower()}
+                disabled={!canAffordUpgrade}
+                className="w-full py-2 rounded font-bold uppercase tracking-wider text-xs transition-all"
+                style={{
+                  backgroundColor: canAffordUpgrade ? 'rgba(75, 163, 212, 0.15)' : 'rgba(62, 54, 40, 0.2)',
+                  border: canAffordUpgrade ? '1px solid rgba(75, 163, 212, 0.4)' : '1px solid rgba(62, 54, 40, 0.2)',
+                  color: canAffordUpgrade ? 'var(--color-info)' : 'var(--color-text-muted)',
+                  cursor: canAffordUpgrade ? 'pointer' : 'not-allowed',
+                  opacity: canAffordUpgrade ? 1 : 0.5,
+                }}
+              >
+                UPGRADE TO LEVEL {towerLevel + 1}
+              </button>
+
+              {/* What you get */}
+              <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>
+                Higher tower level increases placement buff multiplier across all signal levels.
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ─── Active Engagements ─── */}
         {deployments.length > 0 && (
@@ -204,7 +464,12 @@ export function ScanTowerPanel({ onNavigateToCombat, onNavigateToExpedition }: S
           <SectionLine text="Detected Sites" color="var(--color-text-muted)" />
           <div className="space-y-2">
             {scanResults.map(scan => (
-              <ScanResultCard key={scan.id} scan={scan} onClick={() => onNavigateToCombat(scan.id)} />
+              <ScanResultCard
+                key={scan.id}
+                scan={scan}
+                onClick={() => onNavigateToCombat(scan.id)}
+                placementBuff={buffActive ? getPlacementBuff(scan.threatLabel) : 0}
+              />
             ))}
           </div>
         </div>
@@ -233,7 +498,7 @@ export function ScanTowerPanel({ onNavigateToCombat, onNavigateToExpedition }: S
             PvP threat assessment {"\u2022"} Contested district scanning {"\u2022"} Survivor faction tracking
           </div>
           <div className="text-[9px] mt-1 uppercase tracking-wider" style={{ color: 'var(--color-text-muted)', opacity: 0.3 }}>
-            Requires tower upgrade — future update
+            Requires further tower upgrades — future update
           </div>
         </div>
       </div>
@@ -243,7 +508,7 @@ export function ScanTowerPanel({ onNavigateToCombat, onNavigateToExpedition }: S
 
 /* ─── Sub-components ─── */
 
-function ScanResultCard({ scan, onClick }: { scan: ScanResult; onClick: () => void }) {
+function ScanResultCard({ scan, onClick, placementBuff }: { scan: ScanResult; onClick: () => void; placementBuff: number }) {
   const threatColors = ['', 'var(--color-success)', '#8bc34a', 'var(--color-energy)', 'var(--color-danger)', '#d32f2f'];
   const tColor = threatColors[scan.threatLevel] || 'var(--color-text-muted)';
   const clarityPct = Math.round(scan.signalClarity * 100);
@@ -261,6 +526,15 @@ function ScanResultCard({ scan, onClick }: { scan: ScanResult; onClick: () => vo
           <span className="text-xs font-bold" style={{ color: 'var(--color-text-primary)' }}>{scan.name}</span>
         </div>
         <div className="flex items-center gap-2">
+          {placementBuff > 0 && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded font-bold" style={{
+              backgroundColor: 'rgba(75, 163, 212, 0.1)',
+              border: '1px solid rgba(75, 163, 212, 0.2)',
+              color: 'var(--color-info)',
+            }}>
+              +{placementBuff}% stats
+            </span>
+          )}
           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider" style={{ backgroundColor: `${tColor}15`, color: tColor }}>
             {scan.threatLabel}
           </span>
