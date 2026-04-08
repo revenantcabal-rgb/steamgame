@@ -1,6 +1,6 @@
 # Story Progression
 
-The story system gates feature unlocks behind **7 chapters**, each with **7 sequential objectives (parts)**. Completing a chapter's final part unlocks a new game feature.
+The story system gates feature unlocks behind **7 chapters**, each with **7 sequential objectives (parts)**. Most features unlock when an entire chapter is completed, but some features unlock at specific **part** completions within a chapter (noted below).
 
 ---
 
@@ -35,17 +35,17 @@ The story system gates feature unlocks behind **7 chapters**, each with **7 sequ
 ---
 
 ## Chapter 3 — The Wasteland Calls
-> *Unlocks: Hero Recruitment*
+> *Part 1 Unlocks: **Hero Recruitment** (unlocks immediately on completing Part 1, not the full chapter)*
 
-| Part | Objective | Type |
-|------|-----------|------|
-| 1 | Reach hero level 10 | reach_hero_level |
-| 2 | Equip gear in 5+ slots | equip |
-| 3 | Complete Full Sweep in Outskirts | combat_zone |
-| 4 | Craft T2 weapon | craft |
-| 5 | Reach any gathering skill level 10 | reach_skill_level |
-| 6 | Accumulate 500 WC | earn_wc |
-| 7 | Defeat boss on Hard (T2) difficulty | kill_boss |
+| Part | Objective | Type | Notes |
+|------|-----------|------|-------|
+| 1 | Reach hero level **5** | reach_hero_level | **Unlocks Hero Recruitment** |
+| 2 | Equip gear in 5+ slots | equip | |
+| 3 | Defeat Giant Roach (Full Sweep boss) | kill_boss | |
+| 4 | Craft T2 weapon | craft | |
+| 5 | Reach any gathering skill level 10 | reach_skill_level | |
+| 6 | Accumulate 500 WC | earn_currency | |
+| 7 | Defeat boss on Hard (T2) difficulty | kill_boss | |
 
 ---
 
@@ -111,18 +111,26 @@ The story system gates feature unlocks behind **7 chapters**, each with **7 sequ
 
 ## Feature Unlock Summary
 
-| Chapter | Feature Unlocked |
+| Trigger | Feature Unlocked |
 |---------|------------------|
-| 1 | Marketplace |
-| 2 | Accessories (ring, earring, necklace) |
-| 3 | Hero Recruitment |
-| 4 | Guild |
-| 5 | PVP |
-| 6 | Expeditions |
-| 7 | Starlight Constellation |
+| Chapter 1 complete | Marketplace |
+| Chapter 2 complete | Accessories (ring, earring, necklace) |
+| Chapter 3, **Part 1** complete | Hero Recruitment |
+| Chapter 4 complete | Guild |
+| Chapter 5 complete | PVP |
+| Chapter 6 complete | Expeditions |
+| Chapter 7 complete | Starlight Constellation |
+
+### Icqor Chess Piece Gating
+
+Icqor Chess Pieces (used for Starlight Constellation) are **gated behind Chapter 7 being started**. They will not drop from any source (bosses, combat, gathering, production, workers) until the player's current story chapter reaches Chapter 7. This ensures players discover the Starlight system through the story before collecting Icqor pieces.
+
+---
 
 ## Story Tracking
 - **Cumulative counters**: Total kills, total WC earned, bosses defeated, consumables crafted
-- **State-based checks**: Skill levels, hero count, gear slots equipped (rechecked periodically)
+- **State-based checks**: Skill levels, hero count, gear slots equipped (rechecked on game load)
 - **Rewards**: WC + resources granted per part completion
 - Objectives must be completed **sequentially** within each chapter
+- Part-level unlocks trigger immediately upon completing that specific part
+- Chapter-level unlocks (if any) trigger when the final part of the chapter is completed

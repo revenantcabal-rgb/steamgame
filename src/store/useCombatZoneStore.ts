@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 import { COMBAT_ZONES, ZONE_TIER_MULTIPLIERS } from '../config/combatZones';
-import { simulateFight, simulateBossFight, getFightDuration, canEnterZone, getDynamicDifficultyMultiplier } from '../engine/IdleCombatEngine';
-import { addHeroXp, getHeroFocusRing } from '../engine/HeroEngine';
+import { simulateFight, simulateBossFight, getFightDuration, canEnterZone, getDynamicDifficultyMultiplier, calculateAbilityContribution, getCombatTriangleMultiplier } from '../engine/IdleCombatEngine';
+import { addHeroXp, getHeroFocusRing, calculateDerivedStats, getEquippedGear } from '../engine/HeroEngine';
+import { getCombatDamageBonus } from '../engine/EncampmentBonuses';
+import { CLASSES } from '../config/classes';
+import type { CombatStyle } from '../config/combatZones';
 import { useGameStore } from './useGameStore';
 import { useHeroStore } from './useHeroStore';
 import { useEquipmentStore } from './useEquipmentStore';
@@ -17,7 +20,65 @@ import { getEncampmentBonuses } from '../engine/EncampmentBonuses';
 const BOSS_EVERY_N_FIGHTS = 50;
 const ENEMY_SCALE_EVERY_N = 10;
 /** Enemy stat boost per 10-fight wave (compounding) */
-const WAVE_SCALE_FACTOR = 0.12; // +12% per wave
+const WAVE_SCALE_FACTOR = 0.02; // +2% HP/stats per wave (every 10 fights) — gradual pressure
+
+/** A spawned enemy instance with live HP tracking */
+export interface SpawnedEnemy {
+  enemyId: string;
+  name: string;
+  maxHp: number;
+  currentHp: number;
+  damage: number;
+  xpReward: number;
+  resourceDrops: { resourceId: string; chance: number; minQty: number; maxQty: number }[];
+}
+
+/** Generate a random group of 1-5 enemies with pre-computed scaled stats */
+function rollSweepEnemies(
+  zone: typeof COMBAT_ZONES[string],
+  zoneTier: number,
+  waveMultiplier: number,
+  difficultyMult: number,
+): SpawnedEnemy[] {
+  const singleTargets = zone.targets.filter(t => !t.isSweep);
+  if (singleTargets.length === 0) return [];
+  const tierMult = ZONE_TIER_MULTIPLIERS[zoneTier - 1] || ZONE_TIER_MULTIPLIERS[0];
+  const count = Math.floor(Math.random() * 5) + 1; // 1-5
+  const enemies: SpawnedEnemy[] = [];
+  for (let i = 0; i < count; i++) {
+    const pick = singleTargets[Math.floor(Math.random() * singleTargets.length)];
+    const e = pick.enemy;
+    const scaledHp = Math.floor(e.hp * tierMult.hpMult * waveMultiplier * difficultyMult);
+    const scaledDmg = Math.floor(e.damage * tierMult.dmgMult * waveMultiplier * difficultyMult);
+    const scaledXp = Math.floor(e.xpReward * tierMult.xpMult * waveMultiplier);
+    enemies.push({
+      enemyId: e.id, name: e.name,
+      maxHp: scaledHp, currentHp: scaledHp,
+      damage: scaledDmg, xpReward: scaledXp,
+      resourceDrops: e.resourceDrops,
+    });
+  }
+  return enemies;
+}
+
+/** Create a single enemy for non-sweep targets */
+function rollSingleEnemy(
+  enemy: typeof COMBAT_ZONES[string]['targets'][0]['enemy'],
+  zoneTier: number,
+  waveMultiplier: number,
+  difficultyMult: number,
+): SpawnedEnemy[] {
+  const tierMult = ZONE_TIER_MULTIPLIERS[zoneTier - 1] || ZONE_TIER_MULTIPLIERS[0];
+  const scaledHp = Math.floor(enemy.hp * tierMult.hpMult * waveMultiplier * difficultyMult);
+  const scaledDmg = Math.floor(enemy.damage * tierMult.dmgMult * waveMultiplier * difficultyMult);
+  const scaledXp = Math.floor(enemy.xpReward * tierMult.xpMult * waveMultiplier);
+  return [{
+    enemyId: enemy.id, name: enemy.name,
+    maxHp: scaledHp, currentHp: scaledHp,
+    damage: scaledDmg, xpReward: scaledXp,
+    resourceDrops: enemy.resourceDrops,
+  }];
+}
 
 interface PartyDeployment {
   partyId: string;
@@ -34,15 +95,28 @@ interface PartyDeployment {
   recoveryCooldowns: Record<string, number>;
   /** Current wave scaling factor (resets after boss) */
   waveMultiplier: number;
+  /** Current group of enemies in a sweep fight (randomized each fight) */
+  currentEnemies?: SpawnedEnemy[];
+  /** Global tick counter — never resets between fights, used for ability cooldowns */
+  globalTick: number;
+  /** Timestamp when this party was deployed */
+  deployedAt: number;
+  /** Cumulative XP earned by this deployment */
+  totalXpEarned: number;
+  /** Number of times any hero died in this deployment */
+  deathCount: number;
 }
 
 interface CombatZoneState {
   deployments: PartyDeployment[];
   tierUnlocks: Record<string, number>;
   bossKillCounts: Record<string, number>;
+  /** Global hero recovery cooldowns that persist across recalls (heroId -> seconds remaining) */
+  heroRecoveryCooldowns: Record<string, number>;
   nextPartyId: number;
 
   isHeroDeployed: (heroId: string) => boolean;
+  isHeroRecovering: (heroId: string) => boolean;
   deployParty: (heroIds: string[], zoneId: string, targetId: string, tier: number) => boolean;
   recallParty: (partyId: string) => void;
   recallHero: (partyId: string, heroId: string) => void;
@@ -56,6 +130,7 @@ export interface SerializedCombatZoneState {
   deployments: PartyDeployment[];
   tierUnlocks: Record<string, number>;
   bossKillCounts: Record<string, number>;
+  heroRecoveryCooldowns?: Record<string, number>;
   nextPartyId?: number;
 }
 
@@ -63,10 +138,15 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
   deployments: [],
   tierUnlocks: {},
   bossKillCounts: {},
+  heroRecoveryCooldowns: {},
   nextPartyId: 1,
 
   isHeroDeployed: (heroId) => {
     return get().deployments.some(d => d.heroIds.includes(heroId));
+  },
+
+  isHeroRecovering: (heroId) => {
+    return (get().heroRecoveryCooldowns[heroId] || 0) > 0;
   },
 
   deployParty: (heroIds, zoneId, targetId, tier) => {
@@ -85,9 +165,16 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
       if (deployedHeroIds.has(heroId)) continue; // already deployed
       const hero = heroStore.heroes.find(h => h.id === heroId);
       if (!hero) continue;
-      if (!canEnterZone(hero.level, zone.minLevel)) {
-        useGameStore.getState().addLog(`${hero.name} is too low level for ${zone.name}.`, 'error');
+      // Block heroes who are recovering from death
+      const recoverySecs = state.heroRecoveryCooldowns[heroId] || 0;
+      if (recoverySecs > 0) {
+        const mins = Math.floor(recoverySecs / 60);
+        const secs = recoverySecs % 60;
+        useGameStore.getState().addLog(`${hero.name} is recovering (${mins}m ${secs}s remaining).`, 'error');
         continue;
+      }
+      if (hero.level < zone.minLevel) {
+        useGameStore.getState().addLog(`Warning: ${hero.name} (Lv.${hero.level}) is below recommended Lv.${zone.minLevel} for ${zone.name}.`, 'system');
       }
       validHeroes.push(hero);
     }
@@ -101,6 +188,16 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
     const partyId = `party-${currentId}-${Date.now()}`;
     set({ nextPartyId: currentId + 1 });
 
+    const target = zone.targets.find(t => t.id === targetId);
+    // Compute initial difficulty for enemy scaling
+    const initAvgLevel = validHeroes.reduce((s, h) => s + h.level, 0) / validHeroes.length;
+    const { difficultyMult: initDiff } = getDynamicDifficultyMultiplier(validHeroes.length, initAvgLevel, zone.minLevel);
+    const initialEnemies = target?.isSweep
+      ? rollSweepEnemies(zone, tier, 1.0, initDiff)
+      : target?.enemy
+        ? rollSingleEnemy(target.enemy, tier, 1.0, initDiff)
+        : undefined;
+
     set(s => ({
       deployments: [...s.deployments, {
         partyId,
@@ -108,10 +205,11 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
         zoneId, targetId, zoneTier: tier,
         fightCount: 0, fightProgress: 0, totalKills: 0, bossKills: 0,
         recoveryCooldowns: {}, waveMultiplier: 1.0,
+        globalTick: 0, deployedAt: Date.now(), totalXpEarned: 0, deathCount: 0,
+        currentEnemies: initialEnemies,
       }],
     }));
 
-    const target = zone.targets.find(t => t.id === targetId);
     const names = validHeroes.map(h => h.name).join(', ');
     useGameStore.getState().addLog(`Party deployed to ${zone.name}: ${target?.name || targetId} — ${names}.`, 'info');
 
@@ -153,6 +251,23 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
   tick: () => {
     const state = get();
+
+    // Tick down global hero recovery cooldowns (persists across recalls)
+    const updatedGlobalCooldowns = { ...state.heroRecoveryCooldowns };
+    let globalCdChanged = false;
+    for (const heroId of Object.keys(updatedGlobalCooldowns)) {
+      if (updatedGlobalCooldowns[heroId] > 0) {
+        updatedGlobalCooldowns[heroId]--;
+        globalCdChanged = true;
+        if (updatedGlobalCooldowns[heroId] <= 0) {
+          delete updatedGlobalCooldowns[heroId];
+        }
+      }
+    }
+    if (globalCdChanged) {
+      set({ heroRecoveryCooldowns: updatedGlobalCooldowns });
+    }
+
     if (state.deployments.length === 0) return;
 
     const heroStore = useHeroStore.getState();
@@ -178,24 +293,67 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
       // If all heroes are recovering, just tick cooldowns
       if (activeHeroes.length === 0) {
-        newDeployments.push({ ...dep, recoveryCooldowns: newCooldowns });
+        newDeployments.push({ ...dep, recoveryCooldowns: newCooldowns, globalTick: (dep.globalTick || 0) + 1 });
         continue;
       }
 
       // Fight duration based on strongest active hero
-      const fastestDuration = Math.min(...activeHeroes.map(h => getFightDuration(h.level, zone.minLevel)));
+      const baseDuration = Math.min(...activeHeroes.map(h => getFightDuration(h.level, zone.minLevel)));
+
+      // Calculate party difficulty scaling (level-based + hero count)
+      const avgLevel = activeHeroes.reduce((s, h) => s + h.level, 0) / activeHeroes.length;
+      const { difficultyMult, xpBonusMult } = getDynamicDifficultyMultiplier(activeHeroes.length, avgLevel, zone.minLevel);
+
+      // Estimate actual kill time based on party DPS vs enemy HP
+      const target = zone.targets.find(t => t.id === dep.targetId);
+      const isBossTime = target?.isSweep && dep.fightCount >= BOSS_EVERY_N_FIGHTS - 1;
+      let fastestDuration = baseDuration;
+      if (target?.enemy && !isBossTime) {
+        // Use pre-computed enemy HP from currentEnemies (already scaled)
+        let totalRemainingHp: number;
+        if (dep.currentEnemies && dep.currentEnemies.length > 0 && dep.currentEnemies[0].maxHp > 0) {
+          // New format: enemies have pre-computed scaled stats
+          totalRemainingHp = dep.currentEnemies.reduce((sum, e) => sum + Math.max(0, e.currentHp), 0);
+        } else {
+          // Fallback for old saves without scaled enemies
+          const tierMult = ZONE_TIER_MULTIPLIERS[dep.zoneTier - 1] || ZONE_TIER_MULTIPLIERS[0];
+          totalRemainingHp = target.enemy.hp * tierMult.hpMult * dep.waveMultiplier * difficultyMult;
+        }
+        const scaledEnemyHp = totalRemainingHp;
+        const eqStore = useEquipmentStore.getState();
+        const encampmentDmgMult = 1 + getCombatDamageBonus() / 100;
+        let totalPartyDps = 0;
+        for (const hero of activeHeroes) {
+          const gear = getEquippedGear(hero.id, eqStore.heroEquipment, eqStore.inventory);
+          const derived = calculateDerivedStats(hero, gear);
+          const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
+          const cls = CLASSES[hero.classId];
+          const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as CombatStyle, (target.enemy as any).combatStyle);
+          const hitRate = Math.min(1, derived.accuracy / 100);
+          const critMult = 1 + (derived.critChance / 100) * (derived.critDamage / 100 - 1);
+          let heroDps = heroAttack * hitRate * critMult * triangleMult * encampmentDmgMult * 0.9; // 0.9 = enemy defense
+          heroDps += heroAttack * (derived.burnDot + derived.poisonDot + derived.radiationDot + derived.bleedDot) / 100;
+          const abilityContrib = calculateAbilityContribution(hero, derived, baseDuration);
+          heroDps += abilityContrib.bonusDps;
+          totalPartyDps += heroDps;
+        }
+        if (totalPartyDps > 0) {
+          const estimatedKillTime = Math.max(4, Math.ceil(scaledEnemyHp / totalPartyDps));
+          fastestDuration = Math.min(baseDuration, estimatedKillTime);
+        }
+      }
+
       const newProgress = dep.fightProgress + 1;
 
-      if (newProgress >= fastestDuration) {
-        const target = zone.targets.find(t => t.id === dep.targetId);
-        const isBossTime = target?.isSweep && dep.fightCount >= BOSS_EVERY_N_FIGHTS - 1;
+      // Check if all enemies are already dead from per-tick damage
+      const allEnemiesDead = dep.currentEnemies && dep.currentEnemies.length > 0 &&
+        dep.currentEnemies.every(e => e.currentHp <= 0);
 
-        // Calculate party difficulty scaling
-        const avgLevel = activeHeroes.reduce((s, h) => s + h.level, 0) / activeHeroes.length;
-        const { difficultyMult, xpBonusMult } = getDynamicDifficultyMultiplier(activeHeroes.length, avgLevel, zone.minLevel);
-
+      if (allEnemiesDead || newProgress >= fastestDuration) {
         let anyWon = false;
         let anyDied = false;
+        let fightXpGained = 0;
+        let fightDeaths = 0;
         const updatedCooldowns = { ...newCooldowns };
 
         if (isBossTime) {
@@ -234,7 +392,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
             const eqStore = useEquipmentStore.getState();
             const focusRing = getHeroFocusRing(hero.id, eqStore.heroEquipment, eqStore.inventory);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100)), focusRing);
+            const xpAmount = Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100));
+            fightXpGained += xpAmount;
+            const updatedHero = addHeroXp(hero, xpAmount, focusRing);
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {
@@ -244,7 +404,10 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             if (result.won) {
               bossWon = true;
               const resources = { ...gameStore.resources };
+              const bossStory = useStoryStore.getState();
+              const bossIcqorUnlocked = bossStory.currentStoryNumber >= 7 || bossStory.completedStories.includes(7);
               for (const r of result.resourceDrops) {
+                if (r.resourceId === 'icqor_chess_piece' && !bossIcqorUnlocked) continue;
                 resources[r.resourceId] = (resources[r.resourceId] || 0) + r.quantity;
                 useLootTrackerStore.getState().trackLoot(r.resourceId, r.quantity, 'boss', zone.name);
               }
@@ -263,7 +426,10 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
             if (result.heroDied) {
               anyDied = true;
+              fightDeaths++;
               updatedCooldowns[hero.id] = result.recoveryCooldown;
+              // Also set global recovery so it persists across recalls
+              set(s => ({ heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: result.recoveryCooldown } }));
               gameStore.addLog(`${hero.name} was crushed by ${result.enemyName}! Recovering...`, 'error');
             }
           }
@@ -303,18 +469,36 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             set({ bossKillCounts: newBossKillCounts, tierUnlocks });
           }
 
-          // Reset cycle after boss
+          // Reset cycle after boss — roll new enemies for next sweep fight
           newDeployments.push({
             ...dep, fightProgress: 0, fightCount: 0, waveMultiplier: 1.0,
+            globalTick: (dep.globalTick || 0) + 1,
             totalKills: dep.totalKills + (bossWon ? 1 : 0),
             bossKills: dep.bossKills + (bossWon ? 1 : 0),
+            totalXpEarned: dep.totalXpEarned + fightXpGained,
+            deathCount: dep.deathCount + fightDeaths,
             recoveryCooldowns: updatedCooldowns,
+            currentEnemies: target?.isSweep
+              ? rollSweepEnemies(zone, dep.zoneTier, 1.0, difficultyMult)
+              : target?.enemy
+                ? rollSingleEnemy(target.enemy, dep.zoneTier, 1.0, difficultyMult)
+                : undefined,
           });
         } else {
-          // Normal fight — each active hero fights the enemy
+          // Normal fight — build synthetic enemy from ALL currentEnemies (use maxHp, not currentHp)
+          const allSpawned = dep.currentEnemies || [];
+          // Synthetic enemy: total HP (hero must kill all), but only strongest enemy's damage
+          // (hero fights one at a time, takes damage from the current target only)
+          const maxSingleDmg = allSpawned.length > 0 ? Math.max(...allSpawned.map(e => e.damage)) : 0;
+          const syntheticEnemy = allSpawned.length > 0 ? {
+            ...((target?.enemy || zone.targets[0].enemy)),
+            hp: allSpawned.reduce((s, e) => s + e.maxHp, 0),
+            damage: maxSingleDmg,
+            xpReward: allSpawned.reduce((s, e) => s + e.xpReward, 0),
+          } : (target?.enemy || zone.targets[0].enemy);
           for (const hero of activeHeroes) {
-            const enemy = target?.enemy || zone.targets[0].enemy;
-            const result = simulateFight(hero, enemy, dep.zoneTier, zone.minLevel, dep.waveMultiplier, difficultyMult);
+            // Pass tier=1, wave=1, diff=1 since stats are already scaled in syntheticEnemy
+            const result = simulateFight(hero, syntheticEnemy, 1, zone.minLevel, 1.0, 1.0);
 
             // Consume used consumables (1 of each per fight)
             if (result.consumablesUsed.length > 0) {
@@ -347,7 +531,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
             const eqStoreNorm = useEquipmentStore.getState();
             const focusRingNorm = getHeroFocusRing(hero.id, eqStoreNorm.heroEquipment, eqStoreNorm.inventory);
-            const updatedHero = addHeroXp(hero, Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100)), focusRingNorm);
+            const xpAmountNorm = Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100));
+            fightXpGained += xpAmountNorm;
+            const updatedHero = addHeroXp(hero, xpAmountNorm, focusRingNorm);
             useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
             // Story: hero level up
             if (updatedHero.level > hero.level) {
@@ -369,7 +555,9 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
             if (result.heroDied) {
               anyDied = true;
+              fightDeaths++;
               updatedCooldowns[hero.id] = result.recoveryCooldown;
+              set(s => ({ heroRecoveryCooldowns: { ...s.heroRecoveryCooldowns, [hero.id]: result.recoveryCooldown } }));
               gameStore.addLog(`${hero.name} was defeated by ${result.enemyName}! Recovering...`, 'error');
             }
           }
@@ -378,9 +566,11 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           if (anyWon) {
             usePopulationStore.getState().addCombatKill(dep.zoneTier);
 
-            // Rare Icqor Chess Piece drop from regular combat kills
+            // Rare Icqor Chess Piece drop from regular combat kills (gated behind chapter 7)
+            const storyS = useStoryStore.getState();
+            const icqorUnlocked = storyS.currentStoryNumber >= 7 || storyS.completedStories.includes(7);
             const combatIcqorChance = dep.zoneTier >= 3 ? 0.003 : dep.zoneTier >= 2 ? 0.0015 : 0.0005;
-            if (Math.random() < combatIcqorChance) {
+            if (icqorUnlocked && Math.random() < combatIcqorChance) {
               const resources = { ...gameStore.resources };
               resources['icqor_chess_piece'] = (resources['icqor_chess_piece'] || 0) + 1;
               useGameStore.setState({ resources });
@@ -400,12 +590,63 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
 
           newDeployments.push({
             ...dep, fightProgress: 0, fightCount: newFightCount, waveMultiplier: newWaveMult,
+            globalTick: (dep.globalTick || 0) + 1,
             totalKills: dep.totalKills + (anyWon ? 1 : 0),
+            totalXpEarned: dep.totalXpEarned + fightXpGained,
+            deathCount: dep.deathCount + fightDeaths,
             recoveryCooldowns: updatedCooldowns,
+            currentEnemies: target?.isSweep
+              ? rollSweepEnemies(zone, dep.zoneTier, newWaveMult, difficultyMult)
+              : target?.enemy
+                ? rollSingleEnemy(target.enemy, dep.zoneTier, newWaveMult, difficultyMult)
+                : undefined,
           });
         }
       } else {
-        newDeployments.push({ ...dep, fightProgress: newProgress, recoveryCooldowns: newCooldowns });
+        // Mid-fight tick: apply per-hero damage individually based on turn speed
+        const updatedEnemies = dep.currentEnemies ? dep.currentEnemies.map(e => ({ ...e })) : undefined;
+        const gt = (dep.globalTick || 0) + 1;
+        if (updatedEnemies && updatedEnemies.length > 0) {
+          const eqStoreT = useEquipmentStore.getState();
+          const encampmentDmgMultT = 1 + getCombatDamageBonus() / 100;
+
+          // Sort heroes by turn speed (fastest first) for attack order
+          const sortedHeroes = [...activeHeroes].sort((a, b) => {
+            const gA = getEquippedGear(a.id, eqStoreT.heroEquipment, eqStoreT.inventory);
+            const gB = getEquippedGear(b.id, eqStoreT.heroEquipment, eqStoreT.inventory);
+            return calculateDerivedStats(b, gB).turnSpeed - calculateDerivedStats(a, gA).turnSpeed;
+          });
+
+          for (let hi = 0; hi < sortedHeroes.length; hi++) {
+            const hero = sortedHeroes[hi];
+            const gear = getEquippedGear(hero.id, eqStoreT.heroEquipment, eqStoreT.inventory);
+            const derived = calculateDerivedStats(hero, gear);
+
+            // Each hero attacks based on their turn speed
+            // attackInterval: how many ticks between attacks (lower turnSpeed = longer interval)
+            const attackInterval = Math.max(1, Math.round(100 / Math.max(1, derived.turnSpeed) * 3));
+            // Stagger heroes using their index so they don't all attack on the same tick
+            const shouldAttack = (gt + hi) % attackInterval === 0;
+            if (!shouldAttack) continue;
+
+            const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
+            const cls = CLASSES[hero.classId];
+            const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as CombatStyle, (target?.enemy as any)?.combatStyle);
+            const hitRate = Math.min(1, derived.accuracy / 100);
+            const critMult = 1 + (derived.critChance / 100) * (derived.critDamage / 100 - 1);
+            let heroDmg = heroAttack * hitRate * critMult * triangleMult * encampmentDmgMultT * 0.9;
+            heroDmg += heroAttack * (derived.burnDot + derived.poisonDot + derived.radiationDot + derived.bleedDot) / 100;
+            const abilityContrib = calculateAbilityContribution(hero, derived, baseDuration);
+            heroDmg += abilityContrib.bonusDps;
+
+            // Apply this hero's damage to first alive enemy
+            const firstAlive = updatedEnemies.find(e => e.currentHp > 0);
+            if (firstAlive) {
+              firstAlive.currentHp = Math.max(0, firstAlive.currentHp - heroDmg);
+            }
+          }
+        }
+        newDeployments.push({ ...dep, fightProgress: newProgress, globalTick: gt, recoveryCooldowns: newCooldowns, currentEnemies: updatedEnemies });
       }
     }
 
@@ -423,6 +664,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
     deployments: get().deployments,
     tierUnlocks: get().tierUnlocks,
     bossKillCounts: get().bossKillCounts,
+    heroRecoveryCooldowns: get().heroRecoveryCooldowns,
     nextPartyId: get().nextPartyId,
   }),
 
@@ -438,6 +680,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
       })),
       tierUnlocks: saved.tierUnlocks,
       bossKillCounts: saved.bossKillCounts,
+      heroRecoveryCooldowns: saved.heroRecoveryCooldowns || {},
       nextPartyId: savedNextId + saved.deployments.length,
     });
   },

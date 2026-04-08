@@ -1,6 +1,6 @@
 # Resources
 
-There are **31 resources** across **3 tiers** and **5 gathering skills**, plus 1 special drop.
+There are **45+ resources** across **3 tiers** and **5 gathering skills**, plus special items (Icqor Chess Piece, Facet Stone, Enhancement Shard).
 
 ---
 

@@ -1,6 +1,8 @@
 # Combat Zones
 
-There are **7 progressive combat zones** where heroes are deployed for idle combat. Each zone has 3 focused targets plus a Full Sweep mode. Bosses appear every 10 kills in a 50-fight cycle.
+There are **7 progressive combat zones** where heroes are deployed for idle combat. Each zone has 3 focused single-target areas plus a Full Sweep mode. Full Sweep spawns 1-5 random enemies per fight. Bosses appear every **50 fights** in the Full Sweep cycle.
+
+**Zone Entry**: All zones are accessible at any hero level. The listed level is a **recommended level** — not a gate. Underleveled heroes face longer fight durations but are not blocked.
 
 ---
 
@@ -9,137 +11,141 @@ There are **7 progressive combat zones** where heroes are deployed for idle comb
 ### 1. The Outskirts
 | Property | Value |
 |----------|-------|
-| Level Requirement | 1+ |
+| Recommended Level | 1+ |
 | Max Difficulty Tier | T4 |
-| Gear Tier | T1 |
+| Boss Gear Tier | T1 (Salvaged) |
 
-**Enemies:**
-| Enemy | HP | Damage | XP |
-|-------|----|--------|----|
-| Mutated Mosquito | 15 | 3 | 8 |
-| Mutated Frog | 20 | 4 | 10 |
-| Mutated Centipede | 25 | 5 | 12 |
-| **Boss: Giant Roach** | 90 | 12 | 50 |
+**Enemies (Base Stats — before tier/wave scaling):**
 
-**Drops**: Scrap Metal, Chemical Fluids
+| Enemy | HP | Damage | XP | Drops |
+|-------|----|--------|----|-------|
+| Mutated Mosquito | 80 | 6 | 15 | Mutant Roots |
+| Mutated Frog | 120 | 10 | 18 | Chemical Fluids |
+| Mutated Centipede | 100 | 14 | 20 | Scrap Metal |
+| Wasteland Vermin (Sweep) | 100 | 10 | 17 | Mutant Roots, Scrap Metal |
+| **Boss: Giant Roach** | **360** | **30** | **100** | Scrap Metal (5-10), Chemical Fluids (2-5) |
 
 ---
 
 ### 2. Ruined Suburbs
 | Property | Value |
 |----------|-------|
-| Level Requirement | 15+ |
+| Recommended Level | 15+ |
 | Max Difficulty Tier | T5 |
-| Gear Tier | T2 |
+| Boss Gear Tier | T2 |
 
 **Enemies:**
-| Enemy | HP | Damage | XP |
-|-------|----|--------|----|
-| Feral Dog Pack | 45 | 10 | 20 |
-| Mutant Hawk | 35 | 12 | 22 |
-| Rad Rat Swarm | 55 | 8 | 18 |
-| **Boss: Alpha Wolf** | 250 | 28 | 120 |
 
-**Drops**: Iron Ore, Mechanical Parts
+| Enemy | HP | Damage | XP | Drops |
+|-------|----|--------|----|-------|
+| Feral Dog Pack | 240 | 24 | 35 | Mutant Roots |
+| Mutant Hawk | 180 | 36 | 40 | Chemical Fluids |
+| Rad Rat Swarm | 320 | 20 | 38 | Scrap Metal |
+| Suburb Dweller (Sweep) | 240 | 26 | 37 | Iron Ore, Scrap Metal |
+| **Boss: Alpha Wolf** | **1,000** | **60** | **250** | Iron Ore (8-15), Mechanical Parts (3-8) |
 
 ---
 
 ### 3. Toxic Industrial
 | Property | Value |
 |----------|-------|
-| Level Requirement | 30+ |
+| Recommended Level | 30+ |
 | Max Difficulty Tier | T5 |
-| Gear Tier | T3 |
+| Boss Gear Tier | T3 |
 
 **Enemies:**
-| Enemy | HP | Damage | XP |
-|-------|----|--------|----|
-| Slime Crawler | 80 | 18 | 35 |
-| Rogue Drone | 70 | 22 | 38 |
-| Sewer Beast | 100 | 20 | 40 |
-| **Boss: Factory Overseer** | 500 | 48 | 250 |
 
-**Drops**: Electronic Components, Mechanical Parts
+| Enemy | HP | Damage | XP | Drops |
+|-------|----|--------|----|-------|
+| Slime Crawler | 480 | 44 | 65 | Chemical Fluids |
+| Rogue Drone | 400 | 60 | 70 | Electronic Components |
+| Sewer Beast | 600 | 50 | 75 | Mechanical Parts |
+| Factory Mutant (Sweep) | 480 | 50 | 70 | Electronic Components, Chemical Fluids |
+| **Boss: Factory Overseer** | **2,000** | **100** | **500** | Electronic Components (10-20), Mechanical Parts (8-15) |
 
 ---
 
 ### 4. The Deadlands
 | Property | Value |
 |----------|-------|
-| Level Requirement | 45+ |
+| Recommended Level | 45+ |
 | Max Difficulty Tier | T5 |
-| Gear Tier | T4 |
+| Boss Gear Tier | T4 |
 
 **Enemies:**
-| Enemy | HP | Damage | XP |
-|-------|----|--------|----|
-| Sandworm | 130 | 28 | 55 |
-| Raider Gang | 110 | 32 | 58 |
-| Glowing Ghoul | 150 | 25 | 52 |
-| **Boss: Raider Warlord** | 800 | 65 | 400 |
 
-**Drops**: Iron Ore, Copper Ore
-**Boss Special**: 15% Icqor Chess Piece drop
+| Enemy | HP | Damage | XP | Drops |
+|-------|----|--------|----|-------|
+| Sandworm | 800 | 70 | 100 | Raw Stone |
+| Raider Gang | 720 | 80 | 120 | Scrap Metal |
+| Glowing Ghoul | 720 | 90 | 110 | Copper Ore |
+| Deadlands Dweller (Sweep) | 760 | 80 | 110 | Iron Ore, Raw Stone |
+| **Boss: Raider Warlord** | **3,200** | **140** | **800** | Iron Ore (15-30), Copper Ore (10-20) |
+
+**Boss Special**: 15% chance for Icqor Chess Piece (requires Chapter 7 started)
 
 ---
 
 ### 5. Military Zone
 | Property | Value |
 |----------|-------|
-| Level Requirement | 60+ |
+| Recommended Level | 60+ |
 | Max Difficulty Tier | T6 |
-| Gear Tier | T5 |
+| Boss Gear Tier | T5 |
 
 **Enemies:**
-| Enemy | HP | Damage | XP |
-|-------|----|--------|----|
-| Turret Array | 180 | 40 | 75 |
-| Bio-Soldier | 200 | 38 | 80 |
-| Escaped Experiment | 220 | 42 | 85 |
-| **Boss: Commander Mech** | 1500 | 90 | 650 |
 
-**Drops**: Electronic Components, Mechanical Parts
-**Boss Special**: 30% Icqor Chess Piece drop
+| Enemy | HP | Damage | XP | Drops |
+|-------|----|--------|----|-------|
+| Turret Array | 1,200 | 100 | 160 | Electronic Components |
+| Bio-Soldier | 1,120 | 120 | 180 | Mechanical Parts |
+| Escaped Experiment | 1,600 | 160 | 200 | Chemical Fluids |
+| Military Hazard (Sweep) | 1,280 | 120 | 180 | Electronic Components, Mechanical Parts |
+| **Boss: Commander Mech** | **6,000** | **240** | **1,200** | Electronic Components (20-40), Mechanical Parts (15-30) |
+
+**Boss Special**: 30% chance for 1-2 Icqor Chess Pieces (requires Chapter 7 started)
 
 ---
 
 ### 6. The Core
 | Property | Value |
 |----------|-------|
-| Level Requirement | 80+ |
+| Recommended Level | 80+ |
 | Max Difficulty Tier | T6 |
-| Gear Tier | T7 |
+| Boss Gear Tier | T7 |
 
 **Enemies:**
-| Enemy | HP | Damage | XP |
-|-------|----|--------|----|
-| Radiation Elemental | 300 | 55 | 110 |
-| Mutant Abomination | 350 | 50 | 105 |
-| Fusion Golem | 400 | 58 | 115 |
-| **Boss: The Source** | 3000 | 130 | 1000 |
 
-**Drops**: Electronic Components, Copper Ore
-**Boss Special**: 50% Icqor Chess Piece drop
+| Enemy | HP | Damage | XP | Drops |
+|-------|----|--------|----|-------|
+| Radiation Elemental | 2,000 | 200 | 300 | Copper Ore |
+| Mutant Abomination | 2,400 | 260 | 350 | Chemical Fluids |
+| Fusion Golem | 2,800 | 300 | 400 | Electronic Components |
+| Core Abomination (Sweep) | 2,400 | 250 | 350 | Copper Ore, Electronic Components |
+| **Boss: The Source** | **12,000** | **400** | **2,500** | Electronic Components (30-60), Copper Ore (25-50) |
+
+**Boss Special**: 50% chance for 1-3 Icqor Chess Pieces (requires Chapter 7 started)
 
 ---
 
 ### 7. Ground Zero
 | Property | Value |
 |----------|-------|
-| Level Requirement | 95+ |
+| Recommended Level | 95+ |
 | Max Difficulty Tier | T6 |
-| Gear Tier | T8 |
+| Boss Gear Tier | T8 |
 
 **Enemies:**
-| Enemy | HP | Damage | XP |
-|-------|----|--------|----|
-| Phase Walker | 500 | 72 | 150 |
-| Reality Breaker | 550 | 68 | 145 |
-| Apocalypse Herald | 600 | 75 | 155 |
-| **Boss: The Cataclysm** | 5000 | 180 | 1500 |
 
-**Drops**: Electronic Components, Iron Ore
-**Boss Special**: 80% Icqor Chess Piece drop
+| Enemy | HP | Damage | XP | Drops |
+|-------|----|--------|----|-------|
+| Phase Walker | 3,200 | 360 | 500 | Iron Ore |
+| Reality Breaker | 4,000 | 400 | 600 | Electronic Components |
+| Apocalypse Herald | 4,800 | 500 | 700 | Chemical Fluids |
+| Void Entity (Sweep) | 4,000 | 420 | 600 | Iron Ore, Electronic Components |
+| **Boss: The Cataclysm** | **20,000** | **600** | **5,000** | Electronic Components (50-100), Iron Ore (40-80) |
+
+**Boss Special**: 80% chance for 2-5 Icqor Chess Pieces (requires Chapter 7 started)
 
 ---
 
@@ -147,78 +153,62 @@ There are **7 progressive combat zones** where heroes are deployed for idle comb
 
 | Tier | Name | HP Mult | Damage Mult | XP Mult |
 |------|------|---------|-------------|---------|
-| T1 | Normal | 1.0× | 1.0× | 1.0× |
-| T2 | Hard | 1.5× | 1.3× | 1.5× |
-| T3 | Elite | 2.2× | 1.7× | 2.2× |
-| T4 | Nightmare | 3.0× | 2.2× | 3.0× |
-| T5 | Apocalypse | 4.5× | 3.0× | 4.5× |
-| T6 | Extinction | 7.0× | 4.0× | 7.0× |
+| T1 | Normal | 1.0x | 1.0x | 1.0x |
+| T2 | Hard | 2.5x | 1.5x | 2.0x |
+| T3 | Elite | 5.0x | 2.0x | 3.5x |
+| T4 | Nightmare | 10.0x | 3.0x | 6.0x |
+| T5 | Apocalypse | 20.0x | 5.0x | 10.0x |
+| T6 | Extinction | 40.0x | 8.0x | 18.0x |
 
 **Tier Unlocking**: Defeat 5 bosses at the current tier to unlock the next tier for that zone.
 
-## Wave Scaling
-- Enemies get +12% stats every 10 fights (wave multiplier)
-- Boss fights occur on a 50-fight cycle
-- Bosses receive wave multiplier × 1.5 (50% stronger than current wave enemies)
-
-## Dynamic Difficulty
-- Multiple heroes in same zone: +15% per additional hero
-- Overlevel penalty: +2% per level over zone minimum +20
-- XP bonus for difficulty: 60% efficiency on difficulty multiplier
-
-## Zone Entry
-Heroes can enter a zone up to **10 levels below** the minimum level requirement.
+**Example**: Mutated Mosquito (80 HP base) on Elite (T3) = 80 x 5.0 = **400 HP**
 
 ---
 
-# Expeditions
+## Wave Scaling
 
-There are **3 instanced expeditions** with wave-based combat. Each has 3 difficulty levels.
+- Enemies get **+2% stats** every 10 fights (wave multiplier)
+- Formula: `waveMultiplier = 1.0 + floor(fightCount / 10) × 0.02`
+- Boss fights occur every **50 fights** in Full Sweep
+- Bosses receive `waveMultiplier × 1.5` (50% stronger than current wave enemies)
+- Wave multiplier resets to 1.0 after boss defeat
 
-## Expedition List
+---
 
-### 1. The Forgotten Sewers (Level 1+)
-**Waves**: 3 combat waves + 1 boss wave
+## Dynamic Difficulty
 
-| Wave | Enemies |
-|------|---------|
-| 1–3 | Sewer creatures |
-| Boss | **The Drain King** (HP 400) |
+- Multiple heroes in same zone: **+15% enemy stats** per additional hero
+- No level-based scaling — difficulty comes from tier selection and wave progression
+- XP bonus for multi-hero parties: 60% efficiency on difficulty multiplier
 
-**Rewards**: Scrap Metal, Chemical Fluids
+---
 
-### 2. Abandoned Military Bunker (Level 15+)
-**Waves**: 4 combat waves (includes Elite Combat Drone, Flame Bot)
+## Full Sweep Multi-Monster Fights
 
-| Wave | Enemies |
-|------|---------|
-| 1–3 | Military drones and bots |
-| Boss | **Commander Unit MK-IV** (HP 800) |
+In Full Sweep mode:
+- **1-5 random enemies** spawn per fight from the zone's single-target enemy pool
+- Each enemy has individual HP tracking with visible HP bars
+- Heroes single-target the **first alive enemy** (fastest hero attacks first)
+- When an enemy dies, damage moves to the next
+- Fight ends when ALL enemies in the group are dead
+- Dead enemies are visually greyed out
 
-**Rewards**: Mechanical Parts, Electronic Components, Iron Ore
+---
 
-### 3. The Molten Reactor (Level 30+)
-**Waves**: 4 combat waves (radiation mutants escalating)
+## Icqor Chess Piece Drops
 
-| Wave | Enemies |
-|------|---------|
-| 1–3 | Radiation mutants |
-| Boss | **Core Beast — Isotope Prime** (HP 1500) |
+Icqor Chess Pieces are rare drops gated behind **Chapter 7 (The Icqor Convergence)** being started. They drop from:
 
-**Rewards**: Iron Ore, Chemical Fluids, Electronic Components
-
-## Expedition Difficulty Scaling
-
-| Difficulty | HP Mult | Damage Mult | XP Mult | Loot Mult | Rec. Power |
-|------------|---------|-------------|---------|-----------|------------|
-| Normal | 3.0× | 2.0× | 2.0× | 1.0× | 50 |
-| Hard | 6.0× | 4.0× | 4.0× | 2.0× | 100 |
-| Extreme | 12.0× | 8.0× | 8.0× | 4.0× | 200 |
-
-## Expedition Mechanics
-- Between-fight HP/SP regen (3–5 turns worth)
-- Between waves: SP regen (5 turns)
-- Abilities consume SP during fights
-- Heroes can die permanently within the expedition run
-- Rewards granted on completion, must be claimed
-- Cooldown between runs per expedition
+| Source | Drop Rate |
+|--------|-----------|
+| Boss: Raider Warlord (Deadlands) | 15% — 1 piece |
+| Boss: Commander Mech (Military) | 30% — 1-2 pieces |
+| Boss: The Source (The Core) | 50% — 1-3 pieces |
+| Boss: The Cataclysm (Ground Zero) | 80% — 2-5 pieces |
+| Regular combat kills (T1) | 0.05% |
+| Regular combat kills (T2) | 0.15% |
+| Regular combat kills (T3+) | 0.30% |
+| Gathering activities | 0.1-0.6% (scales with level) |
+| Production activities | 0.1-0.6% (scales with level) |
+| Worker trips | 0.1-0.5% (scales with activity tier) |

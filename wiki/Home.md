@@ -28,6 +28,7 @@ Welcome to the official game wiki for **Wasteland Survivor**, a post-apocalyptic
 - [Population & Workers](Population-Workers.md) — Worker management, assignments, milestones
 - [Marketplace](Marketplace.md) — BDO-style trading with listings, purchase orders, and price bands
 - [Golden Cap (Premium)](Golden-Cap.md) — Premium pass benefits and pricing
+- [Loot Tracker](Loot-Tracker.md) — Track all resource gains by source with 12-24hr history
 
 ---
 
@@ -50,29 +51,29 @@ Welcome to the official game wiki for **Wasteland Survivor**, a post-apocalyptic
 | Strength | STR | +2 Melee Attack | +1 Defense |
 | Dexterity | DEX | +2 Ranged Attack | +0.5 Turn Speed |
 | Intelligence | INT | +2 Blast Attack | +1% Crit Damage |
-| Constitution | CON | +10 Max HP | +1.5 Defense, +0.5 HP Regen |
-| Perception | PER | +0.8% Accuracy | +0.5% Crit Chance |
+| Constitution | CON | +8 Max HP | +1.5 Defense, +0.5 HP Regen |
+| Perception | PER | +0.8% Accuracy | +0.4% Crit Chance |
 | Luck | LUK | +0.5% Evasion | +0.5% Status Resist |
 | Resonance | RES | +1% Ability Power | +3 Max SP, unlocks ability slots |
 
 ### Derived Stats & Caps
 | Stat | Formula | Cap |
 |------|---------|-----|
-| Max HP | 100 + CON × 10 | None |
+| Max HP | 100 + CON × 8 | None |
 | Melee Attack | 5 + STR × 2 | None |
 | Ranged Attack | 5 + DEX × 2 | None |
 | Blast Attack | 5 + INT × 2 | None |
 | Defense | STR × 1 + CON × 1.5 | None |
-| Evasion | 5 + LUK × 0.5 | 50% |
+| Evasion | 5 + DEX × 0.3 + LUK × 0.5 | 50% |
 | Accuracy | 80 + PER × 0.8 | 99% |
-| Crit Chance | 5 + PER × 0.5 | 60% |
+| Crit Chance | 5 + PER × 0.4 | 60% |
 | Crit Damage | 150 + INT × 1 | None |
 | Turn Speed | 100 + DEX × 0.5 | None |
 | HP Regen | 1 + CON × 0.5 | None |
 | Status Resist | LUK × 0.5 | 80% |
 | Ability Power | RES × 1 | None |
 | Max SP | 30 + RES × 3 | None |
-| SP Regen | 1 + RES × 0.2 (per turn) | None |
+| SP Regen | 2 + RES × 0.1 (per turn) | None |
 | Lifesteal | From gear only | 25% |
 | Armor Pen | From gear only | 50% |
 | Block Chance | From gear only | 50% |

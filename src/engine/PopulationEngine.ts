@@ -4,6 +4,7 @@ import { getWorkerScaling, workerSkillLevel, workerSkillBonus, getSurvivabilityF
 import type { WorkerAssignment, IndividualWorker } from '../types/population';
 import { getPremiumBonuses } from './PremiumBonuses';
 import { getEncampmentBonuses } from './EncampmentBonuses';
+import { useStoryStore } from '../store/useStoryStore';
 
 export interface TripResult {
   assignmentId: string;
@@ -102,12 +103,16 @@ export function processTrip(
     resourcesGained.push({ resourceId: drop.resourceId, quantity: scaledQty });
   }
 
-  // Rare Icqor Chess Piece drop
-  const activityTier = (subActivity.levelReq || 0) >= 30 ? 3 : (subActivity.levelReq || 0) >= 15 ? 2 : 1;
-  const baseIcqorChance = activityTier === 3 ? 0.005 : activityTier === 2 ? 0.003 : 0.001;
-  const rareDropMult = (1 + (encampment.rare_drop_chance || 0) / 100) * (1 + avgPerceptionBonus) * (1 + avgRankRareDrop);
-  if (Math.random() < baseIcqorChance * rareDropMult) {
-    resourcesGained.push({ resourceId: 'icqor_chess_piece', quantity: 1 });
+  // Rare Icqor Chess Piece drop (gated behind chapter 7)
+  const popStory = useStoryStore.getState();
+  const popIcqorUnlocked = popStory.currentStoryNumber >= 7 || popStory.completedStories.includes(7);
+  if (popIcqorUnlocked) {
+    const activityTier = (subActivity.levelReq || 0) >= 30 ? 3 : (subActivity.levelReq || 0) >= 15 ? 2 : 1;
+    const baseIcqorChance = activityTier === 3 ? 0.005 : activityTier === 2 ? 0.003 : 0.001;
+    const rareDropMult = (1 + (encampment.rare_drop_chance || 0) / 100) * (1 + avgPerceptionBonus) * (1 + avgRankRareDrop);
+    if (Math.random() < baseIcqorChance * rareDropMult) {
+      resourcesGained.push({ resourceId: 'icqor_chess_piece', quantity: 1 });
+    }
   }
 
   // Calculate worker XP gain

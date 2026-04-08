@@ -1,8 +1,24 @@
 # Starlight Constellation
 
-The Starlight system is an **account-level passive bonus tree** with **105 nodes** across **7 paths**. Nodes are unlocked by spending **Icqor Chess Pieces** (dropped by bosses and rarely from gathering).
+The Starlight system is an **account-level passive bonus tree** with **105 nodes** across **7 paths**. Nodes are unlocked by spending **Icqor Chess Pieces**.
 
 Starlight bonuses apply to **ALL heroes** on the account.
+
+### Prerequisites
+- **Feature Unlock**: Requires completing **Chapter 7 — The Icqor Convergence** (all 7 parts)
+- **Icqor Chess Pieces**: Gated behind **Chapter 7 being started** (reaching Chapter 7 in story progression). Pieces will NOT drop from ANY source until Chapter 7 begins.
+
+### Icqor Chess Piece Sources
+| Source | Drop Rate |
+|--------|-----------|
+| Boss: Raider Warlord (Deadlands) | 15% — 1 piece |
+| Boss: Commander Mech (Military) | 30% — 1-2 pieces |
+| Boss: The Source (The Core) | 50% — 1-3 pieces |
+| Boss: The Cataclysm (Ground Zero) | 80% — 2-5 pieces |
+| Regular combat kills (T1/T2/T3+) | 0.05% / 0.15% / 0.30% |
+| Gathering activities | 0.1-0.6% (scales with level) |
+| Production activities | 0.1-0.6% (scales with level) |
+| Worker trips | 0.1-0.5% (scales with activity tier) |
 
 ---
 

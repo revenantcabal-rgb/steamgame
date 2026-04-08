@@ -7,11 +7,11 @@ All gathering skills share the same leveling curve: `XP per level = 50 × level^
 ### Skill List
 | Skill | Base Action Time | Focus |
 |-------|-----------------|-------|
-| Scavenging | 4–5 min | Metals, wood, pipes |
-| Foraging | 4 min | Herbs, berries, roots |
-| Salvage Hunting | 5 min | Mechanical, electronic, chemical |
-| Water Reclamation | 4 min | Water types |
-| Prospecting | 5 min | Ores and stone |
+| Scavenging | 4s base | Metals, wood, pipes |
+| Foraging | 4s base | Herbs, berries, roots |
+| Salvage Hunting | 5s base | Mechanical, electronic, chemical |
+| Water Reclamation | 4s base | Water types |
+| Prospecting | 5s base | Ores and stone |
 
 ### Gathering Speed by Skill Level
 | Level Range | Action Time | Qty Multiplier | XP Multiplier |
@@ -41,11 +41,11 @@ Each skill has activities per tier:
 
 | Skill | Base Action Time | Inputs From | Produces |
 |-------|-----------------|-------------|----------|
-| Cooking | 3 min | Foraging, Water Reclamation | Food consumables |
-| Tinkering | 5 min | Multiple gathering skills | Tools, Focus Rings |
-| Weaponsmithing | 6 min | Prospecting, Salvage Hunting | All weapons |
-| Armorcrafting | 6 min | Prospecting, Scavenging | Armor, shields |
-| Biochemistry | 5 min | Foraging, Water Reclamation | Medicines, chemicals |
+| Cooking | 3s base | Foraging, Water Reclamation | Food consumables |
+| Tinkering | 5s base | Multiple gathering skills | Tools, Focus Rings |
+| Weaponsmithing | 6s base | Prospecting, Salvage Hunting | All weapons |
+| Armorcrafting | 6s base | Prospecting, Scavenging | Armor, shields |
+| Biochemistry | 5s base | Foraging, Water Reclamation, Prospecting | Medicines, chemicals |
 
 ### Craft Time by Gear Tier
 | Tier | Base Craft Time |

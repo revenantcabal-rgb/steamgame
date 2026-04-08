@@ -87,7 +87,43 @@ Additional workers can be gained through **combat kills**: every 10 kills trigge
 
 ## Rare Worker Drops
 
-Workers can find Icqor Chess Pieces during trips:
+Workers can find Icqor Chess Pieces during trips (gated behind Chapter 7):
 - T3 activities (level ≥ 30): **0.5% per trip**
 - T2 activities (level 15–29): **0.3% per trip**
 - T1 activities (level < 15): **0.1% per trip**
+
+Modified by encampment rare drop bonus, worker perception bonus, and rank rare drop bonus.
+
+---
+
+## Worker Rank System
+
+Each individual worker has a **rank** that improves with dispatches:
+
+| Rank | Dispatches Required | Yield Bonus | Survivability | Speed | Rare Drop | XP |
+|------|-------------------|-------------|--------------|-------|-----------|-----|
+| Recruit | 0 | +0% | +0% | +0% | +0% | +0% |
+| Veteran | 50 | +5% | +10% | +5% | +3% | +5% |
+| Grandfather | 250 | +12% | +25% | +10% | +8% | +12% |
+| Legend | 1,000 | +25% | +50% | +20% | +15% | +25% |
+
+Rank bonuses stack with other modifiers.
+
+---
+
+## Individual Worker Stats
+
+Each worker has **5 individual stats** that grow with each trip based on the gathering skill:
+
+| Stat | Growth Source | Effect |
+|------|-------------|--------|
+| Strength | Scavenging | +yield bonus |
+| Endurance | Water Reclamation | +survivability (reduces death risk) |
+| Perception | Foraging | +rare drop chance |
+| Agility | Salvage Hunting | +speed bonus |
+| Intellect | Prospecting | +XP bonus |
+
+### Survivability Formula
+`survivabilityFactor = 1 / (1 + 0.02 × endurance + 0.005 × totalDispatches)`
+
+This factor multiplies the base death risk, reducing it as workers gain experience.

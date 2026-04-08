@@ -130,9 +130,11 @@ export function StoryPanel() {
                     </p>
                   </div>
                   <div className="text-right shrink-0 ml-4">
-                    <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                      Unlocks: <span style={{ color: 'var(--color-info)' }}>{chapter.unlocks.replace(/_/g, ' ')}</span>
-                    </div>
+                    {chapter.unlocks && (
+                      <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                        Unlocks: <span style={{ color: 'var(--color-info)' }}>{chapter.unlocks.replace(/_/g, ' ')}</span>
+                      </div>
+                    )}
                     {isCompleted && (
                       <div
                         className="text-xs mt-1 px-2 py-0.5 rounded inline-block"

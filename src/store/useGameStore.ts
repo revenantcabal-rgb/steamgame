@@ -437,9 +437,11 @@ export const useGameStore = create<GameState>((set, get) => ({
           }
         }
 
-        // Rare Icqor Chess Piece drop from production
+        // Rare Icqor Chess Piece drop from production (gated behind chapter 7)
+        const prodStory = useStoryStore.getState();
+        const prodIcqorUnlocked = prodStory.currentStoryNumber >= 7 || prodStory.completedStories.includes(7);
         const prodIcqorChance = newLevel >= 45 ? 0.006 : newLevel >= 30 ? 0.004 : newLevel >= 15 ? 0.002 : 0.001;
-        if (Math.random() < prodIcqorChance) {
+        if (prodIcqorUnlocked && Math.random() < prodIcqorChance) {
           newResources['icqor_chess_piece'] = (newResources['icqor_chess_piece'] || 0) + 1;
           get().addLog('✦ Rare drop: Icqor Chess Piece!', 'levelup');
           useStoryStore.getState().checkObjective('gather', 'icqor_chess_piece', 1);
@@ -498,10 +500,12 @@ export const useGameStore = create<GameState>((set, get) => ({
           get().addLog(`+${result.xpGained} XP`, 'drop');
         }
 
-        // Rare Icqor Chess Piece drop from gathering
+        // Rare Icqor Chess Piece drop from gathering (gated behind chapter 7)
+        const gatherStory = useStoryStore.getState();
+        const gatherIcqorUnlocked = gatherStory.currentStoryNumber >= 7 || gatherStory.completedStories.includes(7);
         const gatherLevel = skillState.level;
         const gatherIcqorChance = gatherLevel >= 45 ? 0.006 : gatherLevel >= 30 ? 0.004 : gatherLevel >= 15 ? 0.002 : 0.001;
-        if (Math.random() < gatherIcqorChance) {
+        if (gatherIcqorUnlocked && Math.random() < gatherIcqorChance) {
           newResources['icqor_chess_piece'] = (newResources['icqor_chess_piece'] || 0) + 1;
           get().addLog('✦ Rare drop: Icqor Chess Piece!', 'levelup');
           useStoryStore.getState().checkObjective('gather', 'icqor_chess_piece', 1);

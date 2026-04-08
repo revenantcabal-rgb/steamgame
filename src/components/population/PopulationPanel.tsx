@@ -22,6 +22,14 @@ const STAT_LABELS: Record<keyof WorkerStats, string> = {
   intellect: 'INT',
 };
 
+const STAT_DESCRIPTIONS: Record<keyof WorkerStats, string> = {
+  strength: '+0.5% resource yield per point. Primary for Scavenging & Prospecting.',
+  endurance: 'Reduces death risk on dispatches. Primary for Water Reclamation.',
+  perception: '+0.3% rare drop chance per point. Primary for Foraging.',
+  agility: '+0.3% trip speed per point. Secondary for Water Reclamation.',
+  intellect: '+0.4% XP gain per point. Primary for Salvage Hunting.',
+};
+
 const RANK_BONUS_DESCRIPTIONS: Record<WorkerRank, string> = {
   recruit: 'No bonuses (learning the ropes)',
   veteran: '+5% Yield, +5% Survivability, +3% Trip Speed',
@@ -369,7 +377,7 @@ function WorkerDetail({ worker, assignments }: { worker: IndividualWorker; assig
             const value = worker.stats[key];
             const color = STAT_COLORS[key];
             return (
-              <div key={key} className="flex items-center gap-2">
+              <div key={key} className="stat-tooltip-wrap flex items-center gap-2" style={{ cursor: 'help', position: 'relative' }}>
                 <span
                   className="text-xs font-bold"
                   style={{ color, width: '32px', textAlign: 'right' }}
@@ -385,6 +393,25 @@ function WorkerDetail({ worker, assignments }: { worker: IndividualWorker; assig
                 >
                   {value}
                 </span>
+                <div className="stat-tooltip" style={{
+                  position: 'absolute',
+                  left: 0,
+                  bottom: '100%',
+                  marginBottom: 4,
+                  backgroundColor: 'rgba(0,0,0,0.92)',
+                  border: `1px solid ${color}`,
+                  borderRadius: 4,
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  color: '#e5e5e5',
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                  zIndex: 50,
+                  opacity: 0,
+                  transition: 'opacity 0.1s ease',
+                }}>
+                  {STAT_DESCRIPTIONS[key]}
+                </div>
               </div>
             );
           })}

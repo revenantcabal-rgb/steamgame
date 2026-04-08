@@ -39,6 +39,7 @@ const ALL_TOP_TABS: { id: TopTab; label: string; featureKey: string | null }[] =
   { id: 'marketplace', label: 'Marketplace', featureKey: 'marketplace' },
   { id: 'expedition', label: 'Expedition', featureKey: 'expedition' },
   { id: 'starlight', label: 'Starlight', featureKey: 'starlight' },
+  { id: 'loot', label: 'Loot Tracker', featureKey: null },
   { id: 'guild', label: 'Guild', featureKey: 'guild' },
   { id: 'pvp', label: 'PVP Zone', featureKey: 'pvp' },
   { id: 'settings', label: 'Settings', featureKey: null },

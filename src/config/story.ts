@@ -34,6 +34,8 @@ export interface StoryPart {
   objective: StoryObjective;
   rewards: { type: 'wc' | 'resource' | 'gear'; itemId?: string; quantity: number }[];
   hint: string;
+  /** Optional feature unlock when this specific part is completed */
+  unlocks?: string;
 }
 
 export interface StoryChapter {
@@ -43,7 +45,8 @@ export interface StoryChapter {
   description: string;
   parts: StoryPart[];
   completionReward: { type: 'wc' | 'resource' | 'gear'; itemId?: string; quantity: number }[];
-  unlocks: string;
+  /** Feature unlocked when the entire chapter is completed (optional if part-level unlocks are used) */
+  unlocks?: string;
 }
 
 export const STORY_CHAPTERS: StoryChapter[] = [
@@ -213,11 +216,12 @@ export const STORY_CHAPTERS: StoryChapter[] = [
       {
         id: 's3_p0',
         title: 'Veteran',
-        description: 'Reach hero level 10.',
+        description: 'Reach hero level 5.',
         flavor: 'A hardened fighter earns respect. Your hero is no longer a rookie.',
-        objective: { type: 'reach_hero_level', target: 'any', count: 10, description: 'Reach hero level 10' },
+        objective: { type: 'reach_hero_level', target: 'any', count: 5, description: 'Reach hero level 5' },
         rewards: [{ type: 'wc', quantity: 200 }],
         hint: 'Keep fighting enemies to gain hero XP.',
+        unlocks: 'hero_recruitment',
       },
       {
         id: 's3_p1',
@@ -275,7 +279,6 @@ export const STORY_CHAPTERS: StoryChapter[] = [
       },
     ],
     completionReward: [{ type: 'wc', quantity: 300 }],
-    unlocks: 'hero_recruitment',
   },
 
   // ──────────────────────────────────────────────

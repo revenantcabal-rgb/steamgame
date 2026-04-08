@@ -171,7 +171,7 @@ Heroes gain **6 stat points per level** and have a **level cap of 100**.
 |----------|-------|
 | Combat Style | Ranged |
 | Hero Type | Specialist |
-| Primary Stat | INT (starts at 13) |
+| Primary Stat | DEX (starts at 13) |
 | Description | Master crafter, creates quality items |
 | Playstyle | Ranged fighter with crafting quality bonuses |
 

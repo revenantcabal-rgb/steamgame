@@ -172,7 +172,13 @@ export const useStoryStore = create<StoryState>((set, get) => ({
       newProgress = currentProgress + incrementBy;
     }
 
-    if (newProgress === currentProgress) return; // no change
+    if (newProgress === currentProgress) {
+      // Even if progress hasn't changed, check if we already meet the (possibly lowered) requirement
+      if (newProgress >= obj.count) {
+        setTimeout(() => get().completePart(), 0);
+      }
+      return;
+    }
 
     set(s => ({ partProgress: { ...s.partProgress, [partId]: newProgress } }));
 
@@ -245,18 +251,27 @@ export const useStoryStore = create<StoryState>((set, get) => ({
         set(s => ({ totalWcEarned: s.totalWcEarned + chapterWc }));
       }
 
-      gameStore.addLog(`[STORY] Chapter Complete: "${chapter.title}"! Feature Unlocked: ${chapter.unlocks.replace(/_/g, ' ')}!`, 'levelup');
-
-      // Chat system message
-      useChatStore.getState().addSystemMessage('general', `Story Chapter Complete: "${chapter.title}"! Feature Unlocked: ${chapter.unlocks.replace(/_/g, ' ')}.`);
+      if (chapter.unlocks) {
+        gameStore.addLog(`[STORY] Chapter Complete: "${chapter.title}"! Feature Unlocked: ${chapter.unlocks.replace(/_/g, ' ')}!`, 'levelup');
+        useChatStore.getState().addSystemMessage('general', `Story Chapter Complete: "${chapter.title}"! Feature Unlocked: ${chapter.unlocks.replace(/_/g, ' ')}.`);
+      } else {
+        gameStore.addLog(`[STORY] Chapter Complete: "${chapter.title}"!`, 'levelup');
+        useChatStore.getState().addSystemMessage('general', `Story Chapter Complete: "${chapter.title}"!`);
+      }
 
       set(s => ({
         currentStoryNumber: s.currentStoryNumber + 1,
         currentPartIndex: 0,
         completedStories: [...s.completedStories, chapter.number],
-        unlockedFeatures: [...s.unlockedFeatures, chapter.unlocks],
+        unlockedFeatures: chapter.unlocks ? [...s.unlockedFeatures, chapter.unlocks] : s.unlockedFeatures,
       }));
     } else {
+      // Unlock part-level feature if defined
+      if (part.unlocks) {
+        gameStore.addLog(`[STORY] Feature Unlocked: ${part.unlocks.replace(/_/g, ' ')}!`, 'levelup');
+        useChatStore.getState().addSystemMessage('general', `Story progress: Feature Unlocked: ${part.unlocks.replace(/_/g, ' ')}!`);
+        set(s => ({ unlockedFeatures: [...s.unlockedFeatures, part.unlocks!] }));
+      }
       // Advance to next part
       set(s => ({ currentPartIndex: s.currentPartIndex + 1 }));
       // Re-check in case the new objective is already met
@@ -376,6 +391,25 @@ export const useStoryStore = create<StoryState>((set, get) => ({
       if (chapter?.unlocks && !unlockedFeatures.includes(chapter.unlocks)) {
         unlockedFeatures.push(chapter.unlocks);
       }
+      // Also check part-level unlocks for completed chapters
+      if (chapter) {
+        for (const p of chapter.parts) {
+          if (p.unlocks && !unlockedFeatures.includes(p.unlocks)) {
+            unlockedFeatures.push(p.unlocks);
+          }
+        }
+      }
+    }
+    // Auto-repair: check part-level unlocks for the current in-progress chapter
+    const currentChapter = STORY_CHAPTERS.find(c => c.number === (saved.currentStoryNumber ?? 1));
+    if (currentChapter) {
+      const currentPartIdx = saved.currentPartIndex ?? 0;
+      for (let i = 0; i < currentPartIdx; i++) {
+        const p = currentChapter.parts[i];
+        if (p?.unlocks && !unlockedFeatures.includes(p.unlocks)) {
+          unlockedFeatures.push(p.unlocks);
+        }
+      }
     }
 
     set({
@@ -393,7 +427,22 @@ export const useStoryStore = create<StoryState>((set, get) => ({
     });
 
     // Re-check current objective in case it's already met from existing progress
-    setTimeout(() => get().recheckCurrentObjective(), 200);
+    // Chain rechecks to auto-complete multiple sequential parts that are already satisfied
+    const recheckChain = (remaining: number) => {
+      if (remaining <= 0) return;
+      const before = get().currentPartIndex;
+      const beforeStory = get().currentStoryNumber;
+      get().recheckCurrentObjective();
+      // If recheck advanced us (completePart is deferred via setTimeout), wait and check again
+      setTimeout(() => {
+        const after = get().currentPartIndex;
+        const afterStory = get().currentStoryNumber;
+        if (after !== before || afterStory !== beforeStory) {
+          recheckChain(remaining - 1);
+        }
+      }, 300);
+    };
+    setTimeout(() => recheckChain(10), 200);
   },
 }));
 

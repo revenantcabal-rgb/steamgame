@@ -718,6 +718,8 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
   const equipDecree = useHeroStore(s => s.equipDecree);
   const unequipDecree = useHeroStore(s => s.unequipDecree);
   const heroes = useHeroStore(s => s.heroes);
+  const deployments = useCombatZoneStore(s => s.deployments);
+  const isDeployed = deployments.some(d => d.heroIds.includes(hero.id));
   const [expandedSlot, setExpandedSlot] = useState<number | 'decree' | null>(null);
 
   const equippedAbilities = hero.equippedAbilities || [null, null, null, null];
@@ -771,7 +773,14 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
 
   return (
     <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-      <h3 className="font-bold text-sm mb-2">Ability Slots ({derived.abilitySlots}/4 unlocked)</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-bold text-sm">Ability Slots ({derived.abilitySlots}/4 unlocked)</h3>
+        {isDeployed && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}>
+            Deployed — Abilities Locked
+          </span>
+        )}
+      </div>
       <div className="space-y-1">
         {[0, 1, 2, 3].map(slotIndex => {
           const resNeeded = [1, 30, 60, 90][slotIndex];
@@ -783,11 +792,12 @@ function HeroAbilitySection({ hero, derived }: { hero: Hero; derived: ReturnType
           return (
             <div key={slotIndex}>
               <button
-                onClick={() => unlocked && setExpandedSlot(isExpanded ? null : slotIndex)}
-                className="w-full text-left p-2 rounded cursor-pointer"
+                onClick={() => !isDeployed && unlocked && setExpandedSlot(isExpanded ? null : slotIndex)}
+                className="w-full text-left p-2 rounded"
                 style={{
                   backgroundColor: unlocked ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
-                  opacity: unlocked ? 1 : 0.4,
+                  opacity: isDeployed ? 0.6 : unlocked ? 1 : 0.4,
+                  cursor: isDeployed ? 'not-allowed' : unlocked ? 'pointer' : 'default',
                   border: `1px solid ${isExpanded ? 'var(--color-accent)' : equippedAbility ? ABILITY_COLOR_HEX[equippedAbility.color] + '66' : 'var(--color-border)'}`,
                   borderLeft: equippedAbility ? `3px solid ${ABILITY_COLOR_HEX[equippedAbility.color]}` : undefined,
                 }}
@@ -960,6 +970,8 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
   const equipConsumable = useHeroStore(s => s.equipConsumable);
   const unequipConsumable = useHeroStore(s => s.unequipConsumable);
   const resources = useGameStore(s => s.resources);
+  const deployments = useCombatZoneStore(s => s.deployments);
+  const isDeployed = deployments.some(d => d.heroIds.includes(hero.id));
   const [expandedSlot, setExpandedSlot] = useState<number | null>(null);
 
   const equippedConsumables = hero.equippedConsumables || [null];
@@ -986,7 +998,14 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
 
   return (
     <div className="p-3 rounded mb-4" style={{ backgroundColor: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}>
-      <h3 className="font-bold text-sm mb-2">Consumable Bag ({derived.consumableSlots}/{maxSlots} slots)</h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-bold text-sm">Consumable Bag ({derived.consumableSlots}/{maxSlots} slots)</h3>
+        {isDeployed && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: 'rgba(239,68,68,0.15)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)' }}>
+            Deployed — Consumables Locked
+          </span>
+        )}
+      </div>
       <div className="space-y-1">
         {Array.from({ length: maxSlots }).map((_, slotIndex) => {
           const unlocked = slotIndex < derived.consumableSlots;
@@ -998,11 +1017,12 @@ function HeroConsumableSection({ hero, derived }: { hero: Hero; derived: ReturnT
           return (
             <div key={slotIndex}>
               <button
-                onClick={() => unlocked && setExpandedSlot(isExpanded ? null : slotIndex)}
-                className="w-full text-left p-2 rounded cursor-pointer"
+                onClick={() => !isDeployed && unlocked && setExpandedSlot(isExpanded ? null : slotIndex)}
+                className="w-full text-left p-2 rounded"
                 style={{
                   backgroundColor: unlocked ? 'var(--color-bg-tertiary)' : 'var(--color-bg-primary)',
-                  opacity: unlocked ? 1 : 0.4,
+                  opacity: isDeployed ? 0.6 : unlocked ? 1 : 0.4,
+                  cursor: isDeployed ? 'not-allowed' : unlocked ? 'pointer' : 'default',
                   border: `1px solid ${isExpanded ? 'var(--color-accent)' : equippedConsumable ? (TYPE_COLORS[equippedConsumable.type] || '#888') + '66' : 'var(--color-border)'}`,
                   borderLeft: equippedConsumable ? `3px solid ${TYPE_COLORS[equippedConsumable.type] || '#888'}` : undefined,
                 }}
@@ -1316,7 +1336,7 @@ function RecruitModal({ onClose }: { onClose: () => void }) {
             backgroundColor: 'var(--color-bg-tertiary)', border: '1px solid var(--color-border)',
             color: 'var(--color-text-muted)', textAlign: 'center', fontSize: 13,
           }}>
-            &#128274; Complete Story 3 to unlock hero recruitment.
+            &#128274; Complete Story 3.1 to unlock hero recruitment.
           </div>
         )}
 

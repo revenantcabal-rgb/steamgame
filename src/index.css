@@ -118,6 +118,71 @@ body {
   color: var(--color-danger);
 }
 
+/* Floating damage numbers */
+@keyframes float-damage {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  20% { opacity: 1; transform: translateY(-8px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-32px) scale(0.8); }
+}
+.float-damage {
+  animation: float-damage 0.9s ease-out forwards;
+  position: absolute;
+  pointer-events: none;
+  font-weight: 800;
+  font-size: 14px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  z-index: 20;
+}
+
+/* Combat card */
+.combat-card {
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 8px;
+  text-align: center;
+  transition: border-color 0.3s;
+  position: relative;
+}
+.combat-card--targeted {
+  border-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245,158,11,0.3);
+}
+.combat-card--dead {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+/* Ability cooldown overlay */
+.ability-slot {
+  position: relative;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+.ability-slot--ready {
+  border: 2px solid rgba(255,255,255,0.4);
+}
+.ability-slot--casting {
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(255,255,255,0.4);
+}
+.ability-cooldown-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.stat-tooltip-wrap:hover .stat-tooltip {
+  opacity: 1 !important;
+}
+
 @keyframes worker-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.6; transform: scale(1.08); }

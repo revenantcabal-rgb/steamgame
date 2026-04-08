@@ -71,7 +71,7 @@ export const useHeroStore = create<HeroState>((set, get) => ({
     if (!isFree && state.heroes.length > 0) {
       const storyStore = useStoryStore.getState();
       if (!storyStore.isFeatureUnlocked('hero_recruitment')) {
-        gameStore.addLog('Hero recruitment is locked. Complete Story 3 to unlock.', 'error');
+        gameStore.addLog('Hero recruitment is locked. Complete Story 3.1 to unlock.', 'error');
         return null;
       }
 

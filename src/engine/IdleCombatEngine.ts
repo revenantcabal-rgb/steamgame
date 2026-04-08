@@ -117,10 +117,11 @@ export function getFightDuration(heroLevel: number, zoneMinLevel: number, turnSp
   if (diff >= 20) baseDuration = 3;
   else if (diff >= 10) baseDuration = 5;
   else if (diff >= 0) baseDuration = 8;
-  else if (diff >= -10) baseDuration = 12;
-  else baseDuration = 99;
+  else if (diff >= -10) baseDuration = 10;
+  else if (diff >= -20) baseDuration = 12;
+  else baseDuration = 15; // Hard but not impossible (was 99)
   const speedFactor = Math.max(0.3, 100 / Math.max(1, turnSpeed));
-  return Math.max(2, Math.round(baseDuration * speedFactor));
+  return Math.max(4, Math.round(baseDuration * speedFactor));
 }
 
 /**
@@ -140,14 +141,11 @@ export function getDynamicDifficultyMultiplier(
   // More heroes = harder (each hero after the first adds 15% difficulty)
   const heroCountMult = 1 + Math.max(0, heroCount - 1) * 0.15;
 
-  // Overlevel penalty/scaling: if heroes massively outlevel the zone, enemies scale up
-  const levelDiff = avgHeroLevel - zoneMinLevel;
-  const overlevelMult = levelDiff > 20 ? 1 + (levelDiff - 20) * 0.02 : 1.0;
+  // No level-based scaling — difficulty comes from tier selection + wave scaling
+  const difficultyMult = heroCountMult;
 
-  const difficultyMult = heroCountMult * overlevelMult;
-
-  // XP bonus for harder difficulty (diminishing)
-  const xpBonusMult = 1 + (difficultyMult - 1) * 0.6;
+  // XP bonus for multi-hero parties
+  const xpBonusMult = 1 + (heroCountMult - 1) * 0.6;
 
   return { difficultyMult, xpBonusMult };
 }
@@ -308,7 +306,7 @@ export function simulateFight(
     xpGained: won ? scaledXp : Math.floor(scaledXp * 0.2),
     resourceDrops,
     heroDied,
-    recoveryCooldown: heroDied ? Math.floor((scaledEnemyHp > 1000 ? 30 : scaledEnemyHp > 300 ? 15 : 5) * 60 * Math.max(0.3, 1 - derived.statusResist / 200)) : 0,
+    recoveryCooldown: heroDied ? Math.floor(Math.min(180, (scaledEnemyHp > 5000 ? 180 : scaledEnemyHp > 1000 ? 120 : 60)) * Math.max(0.3, 1 - derived.statusResist / 200)) : 0,
     consumablesUsed,
   };
 }
@@ -348,5 +346,5 @@ export function simulateBossFight(
  * Check if a hero can enter a zone.
  */
 export function canEnterZone(heroLevel: number, zoneMinLevel: number): boolean {
-  return heroLevel >= zoneMinLevel - 10;
+  return true; // All zones accessible; minLevel is now "recommended"
 }

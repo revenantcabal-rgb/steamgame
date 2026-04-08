@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCombatZoneStore } from '../../store/useCombatZoneStore';
 import { useHeroStore } from '../../store/useHeroStore';
 import { useEquipmentStore } from '../../store/useEquipmentStore';
@@ -8,9 +8,321 @@ import { ABILITIES } from '../../config/abilities';
 import { ABILITY_COLOR_HEX } from '../../config/abilities';
 import { getFightDuration, canEnterZone, calculateAbilityContribution, getCombatTriangleMultiplier } from '../../engine/IdleCombatEngine';
 import { calculateDerivedStats, getEquippedGear } from '../../engine/HeroEngine';
+import { getEncampmentBonuses, getCombatDamageBonus } from '../../engine/EncampmentBonuses';
+import { useGameStore } from '../../store/useGameStore';
 import { ProgressBar } from '../common/ProgressBar';
 import { ItemIcon } from '../../utils/itemIcons';
 import type { Hero } from '../../types/hero';
+import type { SpawnedEnemy } from '../../store/useCombatZoneStore';
+
+/** Hook for smooth progress bar interpolation between integer ticks */
+function useSmoothProgress(intProgress: number, max: number): number {
+  const [smooth, setSmooth] = useState(intProgress);
+  const lastTickRef = useRef(Date.now());
+  const lastIntRef = useRef(intProgress);
+  const rafRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (intProgress !== lastIntRef.current) {
+      lastTickRef.current = Date.now();
+      lastIntRef.current = intProgress;
+    }
+  }, [intProgress]);
+
+  useEffect(() => {
+    const update = () => {
+      const elapsed = (Date.now() - lastTickRef.current) / 1000;
+      const val = Math.min(max, lastIntRef.current + elapsed);
+      setSmooth(val);
+      rafRef.current = requestAnimationFrame(update);
+    };
+    rafRef.current = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [max]);
+
+  return smooth;
+}
+
+/** Floating damage number component with hero initial */
+function FloatingDamage({ value, color, id, initial }: { value: number; color: string; id: string; initial?: string }) {
+  return (
+    <div key={id} className="float-damage" style={{ color, top: '10%', left: '40%' }}>
+      {initial && <span style={{ fontSize: 10, opacity: 0.7 }}>{initial} </span>}
+      {value > 0 ? `-${Math.round(value)}` : `+${Math.round(-value)}`}
+    </div>
+  );
+}
+
+/** Format seconds as Xm Ys */
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
+
+/** ─── Battle Scene Sub-component (IdleOn-style card layout) ─── */
+function BattleScene({ dep, partyHeroes, zone, target, fastestDuration, heroEquipment, inventory }: {
+  dep: any; partyHeroes: Hero[]; zone: any; target: any; fastestDuration: number;
+  heroEquipment: any; inventory: any;
+}) {
+  const smoothProgress = useSmoothProgress(dep.fightProgress, fastestDuration);
+  const resources = useGameStore(s => s.resources);
+  const prevEnemyHpRef = useRef<number[]>([]);
+  const [floatingDmgs, setFloatingDmgs] = useState<{ id: string; value: number; color: string; initial?: string }[]>([]);
+
+  // Sort heroes by turn speed (fastest attacks first, displayed on left)
+  const HERO_COLORS = ['#f59e0b', '#3b82f6', '#22c55e', '#a855f7', '#ef4444'] as const;
+  const activeHeroesUnsorted = partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0)).slice(0, 5);
+  const activeHeroes = [...activeHeroesUnsorted].sort((a, b) => {
+    const gearA = getEquippedGear(a.id, heroEquipment, inventory);
+    const gearB = getEquippedGear(b.id, heroEquipment, inventory);
+    const dA = calculateDerivedStats(a, gearA);
+    const dB = calculateDerivedStats(b, gearB);
+    return dB.turnSpeed - dA.turnSpeed; // highest speed first (left)
+  });
+  const encampmentBonuses = getEncampmentBonuses();
+  const encampmentDamageMult = 1 + getCombatDamageBonus() / 100;
+  const encampmentDefenseMult = 1 + (encampmentBonuses.combat_defense || 0) / 100;
+  const encampmentHpMult = 1 + (encampmentBonuses.combat_hp || 0) / 100;
+  const progress = dep.fightProgress / Math.max(1, fastestDuration);
+
+  const enemies: SpawnedEnemy[] = dep.currentEnemies || [];
+  const totalEnemyDmg = enemies.reduce((s: number, e: SpawnedEnemy) => s + (e.currentHp > 0 ? e.damage : 0), 0);
+  const firstAliveIdx = enemies.findIndex((e: SpawnedEnemy) => e.currentHp > 0);
+
+  // Determine which hero attacked this tick (for damage color)
+  const gt = dep.globalTick || 0;
+  const attackingHeroIdx = (() => {
+    for (let hi = 0; hi < activeHeroes.length; hi++) {
+      const hero = activeHeroes[hi];
+      const gear = getEquippedGear(hero.id, heroEquipment, inventory);
+      const d = calculateDerivedStats(hero, gear);
+      const interval = Math.max(1, Math.round(100 / Math.max(1, d.turnSpeed) * 3));
+      if ((gt + hi) % interval === 0) return hi;
+    }
+    return 0;
+  })();
+
+  // Floating damage tracking with per-hero colors
+  useEffect(() => {
+    const currentHps = enemies.map((e: SpawnedEnemy) => e.currentHp);
+    const prev = prevEnemyHpRef.current;
+    if (prev.length === currentHps.length) {
+      const newDmgs: { id: string; value: number; color: string; initial: string }[] = [];
+      for (let i = 0; i < currentHps.length; i++) {
+        const delta = prev[i] - currentHps[i];
+        if (delta > 1) {
+          const heroColor = HERO_COLORS[attackingHeroIdx] || HERO_COLORS[0];
+          const heroInitial = activeHeroes[attackingHeroIdx]?.name?.charAt(0) || '?';
+          newDmgs.push({ id: `${gt}-${i}-${Date.now()}`, value: delta, color: heroColor, initial: heroInitial });
+        }
+      }
+      if (newDmgs.length > 0) {
+        setFloatingDmgs(d => [...d.slice(-8), ...newDmgs]);
+        setTimeout(() => setFloatingDmgs(d => d.filter(dd => !newDmgs.some(n => n.id === dd.id))), 900);
+      }
+    }
+    prevEnemyHpRef.current = currentHps;
+  }, [enemies.map((e: SpawnedEnemy) => Math.round(e.currentHp)).join(',')]);
+
+  // Compute per-hero stats
+  const heroStats = activeHeroes.map(hero => {
+    const equippedGear = getEquippedGear(hero.id, heroEquipment, inventory);
+    const derived = calculateDerivedStats(hero, equippedGear);
+    const cls = CLASSES[hero.classId];
+    const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
+    const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as any, (target?.enemy as any)?.combatStyle);
+    const hitRate = Math.min(1, derived.accuracy / 100);
+    const critMult = 1 + (derived.critChance / 100) * (derived.critDamage / 100 - 1);
+    const effectiveEnemyDefense = 0.10 * Math.max(0, 1 - derived.armorPen / 100);
+    let heroDps = heroAttack * hitRate * critMult * (1 - effectiveEnemyDefense) * triangleMult * encampmentDamageMult;
+    heroDps += heroAttack * (derived.burnDot / 100 + derived.poisonDot / 100 + derived.radiationDot / 100 + derived.bleedDot / 100);
+    const abilityContrib = calculateAbilityContribution(hero, derived, fastestDuration);
+    heroDps += abilityContrib.bonusDps;
+    // Show actual HP/SP — heroes are either alive (fighting) or recovering (not shown here)
+    // Don't estimate damage taken during fight; simulateFight resolves at tick end
+    const effectiveMaxHp = Math.round(derived.maxHp * encampmentHpMult);
+    const currentHp = effectiveMaxHp; // alive = full HP (fight hasn't resolved yet)
+    const hpPct = 100;
+    const currentSp = derived.maxSp;
+    const spPct = 100;
+    // Match the store's per-hero attack timing using globalTick
+    const heroIdx = activeHeroes.indexOf(hero);
+    const attackInterval = Math.max(1, Math.round(100 / Math.max(1, derived.turnSpeed) * 3));
+    const justAttacked = gt > 0 && (gt + heroIdx) % attackInterval === 0;
+    return { hero, derived, heroDps: Math.round(heroDps), effectiveMaxHp, currentHp, hpPct, currentSp, spPct, justAttacked, heroIndex: heroIdx };
+  });
+
+  const totalPartyDps = heroStats.reduce((s, h) => s + h.heroDps, 0);
+
+  // Abilities with cooldowns
+  const allAbilities = activeHeroes.flatMap(hero =>
+    (hero.equippedAbilities || []).filter((a): a is string => a != null).map(aId => {
+      const ability = ABILITIES[aId];
+      return ability ? { hero, ability } : null;
+    }).filter(Boolean)
+  ) as { hero: Hero; ability: typeof ABILITIES[string] }[];
+
+  return (
+    <div className="rounded-lg overflow-hidden" style={{
+      backgroundImage: `url(/assets/battle-backgrounds/${dep.zoneId}.png)`,
+      backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative',
+    }}>
+      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 0 }} />
+
+      {/* ── Battle Header ── */}
+      <div style={{ position: 'relative', zIndex: 1, padding: '8px 16px 0' }}>
+        <div className="flex items-center justify-between">
+          <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            {target?.isSweep ? `Battle ${dep.fightCount + 1}/50` : 'Fighting'}
+          </div>
+          <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            {enemies.length > 1 && `${enemies.filter((e: SpawnedEnemy) => e.currentHp <= 0).length}/${enemies.length} slain`}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Battle Scene (3-column grid: heroes | center | enemies) ── */}
+      <div style={{ position: 'relative', zIndex: 1, padding: '12px 16px', display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 16, alignItems: 'center', minHeight: 200 }}>
+
+        {/* LEFT: Hero Cards */}
+        <div className="flex gap-2 justify-start">
+          {heroStats.map(({ hero, derived, heroDps, effectiveMaxHp, currentHp, hpPct, currentSp, spPct, justAttacked, heroIndex }) => {
+            const heroColor = HERO_COLORS[heroIndex] || HERO_COLORS[0];
+            return (
+            <div key={hero.id} className="combat-card" style={{
+              width: 110, animation: justAttacked ? 'combat-pulse 0.3s ease' : 'none',
+              borderColor: justAttacked ? heroColor : undefined,
+            }}>
+              <div className="text-[11px] font-bold truncate" style={{ color: heroColor }}>{hero.name}</div>
+              <div className="my-1"><ItemIcon itemId={hero.classId} itemType="hero" size={52} fallbackLabel={hero.name.charAt(0)} /></div>
+              {/* HP */}
+              <div style={{ width: '100%', height: 7, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 3 }}>
+                <div style={{ width: `${hpPct}%`, height: '100%', backgroundColor: hpPct > 50 ? '#22c55e' : hpPct > 25 ? '#f59e0b' : '#ef4444', borderRadius: 3, transition: 'width 0.4s ease' }} />
+              </div>
+              <div className="text-[10px] font-bold" style={{ color: hpPct > 50 ? '#22c55e' : hpPct > 25 ? '#f59e0b' : '#ef4444' }}>{currentHp}/{effectiveMaxHp}</div>
+              {/* SP */}
+              <div style={{ width: '100%', height: 5, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 3, marginTop: 2 }}>
+                <div style={{ width: `${spPct}%`, height: '100%', backgroundColor: '#3b82f6', borderRadius: 3, transition: 'width 0.4s ease' }} />
+              </div>
+              <div className="text-[10px]" style={{ color: '#3b82f6' }}>{currentSp}/{derived.maxSp}</div>
+              {/* Action + DPS */}
+              <div className="text-[9px] mt-2 py-0.5 rounded" style={{ backgroundColor: justAttacked ? 'rgba(245,158,11,0.2)' : 'rgba(255,255,255,0.05)', color: justAttacked ? '#f59e0b' : 'var(--color-text-muted)', border: justAttacked ? '1px solid rgba(245,158,11,0.4)' : '1px solid transparent' }}>
+                {justAttacked ? 'Attack!' : 'Auto Attack'}
+              </div>
+              <div className="text-[11px] font-bold mt-1" style={{ color: heroColor }}>DPS: {heroDps}</div>
+            </div>
+          );})}
+        </div>
+
+        {/* CENTER: Battle Info */}
+        <div className="flex flex-col items-center justify-center gap-1" style={{ minWidth: 80 }}>
+          <div className="text-3xl combat-swords-icon">&#9876;</div>
+          <div className="text-base font-bold" style={{ color: 'var(--color-text-primary)' }}>{totalPartyDps}</div>
+          <div className="text-[10px]" style={{ color: 'var(--color-text-muted)' }}>Total DPS</div>
+          {dep.waveMultiplier > 1 && (
+            <div className="text-[10px] font-bold px-2 py-0.5 rounded" style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: 'var(--color-energy)' }}>
+              Wave +{Math.round((dep.waveMultiplier - 1) * 100)}%
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT: Enemy Cards */}
+        <div className="flex gap-2 justify-end" style={{ position: 'relative' }}>
+          {/* Floating damage */}
+          {floatingDmgs.map(d => <FloatingDamage key={d.id} id={d.id} value={d.value} color={d.color} initial={d.initial} />)}
+
+          {enemies.map((enemy, idx) => {
+            const isDead = enemy.currentHp <= 0;
+            const isTarget = idx === firstAliveIdx;
+            const eHpPct = enemy.maxHp > 0 ? Math.max(0, Math.min(100, (enemy.currentHp / enemy.maxHp) * 100)) : 0;
+            return (
+              <div key={idx} className={`combat-card ${isTarget ? 'combat-card--targeted' : ''} ${isDead ? 'combat-card--dead' : ''}`}
+                style={{ width: 100 }}>
+                <div className="text-[11px] font-bold truncate" style={{ color: isDead ? 'var(--color-text-muted)' : 'var(--color-danger)' }}>
+                  {enemy.name}
+                </div>
+                <div className="my-1"><ItemIcon itemId={enemy.enemyId} itemType="monster" size={52} fallbackLabel="?" fallbackColor="#e74c3c" /></div>
+                {/* HP */}
+                <div style={{ width: '100%', height: 7, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 3 }}>
+                  <div style={{ width: `${eHpPct}%`, height: '100%', backgroundColor: eHpPct > 50 ? '#ef4444' : eHpPct > 25 ? '#f59e0b' : '#22c55e', borderRadius: 3, transition: 'width 0.4s ease' }} />
+                </div>
+                <div className="text-[10px] font-bold" style={{ color: isDead ? 'var(--color-text-muted)' : '#ef4444' }}>
+                  {isDead ? 'DEAD' : `${Math.round(enemy.currentHp)}/${enemy.maxHp}`}
+                </div>
+                {/* Action + ATK */}
+                <div className="text-[9px] mt-2 py-0.5 rounded" style={{ backgroundColor: isDead ? 'transparent' : 'rgba(239,68,68,0.1)', color: isDead ? 'var(--color-text-muted)' : 'var(--color-danger)', border: isDead ? 'none' : '1px solid rgba(239,68,68,0.2)' }}>
+                  {isDead ? 'Defeated' : 'Auto Attack'}
+                </div>
+                <div className="text-[10px] font-bold mt-1" style={{ color: isDead ? 'var(--color-text-muted)' : '#ef4444' }}>{enemy.damage} ATK</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Abilities & Consumables Bar (BOTTOM) ── */}
+      {(allAbilities.length > 0 || activeHeroes.some(h => h.equippedConsumables?.some(c => c))) && (
+        <div style={{ position: 'relative', zIndex: 1, padding: '0 16px 12px' }}>
+          <div className="flex gap-4 overflow-x-auto">
+            {/* Abilities grouped by hero */}
+            {activeHeroes.map(hero => {
+              const heroAbilities = (hero.equippedAbilities || [])
+                .filter((a): a is string => a != null)
+                .map(aId => ABILITIES[aId])
+                .filter(Boolean);
+              const heroConsumables = (hero.equippedConsumables || [])
+                .filter((c): c is string => c != null);
+              if (heroAbilities.length === 0 && heroConsumables.length === 0) return null;
+              return (
+                <div key={hero.id} className="flex items-center gap-1">
+                  <span className="text-[9px] font-bold mr-0.5" style={{ color: HERO_COLORS[activeHeroes.indexOf(hero)] || 'var(--color-text-muted)' }}>{hero.name.split(' ')[0]}:</span>
+                  {heroAbilities.map(ability => {
+                    const cd = ability.cooldown;
+                    const gt = dep.globalTick || 0;
+                    const isPassive = cd <= 0 || ability.isPassive;
+                    const cdRemaining = !isPassive && gt > 0 ? cd - (gt % cd) : 0;
+                    const isReady = isPassive || gt === 0 || gt % cd === 0;
+                    const abilityColor = ABILITY_COLOR_HEX[ability.color];
+                    return (
+                      <div key={ability.id}
+                        className={`ability-slot ${isReady ? 'ability-slot--ready' : ''}`}
+                        title={`${ability.name} — ${ability.effect}\nCD: ${cd}s · SP: ${ability.spCost}`}
+                        style={{ padding: 2, backgroundColor: 'rgba(0,0,0,0.5)', borderColor: isReady ? abilityColor : 'transparent' }}>
+                        <ItemIcon itemId={ability.id} itemType="ability" size={24} fallbackColor={abilityColor} />
+                        {isPassive && (
+                          <div className="ability-cooldown-overlay" style={{ fontSize: 8, backgroundColor: 'rgba(0,0,0,0.4)' }}>P</div>
+                        )}
+                        {!isPassive && !isReady && cdRemaining > 0 && (
+                          <div className="ability-cooldown-overlay">{cdRemaining}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {heroConsumables.map((cId, i) => {
+                    const qty = resources[cId] || 0;
+                    return (
+                      <div key={`c-${i}`} className="ability-slot" style={{ padding: 2, backgroundColor: 'rgba(0,0,0,0.4)', borderColor: qty > 0 ? 'rgba(100,200,100,0.3)' : 'rgba(200,50,50,0.3)' }}
+                        title={`${cId.replace(/_/g, ' ')} (${qty} left)`}>
+                        <ItemIcon itemId={cId} itemType="consumable" size={20} fallbackColor="#27ae60" />
+                        <span className="absolute text-[8px] font-bold rounded-sm px-0.5" style={{
+                          top: -2, right: -2, lineHeight: 1,
+                          backgroundColor: qty > 0 ? 'rgba(39,174,96,0.9)' : 'rgba(200,50,50,0.9)',
+                          color: '#fff', minWidth: 12, textAlign: 'center',
+                        }}>{qty}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface CombatZonePanelProps {
   /** Pre-select a zone when navigating from the sidebar */
@@ -23,6 +335,7 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
   const deployParty = useCombatZoneStore(s => s.deployParty);
   const recallParty = useCombatZoneStore(s => s.recallParty);
   const recallHero = useCombatZoneStore(s => s.recallHero);
+  const heroRecoveryCooldowns = useCombatZoneStore(s => s.heroRecoveryCooldowns);
   const heroes = useHeroStore(s => s.heroes);
   const inventory = useEquipmentStore(s => s.inventory);
   const heroEquipment = useEquipmentStore(s => s.heroEquipment);
@@ -133,13 +446,17 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
               {availableHeroes.map(h => {
                 const cls = CLASSES[h.classId];
                 const isSelected = selectedHeroIds.includes(h.id);
+                const recoverySecs = heroRecoveryCooldowns[h.id] || 0;
+                const isRecovering = recoverySecs > 0;
                 return (
-                  <button key={h.id} onClick={() => toggleHero(h.id)}
-                    className="flex items-center gap-2 p-2 rounded text-xs text-left cursor-pointer"
+                  <button key={h.id} onClick={() => !isRecovering && toggleHero(h.id)}
+                    className="flex items-center gap-2 p-2 rounded text-xs text-left"
                     style={{
-                      backgroundColor: isSelected ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
-                      color: isSelected ? '#000' : 'var(--color-text-primary)',
-                      border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      backgroundColor: isRecovering ? 'rgba(239,68,68,0.1)' : isSelected ? 'var(--color-accent)' : 'var(--color-bg-tertiary)',
+                      color: isRecovering ? 'var(--color-danger)' : isSelected ? '#000' : 'var(--color-text-primary)',
+                      border: `1px solid ${isRecovering ? 'var(--color-danger)' : isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      cursor: isRecovering ? 'not-allowed' : 'pointer',
+                      opacity: isRecovering ? 0.6 : 1,
                     }}>
                     <span style={{
                       width: 14, height: 14, borderRadius: 3, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -150,8 +467,11 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                       {isSelected ? '✓' : ''}
                     </span>
                     <span className="font-bold">{h.name}</span>
-                    <span style={{ color: isSelected ? 'rgba(0,0,0,0.6)' : 'var(--color-text-muted)' }}>
-                      Lv.{h.level} {cls?.name}
+                    <span style={{ color: isRecovering ? 'var(--color-danger)' : isSelected ? 'rgba(0,0,0,0.6)' : 'var(--color-text-muted)' }}>
+                      {isRecovering
+                        ? `Recovering (${Math.floor(recoverySecs / 60)}m ${recoverySecs % 60}s)`
+                        : `Lv.${h.level} ${cls?.name}`
+                      }
                     </span>
                   </button>
                 );
@@ -252,154 +572,24 @@ export function CombatZonePanel({ initialZoneId }: CombatZonePanelProps) {
                     <ProgressBar value={1} max={1} color="var(--color-danger)" height="6px" />
                   </div>
                 ) : (
-                  <div className="p-3 rounded" style={{
-                    backgroundImage: `url(/assets/battle-backgrounds/${dep.zoneId}.png)`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    position: 'relative',
-                  }}>
-                    {/* Overlay for text readability */}
-                    <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 'inherit' }} />
-                    {/* Visual Battle Scene */}
-                    <div className="flex items-center justify-between mb-2" style={{ position: 'relative' }}>
-                      {/* Hero Side */}
-                      <div className="flex gap-2 items-end">
-                        {partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0)).slice(0, 3).map(hero => {
-                          const equippedGear = getEquippedGear(hero.id, heroEquipment, inventory);
-                          const derived = calculateDerivedStats(hero, equippedGear);
-                          const cls = CLASSES[hero.classId];
-                          const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
-                          const enemyStyle = target?.enemy ? (zone?.targets.find(t => t.id === dep.targetId)?.enemy as any)?.combatStyle : undefined;
-                          const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as any, enemyStyle);
-                          const abilityContrib = calculateAbilityContribution(hero, derived, fastestDuration);
-                          const estimatedDps = Math.round((heroAttack * triangleMult + abilityContrib.bonusDps) * (derived.accuracy / 100));
-                          return (
-                            <div key={hero.id} className="text-center" style={{
-                              animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 0 ? 'combat-pulse 0.5s ease' : 'none',
-                            }}>
-                              <ItemIcon itemId={hero.classId} itemType="hero" size={36} fallbackLabel={hero.name.charAt(0)} />
-                              <div className="text-[8px] truncate font-bold" style={{ color: 'var(--color-text-primary)', maxWidth: 56 }}>{hero.name.split(' ')[0]}</div>
-                              {/* HP Bar */}
-                              <div style={{ width: 56, height: 4, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 2, marginTop: 2 }}>
-                                <div style={{ width: '100%', height: '100%', backgroundColor: '#22c55e', borderRadius: 2 }} />
-                              </div>
-                              <div className="text-[7px]" style={{ color: '#22c55e' }}>{derived.maxHp} HP</div>
-                              {/* SP Bar */}
-                              <div style={{ width: 56, height: 3, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 2, marginTop: 1 }}>
-                                <div style={{ width: '100%', height: '100%', backgroundColor: '#3b82f6', borderRadius: 2 }} />
-                              </div>
-                              <div className="text-[7px]" style={{ color: '#3b82f6' }}>{derived.maxSp} SP</div>
-                              {/* DPS */}
-                              <div className="text-[8px] font-bold" style={{ color: 'var(--color-energy)' }}>{estimatedDps} DPS</div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Battle Indicator */}
-                      <div className="flex flex-col items-center px-3">
-                        <div className="text-lg font-bold combat-swords-icon">&#9876;</div>
-                        <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{dep.fightProgress}s / {fastestDuration}s</div>
-                        {/* Party total DPS */}
-                        {(() => {
-                          const activeHeroes = partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0));
-                          const totalDps = activeHeroes.reduce((sum, hero) => {
-                            const equippedGear = getEquippedGear(hero.id, heroEquipment, inventory);
-                            const derived = calculateDerivedStats(hero, equippedGear);
-                            const cls = CLASSES[hero.classId];
-                            const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
-                            const abilityContrib = calculateAbilityContribution(hero, derived, fastestDuration);
-                            return sum + Math.round((heroAttack + abilityContrib.bonusDps) * (derived.accuracy / 100));
-                          }, 0);
-                          return activeHeroes.length > 1 ? (
-                            <div className="text-[9px] font-bold" style={{ color: 'var(--color-energy)' }}>
-                              {totalDps} Total DPS
-                            </div>
-                          ) : null;
-                        })()}
-                      </div>
-
-                      {/* Enemy Side */}
-                      <div className="text-center" style={{
-                        animation: dep.fightProgress > 0 && dep.fightProgress % 2 === 1 ? 'combat-pulse 0.5s ease' : 'none',
-                      }}>
-                        <ItemIcon itemId={target?.enemy.id || 'unknown'} itemType="monster" size={44} fallbackLabel="?" fallbackColor="#e74c3c" />
-                        <div className="text-[11px] font-bold" style={{ color: 'var(--color-danger)' }}>{target?.enemy.name || '...'}</div>
-                        {/* Enemy HP */}
-                        {target?.enemy && (
-                          <>
-                            <div style={{ width: 64, height: 4, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 2, marginTop: 2, margin: '2px auto 0' }}>
-                              <div style={{ width: '100%', height: '100%', backgroundColor: '#ef4444', borderRadius: 2 }} />
-                            </div>
-                            <div className="text-[8px]" style={{ color: '#ef4444' }}>
-                              {Math.round(target.enemy.hp * dep.waveMultiplier)} HP | {Math.round(target.enemy.damage * dep.waveMultiplier)} ATK
-                            </div>
-                          </>
-                        )}
-                        {dep.waveMultiplier > 1 && (
-                          <div className="text-[8px]" style={{ color: 'var(--color-energy)' }}>Wave +{Math.round((dep.waveMultiplier - 1) * 100)}%</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Active Abilities Row */}
-                    {(() => {
-                      const activeHeroes = partyHeroes.filter(h => !(dep.recoveryCooldowns[h.id] > 0));
-                      const allAbilities = activeHeroes.flatMap(hero =>
-                        (hero.equippedAbilities || []).filter((a): a is string => a != null).map(aId => {
-                          const ability = ABILITIES[aId];
-                          return ability ? { hero, ability } : null;
-                        }).filter(Boolean)
-                      ) as { hero: Hero; ability: typeof ABILITIES[string] }[];
-
-                      if (allAbilities.length === 0) return null;
-
-                      // Determine which ability is "casting" based on fight progress
-                      const castingIndex = dep.fightProgress > 0 ? dep.fightProgress % allAbilities.length : -1;
-
-                      return (
-                        <div className="flex flex-wrap gap-1 mt-2 mb-1" style={{ position: 'relative' }}>
-                          {allAbilities.map((entry, i) => {
-                            const isCasting = i === castingIndex;
-                            return (
-                              <div key={`${entry.hero.id}-${entry.ability.id}`}
-                                className="flex items-center gap-1 px-1.5 py-0.5 rounded"
-                                title={`${entry.hero.name.split(' ')[0]}: ${entry.ability.name} — ${entry.ability.effect}`}
-                                style={{
-                                  backgroundColor: isCasting ? ABILITY_COLOR_HEX[entry.ability.color] + '44' : 'rgba(0,0,0,0.4)',
-                                  border: `1px solid ${isCasting ? ABILITY_COLOR_HEX[entry.ability.color] : 'transparent'}`,
-                                  transition: 'all 0.3s ease',
-                                }}>
-                                <ItemIcon itemId={entry.ability.id} itemType="ability" size={14} fallbackColor={ABILITY_COLOR_HEX[entry.ability.color]} />
-                                <span className="text-[8px] font-bold" style={{ color: isCasting ? ABILITY_COLOR_HEX[entry.ability.color] : 'var(--color-text-muted)' }}>
-                                  {entry.ability.name}
-                                </span>
-                                {isCasting && (
-                                  <span className="text-[7px]" style={{ color: ABILITY_COLOR_HEX[entry.ability.color] }}>CAST</span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Fight Progress Bar */}
-                    <div style={{ position: 'relative' }}>
-                      <ProgressBar value={dep.fightProgress} max={fastestDuration} color="var(--color-energy)" height="5px" />
-                      {target?.isSweep && (
-                        <div className="text-[11px] text-center mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                          Fight {dep.fightCount}/50 to boss
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <BattleScene dep={dep} partyHeroes={partyHeroes} zone={zone!} target={target!} fastestDuration={fastestDuration} heroEquipment={heroEquipment} inventory={inventory} />
                 )}
 
-                <div className="flex gap-4 text-xs mt-2" style={{ color: 'var(--color-text-muted)' }}>
+                {/* Combat Stats Footer */}
+                <div className="flex gap-4 text-xs mt-2 flex-wrap" style={{ color: 'var(--color-text-muted)' }}>
                   <span>Kills: <b style={{ color: 'var(--color-success)' }}>{dep.totalKills}</b></span>
                   <span>Bosses: <b style={{ color: 'var(--color-accent)' }}>{dep.bossKills}</b></span>
                   <span>Party: <b>{partyHeroes.length}</b> heroes</span>
+                  <span>XP: <b style={{ color: 'var(--color-energy)' }}>{(dep.totalXpEarned || 0).toLocaleString()}</b></span>
+                  <span>Deaths: <b style={{ color: 'var(--color-danger)' }}>{dep.deathCount || 0}</b></span>
+                  {dep.deployedAt && (() => {
+                    const elapsed = Math.floor((Date.now() - dep.deployedAt) / 1000);
+                    const killsPerHour = elapsed > 0 ? Math.round(dep.totalKills / (elapsed / 3600)) : 0;
+                    return <>
+                      <span>Duration: <b>{formatDuration(elapsed)}</b></span>
+                      <span>Kills/hr: <b>{killsPerHour}</b></span>
+                    </>;
+                  })()}
                 </div>
               </div>
             );
