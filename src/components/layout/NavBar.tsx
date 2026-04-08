@@ -12,6 +12,7 @@
 
 import { GAME_NAME } from '../../config/branding';
 import { useStoryStore } from '../../store/useStoryStore';
+import { useGameStore } from '../../store/useGameStore';
 
 export type NavTarget =
   | 'hub'
@@ -24,6 +25,7 @@ export type NavTarget =
   | 'expedition'
   | 'starlight'
   | 'loot'
+  | 'inventory'
   | 'settings'
   | 'shop'
   | 'scan'
@@ -45,6 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'heroes',     label: 'Heroes',     icon: '\u2694\uFE0F', featureKey: null },
   { id: 'workshop',   label: 'Workshop',   icon: '\u2692\uFE0F', featureKey: null },
   { id: 'scan',       label: 'Scan',       icon: '\uD83D\uDCE1', featureKey: null },
+  { id: 'inventory',  label: 'Inventory',  icon: '\uD83C\uDF92', featureKey: null },
   { id: 'marketplace',label: 'Market',     icon: '\uD83C\uDFEA', featureKey: 'marketplace' },
   { id: 'expedition', label: 'Expedition', icon: '\uD83C\uDFF0', featureKey: 'expedition' },
   { id: 'settings',   label: 'Settings',   icon: '\u2699\uFE0F', featureKey: null },
@@ -61,6 +64,7 @@ export function NavBar({ activeView, onNavigate, sidebarOpen, onToggleSidebar }:
   const isFeatureUnlocked = useStoryStore(s => s.isFeatureUnlocked);
   // Subscribe to unlockedFeatures so nav re-renders when features unlock
   useStoryStore(s => s.unlockedFeatures);
+  const wcAmount = useGameStore(s => s.resources['wasteland_credits'] || 0);
 
   const visibleItems = NAV_ITEMS.filter(item => {
     if (!item.featureKey) return true;
@@ -122,6 +126,24 @@ export function NavBar({ activeView, onNavigate, sidebarOpen, onToggleSidebar }:
           </button>
         );
       })}
+
+      {/* Spacer + WC currency badge */}
+      <div className="flex-1" />
+      <button
+        onClick={() => onNavigate('inventory')}
+        className="flex items-center gap-1 px-2.5 h-full shrink-0 cursor-pointer"
+        style={{
+          background: 'linear-gradient(135deg, rgba(212, 168, 67, 0.06) 0%, transparent 100%)',
+          border: 'none',
+          borderLeft: '1px solid rgba(62, 54, 40, 0.15)',
+        }}
+        title="Wasteland Credits — click to open Inventory"
+      >
+        <span className="text-[10px] font-bold" style={{ color: 'var(--color-accent)' }}>WC</span>
+        <span className="text-[11px] font-mono font-bold" style={{ color: 'var(--color-accent)', textShadow: '0 0 6px rgba(212, 168, 67, 0.2)' }}>
+          {wcAmount.toLocaleString()}
+        </span>
+      </button>
     </div>
   );
 }

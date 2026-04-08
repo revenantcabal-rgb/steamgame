@@ -9,7 +9,7 @@ import { GatheringPanel } from './components/skills/GatheringPanel';
 import { HeroPanel } from './components/heroes/HeroPanel';
 import { CombatZonePanel } from './components/combat/CombatZonePanel';
 import { MarketplacePanel } from './components/marketplace/MarketplacePanel';
-import { ResourcePanel } from './components/layout/ResourcePanel';
+import { InventoryPanel } from './components/inventory/InventoryPanel';
 import { BottomPanel } from './components/layout/BottomPanel';
 import { ExpeditionPanel } from './components/expedition/ExpeditionPanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
@@ -47,6 +47,7 @@ type ActiveView =
   | 'shop'
   | 'pvp'
   | 'guild'
+  | 'inventory'
   | 'settings';
 
 // ──────────────────────────────────────────────
@@ -170,6 +171,7 @@ function App() {
           {activeView === 'marketplace' && <MarketplacePanel />}
           {activeView === 'expedition' && <ExpeditionPanel />}
           {activeView === 'starlight' && <StarlightPanel />}
+          {activeView === 'inventory' && <InventoryPanel />}
           {activeView === 'loot' && <LootTracker />}
           {activeView === 'shop' && <ShopPanel />}
           {activeView === 'pvp' && (
@@ -187,13 +189,10 @@ function App() {
           {activeView === 'settings' && <SettingsPanel />}
         </div>
 
-        <BottomPanel />
       </div>
 
-      {/* Right: Resource panel — hidden on small screens */}
-      <div className="hidden xl:block">
-        <ResourcePanel />
-      </div>
+      {/* Floating log/radio overlay — no longer in layout flow */}
+      <BottomPanel />
     </div>
     </NavigationContext.Provider>
   );

@@ -43,7 +43,7 @@ export interface DerivedStats {
   dropChance: number;
   // SP (Spirit Point) stats
   maxSp: number;           // Max spirit points (30 + RES*3)
-  spRegen: number;         // SP regen per combat turn (1 + RES*0.2)
+  spRegen: number;         // SP regen per combat turn (2 + RES*0.1)
   spCostReduction: number; // % reduction to ability SP costs (0-50)
   /** Number of consumable slots unlocked (1 base + 1 per level threshold) */
   consumableSlots: number;

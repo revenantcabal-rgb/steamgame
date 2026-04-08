@@ -183,8 +183,8 @@ export function MarketItemGrid({ category, subcategory, searchQuery, selectedIte
         <span />
         <span>Item</span>
         <span style={{ textAlign: 'right' }}>Base</span>
-        <span style={{ textAlign: 'right' }}>Current</span>
-        <span style={{ textAlign: 'right' }}>Stock</span>
+        <span style={{ textAlign: 'right' }}>Market</span>
+        <span style={{ textAlign: 'right' }}>Listed</span>
       </div>
 
       {/* Rows */}

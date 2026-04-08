@@ -1,9 +1,9 @@
 /**
- * BottomPanel — Collapsible game log and radio comms.
+ * BottomPanel — Floating game log and radio overlay.
  *
- * Defaults to a single-line collapsed bar showing the latest log message.
- * Click to expand to full log/chat view. This recovers ~150px of vertical
- * space for the hub and active panels.
+ * v2: No longer occupies layout flow. Renders as a floating pill (collapsed)
+ * or overlay panel (expanded) in the bottom-right corner. Zero vertical
+ * footprint on the main content area.
  */
 
 import { useState } from 'react';
@@ -24,56 +24,66 @@ export function BottomPanel() {
   const latestLog = logs.length > 0 ? logs[logs.length - 1] : null;
 
   if (!expanded) {
-    // Collapsed: single-line bar with latest message
+    // Collapsed: floating pill in bottom-right
     return (
       <button
         onClick={() => setExpanded(true)}
-        className="shrink-0 w-full flex items-center px-3 py-1 cursor-pointer text-left"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer"
         style={{
-          borderTop: '1px solid rgba(62, 54, 40, 0.2)',
-          background: 'linear-gradient(0deg, #13110d 0%, #0e0c09 100%)',
-          height: '26px',
-          border: 'none',
-          borderTopWidth: '1px',
-          borderTopStyle: 'solid',
-          borderTopColor: 'rgba(62, 54, 40, 0.2)',
+          position: 'fixed',
+          bottom: 10,
+          right: 10,
+          zIndex: 50,
+          background: 'linear-gradient(135deg, #1a1714 0%, #13110d 100%)',
+          border: '1px solid rgba(62, 54, 40, 0.4)',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.6)',
+          maxWidth: 320,
         }}
       >
-        <span className="text-[10px] font-bold uppercase tracking-wider mr-2" style={{ color: 'var(--color-text-muted)', opacity: 0.5 }}>
+        <span className="text-[10px] font-bold uppercase tracking-wider shrink-0" style={{ color: 'var(--color-text-muted)', opacity: 0.6 }}>
           Log
         </span>
-        <span className="text-[10px] flex-1 truncate" style={{
+        <span className="text-[10px] truncate" style={{
           color: latestLog?.type === 'error' ? 'var(--color-danger)'
             : latestLog?.type === 'levelup' ? 'var(--color-accent)'
+            : latestLog?.type === 'drop' ? 'var(--color-success)'
             : 'var(--color-text-muted)',
         }}>
           {latestLog?.message || 'No activity yet.'}
         </span>
         {totalUnread > 0 && (
           <span
-            className="ml-2 px-1.5 rounded-full text-[9px] font-bold"
-            style={{
-              background: 'var(--color-accent)',
-              color: '#0c0a08',
-            }}
+            className="px-1.5 rounded-full text-[9px] font-bold shrink-0"
+            style={{ background: 'var(--color-accent)', color: '#0c0a08' }}
           >
             {totalUnread}
           </span>
         )}
-        <span className="ml-2 text-[10px]" style={{ color: 'var(--color-text-muted)', opacity: 0.4 }}>{"\u25B2"}</span>
+        <span className="text-[10px] shrink-0" style={{ color: 'var(--color-text-muted)', opacity: 0.4 }}>{"\u25B2"}</span>
       </button>
     );
   }
 
-  // Expanded: full log/chat with tab bar
+  // Expanded: floating overlay panel
   return (
-    <div className="shrink-0" style={{ maxHeight: 'clamp(120px, 22vh, 220px)' }}>
+    <div style={{
+      position: 'fixed',
+      bottom: 10,
+      right: 10,
+      zIndex: 50,
+      width: 'min(480px, calc(100vw - 20px))',
+      maxHeight: 'clamp(140px, 28vh, 260px)',
+      borderRadius: 8,
+      overflow: 'hidden',
+      boxShadow: '0 4px 24px rgba(0, 0, 0, 0.7)',
+      border: '1px solid rgba(62, 54, 40, 0.4)',
+    }}>
       {/* Tab Bar */}
       <div
         className="flex items-center"
         style={{
-          borderTop: '1px solid rgba(62, 54, 40, 0.3)',
           background: 'linear-gradient(0deg, #16130f 0%, #100e0a 100%)',
+          borderBottom: '1px solid rgba(62, 54, 40, 0.3)',
         }}
       >
         <button
@@ -109,7 +119,6 @@ export function BottomPanel() {
           )}
         </button>
 
-        {/* Collapse button */}
         <button
           onClick={() => setExpanded(false)}
           className="ml-auto px-2 py-1 text-[10px] cursor-pointer"

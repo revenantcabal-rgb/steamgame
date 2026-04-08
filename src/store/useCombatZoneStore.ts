@@ -418,7 +418,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             const xpAmount = Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100));
             fightXpGained += xpAmount;
             const updatedHero = addHeroXp(hero, xpAmount, focusRing);
-            useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
+            useHeroStore.setState(s => ({ heroes: s.heroes.map(h => h.id === hero.id ? { ...updatedHero, equippedConsumables: h.equippedConsumables } : h) }));
             // Story: hero level up
             if (updatedHero.level > hero.level) {
               useStoryStore.getState().checkObjective('reach_hero_level', 'any', updatedHero.level);
@@ -560,7 +560,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             const xpAmountNorm = Math.floor(result.xpGained * xpBonusMult * getPremiumBonuses().xpMultiplier * (1 + (getEncampmentBonuses().hero_xp || 0) / 100));
             fightXpGained += xpAmountNorm;
             const updatedHero = addHeroXp(hero, xpAmountNorm, focusRingNorm);
-            useHeroStore.setState({ heroes: heroStore.heroes.map(h => h.id === hero.id ? updatedHero : h) });
+            useHeroStore.setState(s => ({ heroes: s.heroes.map(h => h.id === hero.id ? { ...updatedHero, equippedConsumables: h.equippedConsumables } : h) }));
             // Story: hero level up
             if (updatedHero.level > hero.level) {
               useStoryStore.getState().checkObjective('reach_hero_level', 'any', updatedHero.level);
@@ -703,6 +703,16 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             const blkReduction = 1 - (derived.blockChance / 100) * 0.5;
             const drReduction = 1 - derived.damageReduction / 100;
             const incomingDmg = dmgPerHero * defReduction * evaReduction * blkReduction * drReduction;
+
+            // Thorns: reflect a portion of incoming damage back to first alive enemy
+            if (derived.thornsDamage > 0) {
+              const thornsDmg = incomingDmg * (derived.thornsDamage / 100);
+              const thornTarget = updatedEnemies.find(e => e.currentHp > 0);
+              if (thornTarget) {
+                thornTarget.currentHp = Math.max(0, thornTarget.currentHp - thornsDmg);
+              }
+            }
+
             const regenHeal = derived.hpRegen || 0;
             const netDmg = Math.max(0, incomingDmg - regenHeal);
             const maxHp = Math.round(derived.maxHp * encHpMultT);

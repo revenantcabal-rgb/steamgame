@@ -178,8 +178,15 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
         <Sep />
 
         {/* Price Ladder */}
-        <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
-          Price Ladder
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+            Order Book
+          </span>
+          {itemPOs.some(po => po.isBot) && (
+            <span style={{ fontSize: 9, color: 'var(--color-text-muted)', opacity: 0.6 }} title="NPC floor buyers maintain minimum demand at base price">
+              includes NPC orders
+            </span>
+          )}
         </div>
         <div style={{ maxHeight: 120, overflowY: 'auto', marginBottom: 8 }}>
           {priceLadder.map((row, i) => (
@@ -208,10 +215,10 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
               </span>
             </div>
           ))}
-          <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 40px', fontSize: 11, padding: '2px 4px', color: 'var(--color-text-muted)' }}>
-            <span>Sellers</span>
+          <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 40px', fontSize: 10, padding: '2px 4px', color: 'var(--color-text-muted)', opacity: 0.7 }}>
+            <span>Listed</span>
             <span style={{ textAlign: 'center' }}>Price</span>
-            <span style={{ textAlign: 'right' }}>Buyers</span>
+            <span style={{ textAlign: 'right' }}>Orders</span>
           </div>
         </div>
 
@@ -260,12 +267,17 @@ function PurchaseForm({ item, priceInfo }: { item: CatalogItem; priceInfo: Retur
 
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
-        Purchase
+      <div style={{ marginBottom: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+          Place Buy Order
+        </div>
+        <div style={{ fontSize: 9, color: 'var(--color-text-muted)', opacity: 0.6, marginTop: 1 }}>
+          Orders are filled by listed items or NPC floor supply
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
         <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Desired Price</label>
+          <label style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>Bid Price</label>
           <div style={{ display: 'flex', gap: 2 }}>
             <button
               onClick={() => setBuyPrice(priceInfo.minPrice)}
@@ -309,7 +321,7 @@ function PurchaseForm({ item, priceInfo }: { item: CatalogItem; priceInfo: Retur
           color: totalCost > playerWC ? 'var(--color-text-muted)' : '#000',
         }}
       >
-        {totalCost > playerWC ? 'Not enough WC' : 'Buy'}
+        {totalCost > playerWC ? 'Not enough WC' : 'Place Order'}
       </button>
     </div>
   );
@@ -344,8 +356,13 @@ function SellForm({ item, priceInfo, playerAmount }: { item: CatalogItem; priceI
 
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>
-        Sell (You have {playerAmount})
+      <div style={{ marginBottom: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 'bold', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>
+          List for Sale (You have {playerAmount})
+        </div>
+        <div style={{ fontSize: 9, color: 'var(--color-text-muted)', opacity: 0.6, marginTop: 1 }}>
+          NPC floor buyers purchase at base price if no other orders exist
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
         <div style={{ flex: 1 }}>

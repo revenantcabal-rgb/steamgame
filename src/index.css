@@ -142,65 +142,110 @@ body {
   color: var(--color-danger);
 }
 
-/* Floating damage numbers */
+/* Floating damage numbers — anchored per-enemy */
 @keyframes float-damage {
-  0% { opacity: 1; transform: translateY(0) scale(1); }
-  20% { opacity: 1; transform: translateY(-8px) scale(1.2); }
-  100% { opacity: 0; transform: translateY(-32px) scale(0.8); }
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1.25); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-36px) scale(0.85); }
 }
 .float-damage {
-  animation: float-damage 0.9s ease-out forwards;
+  animation: float-damage 1s ease-out forwards;
   position: absolute;
   pointer-events: none;
   font-weight: 800;
-  font-size: 14px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  font-size: 15px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);
   z-index: 20;
+  white-space: nowrap;
 }
 
 /* Combat card */
 .combat-card {
-  background: rgba(0,0,0,0.45);
+  background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.6) 100%);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 10px;
+  padding: 8px 10px;
   text-align: center;
-  transition: border-color 0.3s;
+  transition: border-color 0.3s, box-shadow 0.3s;
   position: relative;
+  backdrop-filter: blur(4px);
 }
 .combat-card--targeted {
-  border-color: #f59e0b;
-  box-shadow: 0 0 8px rgba(245,158,11,0.3);
+  border-color: #ef4444;
+  box-shadow: 0 0 12px rgba(239,68,68,0.25);
+  animation: target-pulse 2s ease-in-out infinite;
+}
+@keyframes target-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,0.2); }
+  50% { box-shadow: 0 0 16px rgba(239,68,68,0.4); }
 }
 .combat-card--dead {
-  opacity: 0.3;
+  opacity: 0.25;
   filter: grayscale(1);
 }
+/* Low HP warning on hero cards */
+@keyframes low-hp-pulse {
+  0%, 100% { border-color: rgba(239,68,68,0.3); }
+  50% { border-color: rgba(239,68,68,0.7); }
+}
+.combat-card--low-hp {
+  animation: low-hp-pulse 1.2s ease-in-out infinite;
+}
 
-/* Ability cooldown overlay */
+/* Ability / loadout slot system */
 .ability-slot {
   position: relative;
   border-radius: 6px;
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.2s;
+  border: 2px solid transparent;
 }
 .ability-slot--ready {
-  border: 2px solid rgba(255,255,255,0.4);
+  box-shadow: 0 0 8px rgba(255,255,255,0.2);
 }
 .ability-slot--casting {
   transform: scale(1.15);
   box-shadow: 0 0 10px rgba(255,255,255,0.4);
 }
+.ability-slot--empty {
+  width: 38px;
+  height: 38px;
+  border: 2px dashed rgba(255,255,255,0.08);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.2);
+}
+.ability-slot--consumable-empty {
+  width: 34px;
+  height: 34px;
+}
+.ability-slot--locked {
+  border: 2px solid rgba(255,255,255,0.04);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.3);
+  opacity: 0.35;
+}
 .ability-cooldown-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: rgba(255,255,255,0.85);
+  border-radius: 4px;
+}
+
+/* Ability bar container */
+.ability-bar {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(0deg, rgba(0,0,0,0.25) 0%, transparent 100%);
+}
+.ability-bar-group {
+  border-radius: 6px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.04);
 }
 
 .stat-tooltip-wrap:hover .stat-tooltip {

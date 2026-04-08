@@ -25,19 +25,24 @@ export function MarketStatusPanel() {
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Notification bar */}
+      {/* Notification bar — recent trades */}
       {recentTxns.length > 0 && (
         <div style={{
           padding: '6px 12px', backgroundColor: 'rgba(34,197,94,0.1)',
           borderBottom: '1px solid rgba(34,197,94,0.2)', overflowX: 'auto',
           whiteSpace: 'nowrap', fontSize: 11, color: '#22c55e',
         }}>
-          {recentTxns.map((t, i) => (
-            <span key={t.id}>
-              {i > 0 && <span style={{ color: 'var(--color-text-muted)', margin: '0 8px' }}>|</span>}
-              {t.quantity}x {t.itemName} @ {t.pricePerUnit.toLocaleString()} WC
-            </span>
-          ))}
+          <span style={{ fontSize: 9, color: 'var(--color-text-muted)', marginRight: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent:</span>
+          {recentTxns.map((t, i) => {
+            const isNpc = (t as any).buyerName?.startsWith('NPC') || (t as any).sellerName?.startsWith('NPC');
+            return (
+              <span key={t.id}>
+                {i > 0 && <span style={{ color: 'var(--color-text-muted)', margin: '0 6px' }}>|</span>}
+                {t.quantity}x {t.itemName} @ {t.pricePerUnit.toLocaleString()} WC
+                {isNpc && <span style={{ fontSize: 9, opacity: 0.5 }}> (npc)</span>}
+              </span>
+            );
+          })}
         </div>
       )}
 

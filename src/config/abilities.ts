@@ -84,7 +84,7 @@ export const ABILITIES: Record<string, AbilityTome> = {
     effect: 'Deal 110% melee damage. Apply bleed: 3% dmg/turn for 3 turns.',
     scaling: '+1% bleed per 10 RES', source: 'Zone 1+ drops',
     requirements: [{ stat: 'res', value: 1 }],
-    spCost: 5, duration: 3, mechanicalEffect: { type: 'dot', stat: 'burnDot', value: 3, isPercentage: true, scaling: 0.5 } },
+    spCost: 5, duration: 3, mechanicalEffect: { type: 'dot', stat: 'bleedDot', value: 3, isPercentage: true, scaling: 0.5 } },
 
   r_shield_breaker: { id: 'r_shield_breaker', name: 'Shield Breaker', color: 'red', cooldown: 10, isPassive: false, isDecree: false,
     description: 'Smash through enemy defenses with raw force.',
@@ -335,7 +335,7 @@ export const ABILITIES: Record<string, AbilityTome> = {
     effect: 'Deal 100% blast to all. Radiation: 15 dmg/turn 4 turns. -20% healing.',
     scaling: '+2 rad dmg per 5 RES', source: 'Zone 6+ boss',
     requirements: [{ stat: 'res', value: 55 }],
-    spCost: 28, duration: 4, mechanicalEffect: { type: 'dot', stat: 'burnDot', value: 8, isPercentage: true, scaling: 1.2 } },
+    spCost: 28, duration: 4, mechanicalEffect: { type: 'dot', stat: 'radiationDot', value: 8, isPercentage: true, scaling: 1.2 } },
 
   b_carpet_bomb: { id: 'b_carpet_bomb', name: 'Carpet Bomb', color: 'blue', cooldown: 20, isPassive: false, isDecree: false,
     description: 'Saturate the entire area with explosives.',
