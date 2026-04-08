@@ -22,13 +22,13 @@ export interface ChatMessage {
 }
 
 export const CHANNEL_LABELS: Record<ChatChannel, string> = {
-  general: 'General',
-  trade: 'Trade',
+  general: 'Radio',
+  trade: 'Trade Log',
   recruitment: 'Recruit',
-  beginner: 'Beginner',
-  guild: 'Guild',
-  party: 'Party',
-  whisper: 'Whisper',
+  beginner: 'Field Notes',
+  guild: 'Faction',
+  party: 'Squad',
+  whisper: 'Personal',
 };
 
 export const CHANNEL_COLORS: Record<ChatChannel, string> = {

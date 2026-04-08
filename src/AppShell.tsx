@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { GAME_NAME } from './config/branding';
 import { useAuthStore } from './store/useAuthStore';
 import { useAnticheatStore } from './store/useAnticheatStore';
 import { LandingPage } from './components/auth/LandingPage';
@@ -57,7 +58,7 @@ export function AppShell() {
     return (
       <div className="min-h-screen min-h-dvh w-full flex-1 flex items-center justify-center p-4" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
         <div className="text-center">
-          <h1 className="text-xl md:text-2xl font-bold mb-2" style={{ color: 'var(--color-accent)' }}>WASTELAND GRIND</h1>
+          <h1 className="text-xl md:text-2xl font-bold mb-2" style={{ color: 'var(--color-accent)', letterSpacing: '0.15em' }}>{GAME_NAME}</h1>
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>Loading...</p>
         </div>
       </div>

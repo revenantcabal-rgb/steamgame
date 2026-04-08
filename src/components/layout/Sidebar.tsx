@@ -1,3 +1,4 @@
+import { GAME_NAME } from '../../config/branding';
 import { GATHERING_SKILLS, PRODUCTION_SKILLS } from '../../config/skills';
 import { COMBAT_ZONE_LIST } from '../../config/combatZones';
 import { SkillListItem } from '../skills/SkillListItem';
@@ -17,9 +18,11 @@ interface SidebarProps {
   activeCombatZoneId?: string | null;
   /** Callback when story section is clicked */
   onNavigateToStory?: () => void;
+  /** Callback to return to the hub */
+  onNavigateToHub?: () => void;
 }
 
-export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId, onNavigateToStory }: SidebarProps) {
+export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId, onNavigateToStory, onNavigateToHub }: SidebarProps) {
   const idle = useGameStore(s => s.idle);
   const activeSkillId = useGameStore(s => s.activeSkillId);
   const currentObjective = useStoryStore(s => s.getCurrentObjective);
@@ -40,13 +43,19 @@ export function Sidebar({ onSelectSkill, onSelectCombatZone, activeCombatZoneId,
         boxShadow: '2px 0 12px rgba(0, 0, 0, 0.3)',
       }}
     >
-      {/* Game Title */}
-      <div className="p-4 text-center" style={{ borderBottom: '1px solid rgba(212, 168, 67, 0.15)', background: 'linear-gradient(180deg, rgba(212, 168, 67, 0.06) 0%, transparent 100%)' }}>
-        <h1 className="text-lg font-bold" style={{ color: 'var(--color-accent)', textShadow: '0 0 20px rgba(212, 168, 67, 0.3)', letterSpacing: '0.1em' }}>
-          &#9760; WASTELAND GRIND
+      {/* Game Title — clickable, returns to hub */}
+      <div
+        className="p-4 text-center cursor-pointer"
+        style={{ borderBottom: '1px solid rgba(212, 168, 67, 0.15)', background: 'linear-gradient(180deg, rgba(212, 168, 67, 0.06) 0%, transparent 100%)' }}
+        onClick={onNavigateToHub}
+        role="button"
+        tabIndex={0}
+      >
+        <h1 className="text-sm font-bold" style={{ color: 'var(--color-accent)', textShadow: '0 0 20px rgba(212, 168, 67, 0.3)', letterSpacing: '0.12em' }}>
+          {GAME_NAME}
         </h1>
-        <div className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-          Post-Apocalyptic Idle RPG
+        <div className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+          Survive. Build. Command.
         </div>
         {goldenCapActive && (
           <div className="flex items-center justify-center gap-1 mt-1.5 text-xs" style={{ color: '#FFD700' }}>

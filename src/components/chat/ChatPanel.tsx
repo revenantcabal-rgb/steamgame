@@ -7,7 +7,9 @@ import {
 } from '../../store/useChatStore';
 import { GoldenCapBadge } from '../common/GoldenCapBadge';
 
-const ALL_CHANNELS: ChatChannel[] = ['general', 'trade', 'recruitment', 'beginner', 'guild', 'party', 'whisper'];
+/** Only show channels that make sense for single-player radio comms.
+ *  Guild/party/whisper are hidden until real multiplayer exists. */
+const ALL_CHANNELS: ChatChannel[] = ['general', 'trade', 'recruitment', 'beginner'];
 
 function formatTime(ts: number): string {
   const d = new Date(ts);

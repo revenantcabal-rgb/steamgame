@@ -105,6 +105,10 @@ interface PartyDeployment {
   totalXpEarned: number;
   /** Number of times any hero died in this deployment */
   deathCount: number;
+  /** Transient per-fight hero HP (heroId -> current HP). Reset each fight. */
+  heroHpMap?: Record<string, number>;
+  /** Transient per-fight hero SP (heroId -> current SP). Reset each fight. */
+  heroSpMap?: Record<string, number>;
 }
 
 interface CombatZoneState {
@@ -134,6 +138,24 @@ export interface SerializedCombatZoneState {
   nextPartyId?: number;
 }
 
+/** Build initial HP/SP maps for a set of heroes (full health/mana). */
+function buildInitialHeroMaps(heroIds: string[]): { heroHpMap: Record<string, number>; heroSpMap: Record<string, number> } {
+  const eqStore = useEquipmentStore.getState();
+  const encampmentHpMult = 1 + (getEncampmentBonuses().combat_hp || 0) / 100;
+  const heroHpMap: Record<string, number> = {};
+  const heroSpMap: Record<string, number> = {};
+  const heroStore = useHeroStore.getState();
+  for (const hid of heroIds) {
+    const hero = heroStore.heroes.find(h => h.id === hid);
+    if (!hero) continue;
+    const gear = getEquippedGear(hero.id, eqStore.heroEquipment, eqStore.inventory);
+    const derived = calculateDerivedStats(hero, gear);
+    heroHpMap[hid] = Math.round(derived.maxHp * encampmentHpMult);
+    heroSpMap[hid] = derived.maxSp;
+  }
+  return { heroHpMap, heroSpMap };
+}
+
 export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
   deployments: [],
   tierUnlocks: {},
@@ -160,7 +182,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
     const deployedHeroIds = new Set(state.deployments.flatMap(d => d.heroIds));
 
     // Validate all heroes
-    const validHeroes = [];
+    const validHeroes: typeof heroStore.heroes = [];
     for (const heroId of heroIds) {
       if (deployedHeroIds.has(heroId)) continue; // already deployed
       const hero = heroStore.heroes.find(h => h.id === heroId);
@@ -207,6 +229,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
         recoveryCooldowns: {}, waveMultiplier: 1.0,
         globalTick: 0, deployedAt: Date.now(), totalXpEarned: 0, deathCount: 0,
         currentEnemies: initialEnemies,
+        ...buildInitialHeroMaps(validHeroes.map(h => h.id)),
       }],
     }));
 
@@ -470,6 +493,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
           }
 
           // Reset cycle after boss — roll new enemies for next sweep fight
+          const bossResetMaps = buildInitialHeroMaps(dep.heroIds);
           newDeployments.push({
             ...dep, fightProgress: 0, fightCount: 0, waveMultiplier: 1.0,
             globalTick: (dep.globalTick || 0) + 1,
@@ -483,6 +507,8 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               : target?.enemy
                 ? rollSingleEnemy(target.enemy, dep.zoneTier, 1.0, difficultyMult)
                 : undefined,
+            heroHpMap: bossResetMaps.heroHpMap,
+            heroSpMap: bossResetMaps.heroSpMap,
           });
         } else {
           // Normal fight — build synthetic enemy from ALL currentEnemies (use maxHp, not currentHp)
@@ -588,6 +614,7 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             gameStore.addLog(`Wave ${Math.floor(newFightCount / ENEMY_SCALE_EVERY_N) + 1}: enemies in ${zone.name} grow stronger! (+${Math.round((newWaveMult - 1) * 100)}%)`, 'system');
           }
 
+          const fightResetMaps = buildInitialHeroMaps(dep.heroIds);
           newDeployments.push({
             ...dep, fightProgress: 0, fightCount: newFightCount, waveMultiplier: newWaveMult,
             globalTick: (dep.globalTick || 0) + 1,
@@ -600,15 +627,23 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
               : target?.enemy
                 ? rollSingleEnemy(target.enemy, dep.zoneTier, newWaveMult, difficultyMult)
                 : undefined,
+            heroHpMap: fightResetMaps.heroHpMap,
+            heroSpMap: fightResetMaps.heroSpMap,
           });
         }
       } else {
-        // Mid-fight tick: apply per-hero damage individually based on turn speed
+        // Mid-fight tick: apply per-hero damage to enemies AND enemy damage to heroes
         const updatedEnemies = dep.currentEnemies ? dep.currentEnemies.map(e => ({ ...e })) : undefined;
         const gt = (dep.globalTick || 0) + 1;
+        const updatedHpMap = { ...(dep.heroHpMap || {}) };
+        const updatedSpMap = { ...(dep.heroSpMap || {}) };
+
         if (updatedEnemies && updatedEnemies.length > 0) {
           const eqStoreT = useEquipmentStore.getState();
           const encampmentDmgMultT = 1 + getCombatDamageBonus() / 100;
+          const encBonusesT = getEncampmentBonuses();
+          const encDefMultT = 1 + (encBonusesT.combat_defense || 0) / 100;
+          const encHpMultT = 1 + (encBonusesT.combat_hp || 0) / 100;
 
           // Sort heroes by turn speed (fastest first) for attack order
           const sortedHeroes = [...activeHeroes].sort((a, b) => {
@@ -617,36 +652,71 @@ export const useCombatZoneStore = create<CombatZoneState>((set, get) => ({
             return calculateDerivedStats(b, gB).turnSpeed - calculateDerivedStats(a, gA).turnSpeed;
           });
 
+          // Total enemy damage from alive enemies, split across active heroes
+          const totalEnemyDmg = updatedEnemies.reduce((s, e) => s + (e.currentHp > 0 ? e.damage : 0), 0);
+          const dmgPerHero = sortedHeroes.length > 0 ? totalEnemyDmg / sortedHeroes.length : 0;
+
           for (let hi = 0; hi < sortedHeroes.length; hi++) {
             const hero = sortedHeroes[hi];
             const gear = getEquippedGear(hero.id, eqStoreT.heroEquipment, eqStoreT.inventory);
             const derived = calculateDerivedStats(hero, gear);
 
-            // Each hero attacks based on their turn speed
-            // attackInterval: how many ticks between attacks (lower turnSpeed = longer interval)
+            // ── Hero attacks enemy ──
             const attackInterval = Math.max(1, Math.round(100 / Math.max(1, derived.turnSpeed) * 3));
-            // Stagger heroes using their index so they don't all attack on the same tick
             const shouldAttack = (gt + hi) % attackInterval === 0;
-            if (!shouldAttack) continue;
 
-            const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
-            const cls = CLASSES[hero.classId];
-            const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as CombatStyle, (target?.enemy as any)?.combatStyle);
-            const hitRate = Math.min(1, derived.accuracy / 100);
-            const critMult = 1 + (derived.critChance / 100) * (derived.critDamage / 100 - 1);
-            let heroDmg = heroAttack * hitRate * critMult * triangleMult * encampmentDmgMultT * 0.9;
-            heroDmg += heroAttack * (derived.burnDot + derived.poisonDot + derived.radiationDot + derived.bleedDot) / 100;
-            const abilityContrib = calculateAbilityContribution(hero, derived, baseDuration);
-            heroDmg += abilityContrib.bonusDps;
+            if (shouldAttack) {
+              const heroAttack = Math.max(derived.meleeAttack, derived.rangedAttack, derived.blastAttack);
+              const cls = CLASSES[hero.classId];
+              const triangleMult = getCombatTriangleMultiplier(cls?.primaryCombatStyle as CombatStyle, (target?.enemy as any)?.combatStyle);
+              const hitRate = Math.min(1, derived.accuracy / 100);
+              const critMult = 1 + (derived.critChance / 100) * (derived.critDamage / 100 - 1);
+              let heroDmg = heroAttack * hitRate * critMult * triangleMult * encampmentDmgMultT * 0.9;
+              heroDmg += heroAttack * (derived.burnDot + derived.poisonDot + derived.radiationDot + derived.bleedDot) / 100;
+              const abilityContrib = calculateAbilityContribution(hero, derived, baseDuration);
+              heroDmg += abilityContrib.bonusDps;
 
-            // Apply this hero's damage to first alive enemy
-            const firstAlive = updatedEnemies.find(e => e.currentHp > 0);
-            if (firstAlive) {
-              firstAlive.currentHp = Math.max(0, firstAlive.currentHp - heroDmg);
+              // Apply hero damage to first alive enemy
+              const firstAlive = updatedEnemies.find(e => e.currentHp > 0);
+              if (firstAlive) {
+                firstAlive.currentHp = Math.max(0, firstAlive.currentHp - heroDmg);
+              }
+
+              // SP consumption: deduct ability SP proportionally per attack tick
+              if (abilityContrib.spUsed > 0) {
+                const spPerTick = abilityContrib.spUsed / Math.max(1, baseDuration);
+                updatedSpMap[hero.id] = Math.max(0, (updatedSpMap[hero.id] ?? derived.maxSp) - spPerTick);
+              }
+
+              // Lifesteal healing
+              const lifestealHeal = heroDmg * (derived.lifesteal / 100);
+              if (lifestealHeal > 0) {
+                const maxHp = Math.round(derived.maxHp * encHpMultT);
+                updatedHpMap[hero.id] = Math.min(maxHp, (updatedHpMap[hero.id] ?? maxHp) + lifestealHeal);
+              }
             }
+
+            // ── Enemy damages hero (every tick, regardless of hero attack timing) ──
+            const effectiveDefense = derived.defense * encDefMultT;
+            const defReduction = Math.max(0.2, 1 - effectiveDefense / (effectiveDefense + 200));
+            const evaReduction = 1 - Math.min(0.5, derived.evasion / 100);
+            const blkReduction = 1 - (derived.blockChance / 100) * 0.5;
+            const drReduction = 1 - derived.damageReduction / 100;
+            const incomingDmg = dmgPerHero * defReduction * evaReduction * blkReduction * drReduction;
+            const regenHeal = derived.hpRegen || 0;
+            const netDmg = Math.max(0, incomingDmg - regenHeal);
+            const maxHp = Math.round(derived.maxHp * encHpMultT);
+            updatedHpMap[hero.id] = Math.max(1, (updatedHpMap[hero.id] ?? maxHp) - netDmg);
+
+            // SP regen
+            updatedSpMap[hero.id] = Math.min(derived.maxSp, (updatedSpMap[hero.id] ?? derived.maxSp) + derived.spRegen);
           }
         }
-        newDeployments.push({ ...dep, fightProgress: newProgress, globalTick: gt, recoveryCooldowns: newCooldowns, currentEnemies: updatedEnemies });
+        newDeployments.push({
+          ...dep, fightProgress: newProgress, globalTick: gt,
+          recoveryCooldowns: newCooldowns, currentEnemies: updatedEnemies,
+          heroHpMap: updatedHpMap, heroSpMap: updatedSpMap,
+        });
       }
     }
 

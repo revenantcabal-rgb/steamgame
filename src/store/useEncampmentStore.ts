@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import { BUILDINGS, getBuildCost, getBonusAtLevel, getWorkerTickInterval } from '../config/buildings';
 import type { BonusType } from '../config/buildings';
+import { CLASSES } from '../config/classes';
 import { useGameStore } from './useGameStore';
 import { usePopulationStore } from './usePopulationStore';
+import { useHeroStore } from './useHeroStore';
 
 export interface BuiltBuilding {
   buildingId: string;
@@ -10,6 +12,8 @@ export interface BuiltBuilding {
   assignedWorker: boolean;
   /** Seconds accumulated toward next worker resource tick */
   workerTickProgress: number;
+  /** Specialist hero assigned as leader (optional) */
+  leaderId?: string;
 }
 
 interface EncampmentState {
@@ -20,6 +24,9 @@ interface EncampmentActions {
   buildOrUpgrade: (buildingId: string) => boolean;
   assignWorker: (buildingId: string) => boolean;
   removeWorker: (buildingId: string) => boolean;
+  assignLeader: (buildingId: string, heroId: string) => boolean;
+  removeLeader: (buildingId: string) => boolean;
+  getLeaderBonus: (buildingId: string) => number;
   tick: () => void;
   getBonuses: () => Record<BonusType, number>;
   getSerializableState: () => any;
@@ -164,6 +171,73 @@ export const useEncampmentStore = create<EncampmentState & EncampmentActions>((s
     return true;
   },
 
+  assignLeader: (buildingId: string, heroId: string) => {
+    const state = get();
+    const building = state.buildings[buildingId];
+    if (!building) return false;
+    if (building.leaderId) return false; // already has a leader
+
+    // Validate hero exists and is a specialist
+    const heroStore = useHeroStore.getState();
+    const hero = heroStore.heroes.find(h => h.id === heroId);
+    if (!hero) return false;
+    const cls = CLASSES[hero.classId];
+    if (!cls || cls.heroType !== 'specialist') {
+      useGameStore.getState().addLog('Only specialist heroes can serve as building leaders.', 'error');
+      return false;
+    }
+
+    // Check hero isn't already leading another building
+    for (const b of Object.values(state.buildings)) {
+      if (b.leaderId === heroId) {
+        useGameStore.getState().addLog(`${hero.name} is already leading another building.`, 'error');
+        return false;
+      }
+    }
+
+    set({
+      buildings: {
+        ...state.buildings,
+        [buildingId]: { ...building, leaderId: heroId },
+      },
+    });
+
+    const def = BUILDINGS[buildingId];
+    useGameStore.getState().addLog(`${hero.name} assigned as leader of ${def?.name || buildingId}.`, 'system');
+    return true;
+  },
+
+  removeLeader: (buildingId: string) => {
+    const state = get();
+    const building = state.buildings[buildingId];
+    if (!building || !building.leaderId) return false;
+
+    const hero = useHeroStore.getState().heroes.find(h => h.id === building.leaderId);
+
+    set({
+      buildings: {
+        ...state.buildings,
+        [buildingId]: { ...building, leaderId: undefined },
+      },
+    });
+
+    const def = BUILDINGS[buildingId];
+    useGameStore.getState().addLog(`${hero?.name || 'Leader'} removed from ${def?.name || buildingId}.`, 'system');
+    return true;
+  },
+
+  getLeaderBonus: (buildingId: string) => {
+    const state = get();
+    const building = state.buildings[buildingId];
+    if (!building?.leaderId) return 0;
+
+    const hero = useHeroStore.getState().heroes.find(h => h.id === building.leaderId);
+    if (!hero) return 0;
+
+    // Leader bonus: 1% per hero level, capped at 50%
+    return Math.min(50, hero.level);
+  },
+
   tick: () => {
     const state = get();
     const updates: Record<string, BuiltBuilding> = {};
@@ -205,7 +279,12 @@ export const useEncampmentStore = create<EncampmentState & EncampmentActions>((s
       const def = BUILDINGS[building.buildingId];
       if (!def) continue;
 
-      const bonus = getBonusAtLevel(def, building.level);
+      let bonus = getBonusAtLevel(def, building.level);
+      // Leader multiplier: specialist hero assigned as leader boosts building output
+      if (building.leaderId) {
+        const leaderPct = get().getLeaderBonus(building.buildingId);
+        bonus *= (1 + leaderPct / 100);
+      }
       bonuses[def.bonusType] = (bonuses[def.bonusType] || 0) + bonus;
     }
 

@@ -14,8 +14,8 @@
     "electron:pack": "electron-builder --dir"
   },
   "build": {
-    "appId": "com.wastelandgrind.game",
-    "productName": "Wasteland Grind",
+    "appId": "com.deadcitydirective.game",
+    "productName": "Dead City Directive",
     "directories": {
       "output": "release"
     },

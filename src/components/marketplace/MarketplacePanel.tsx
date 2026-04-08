@@ -34,9 +34,14 @@ export function MarketplacePanel() {
       {/* Header */}
       <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--color-text-primary)', margin: 0 }}>
-            Central Market
-          </h2>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 'bold', color: 'var(--color-text-primary)', margin: 0 }}>
+              Trade Post
+            </h2>
+            <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2, letterSpacing: '0.05em' }}>
+              Local market — NPC floor buyers maintain price stability
+            </div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 'bold', color: 'var(--color-accent)' }}>
               {playerWC.toLocaleString()} WC

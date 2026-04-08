@@ -35,7 +35,7 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 768,
-    title: 'Wasteland Grind',
+    title: 'Dead City Directive',
     icon: path.join(__dirname, '../public/favicon.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

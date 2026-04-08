@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useEncampmentStore } from '../../store/useEncampmentStore';
 import { useGameStore } from '../../store/useGameStore';
 import { usePopulationStore } from '../../store/usePopulationStore';
+import { useHeroStore } from '../../store/useHeroStore';
 import { BUILDINGS, BUILDING_LIST, BUILDING_CATEGORIES, getBuildCost, getBonusAtLevel, getWorkerTickInterval } from '../../config/buildings';
 import type { BuildingDefinition, BuildingCategory } from '../../config/buildings';
+import { CLASSES, SPECIALIST_CLASSES } from '../../config/classes';
 import { RESOURCES } from '../../config/resources';
 import { ItemIcon } from '../../utils/itemIcons';
 
@@ -42,8 +44,17 @@ export function EncampmentPanel() {
   const buildOrUpgrade = useEncampmentStore(s => s.buildOrUpgrade);
   const assignWorker = useEncampmentStore(s => s.assignWorker);
   const removeWorker = useEncampmentStore(s => s.removeWorker);
+  const assignLeader = useEncampmentStore(s => s.assignLeader);
+  const removeLeader = useEncampmentStore(s => s.removeLeader);
+  const getLeaderBonus = useEncampmentStore(s => s.getLeaderBonus);
   const resources = useGameStore(s => s.resources);
   const availableWorkers = usePopulationStore(s => s.availableWorkers);
+  const heroes = useHeroStore(s => s.heroes);
+  const assignedLeaderIds = new Set(Object.values(buildings).map(b => b.leaderId).filter(Boolean));
+  const availableLeaders = heroes.filter(h => {
+    const cls = CLASSES[h.classId];
+    return cls?.heroType === 'specialist' && !assignedLeaderIds.has(h.id);
+  });
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState<BuildingCategory | 'all'>('all');
@@ -217,6 +228,11 @@ export function EncampmentPanel() {
             onBuild={() => buildOrUpgrade(selectedDef.id)}
             onAssignWorker={() => assignWorker(selectedDef.id)}
             onRemoveWorker={() => removeWorker(selectedDef.id)}
+            onAssignLeader={(heroId) => assignLeader(selectedDef.id, heroId)}
+            onRemoveLeader={() => removeLeader(selectedDef.id)}
+            leaderBonus={getLeaderBonus(selectedDef.id)}
+            availableLeaders={availableLeaders}
+            currentLeader={selectedBuilding?.leaderId ? heroes.find(h => h.id === selectedBuilding.leaderId) : undefined}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center p-6">
@@ -244,14 +260,24 @@ function BuildingDetail({
   onBuild,
   onAssignWorker,
   onRemoveWorker,
+  onAssignLeader,
+  onRemoveLeader,
+  leaderBonus,
+  availableLeaders,
+  currentLeader,
 }: {
   def: BuildingDefinition;
-  built: { level: number; assignedWorker: boolean; workerTickProgress: number } | null | undefined;
+  built: { level: number; assignedWorker: boolean; workerTickProgress: number; leaderId?: string } | null | undefined;
   resources: Record<string, number>;
   availableWorkers: number;
   onBuild: () => void;
   onAssignWorker: () => void;
   onRemoveWorker: () => void;
+  onAssignLeader: (heroId: string) => void;
+  onRemoveLeader: () => void;
+  leaderBonus: number;
+  availableLeaders: { id: string; name: string; level: number; classId: string }[];
+  currentLeader?: { id: string; name: string; level: number; classId: string };
 }) {
   const level = built?.level || 0;
   const targetLevel = level + 1;
@@ -401,6 +427,59 @@ function BuildingDetail({
           </div>
         )}
       </div>
+
+      {/* Leader Assignment */}
+      {level > 0 && (
+        <div className="p-2 rounded" style={{ backgroundColor: 'var(--color-bg-primary)', border: '1px solid var(--color-border)' }}>
+          <div className="text-[11px] font-bold mb-1" style={{ color: 'var(--color-text-muted)' }}>
+            Building Leader (Specialist)
+          </div>
+          {currentLeader ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold" style={{ color: 'var(--color-xp)' }}>{currentLeader.name}</span>
+                <span className="text-[11px] ml-1" style={{ color: 'var(--color-text-muted)' }}>
+                  Lv.{currentLeader.level} {CLASSES[currentLeader.classId]?.name}
+                </span>
+                {leaderBonus > 0 && (
+                  <span className="text-[11px] ml-1" style={{ color: 'var(--color-success)' }}>
+                    +{leaderBonus}% bonus
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={onRemoveLeader}
+                className="px-2 py-1 rounded text-[11px] cursor-pointer"
+                style={{ backgroundColor: 'var(--color-danger)', color: '#fff', border: 'none' }}
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div>
+              {availableLeaders.length > 0 ? (
+                <select
+                  onChange={e => e.target.value && onAssignLeader(e.target.value)}
+                  defaultValue=""
+                  className="w-full p-1.5 rounded text-xs"
+                  style={{ backgroundColor: 'var(--color-bg-tertiary)', color: 'var(--color-text-primary)', border: '1px solid var(--color-border)' }}
+                >
+                  <option value="">Assign a specialist hero...</option>
+                  {availableLeaders.map(h => (
+                    <option key={h.id} value={h.id}>
+                      {h.name} — Lv.{h.level} {CLASSES[h.classId]?.name} (+{Math.min(50, h.level)}%)
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
+                  No specialist heroes available. Recruit Scavengers, Rangers, Prospectors, or Artificers.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Build / Upgrade Section */}
       {!isMaxLevel && (

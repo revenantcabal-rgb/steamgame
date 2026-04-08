@@ -116,14 +116,16 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
   const totalTrades = history.filter(t => t.itemId === item.id).length;
   const itemPOs = purchaseOrders.filter(po => po.itemId === item.id && po.expiresAt > Date.now());
 
-  // Price ladder data
+  // Price ladder data — distinguish player vs NPC buyers
   const priceLadder = useMemo(() => {
-    const ladder: { price: number; listed: number; buyers: number }[] = [];
+    const ladder: { price: number; listed: number; buyers: number; npcBuyers: number }[] = [];
     const step = Math.max(1, Math.floor((priceInfo.maxPrice - priceInfo.minPrice) / 8));
     for (let p = priceInfo.maxPrice; p >= priceInfo.minPrice; p -= step) {
       const listed = listings.filter(l => l.itemId === item.id && l.pricePerUnit === p && l.expiresAt > Date.now()).reduce((s, l) => s + l.quantity, 0);
-      const buyers = itemPOs.filter(po => po.bidPrice === p).reduce((s, po) => s + (po.quantity - po.quantityFilled), 0);
-      ladder.push({ price: p, listed, buyers });
+      const matchingPOs = itemPOs.filter(po => po.bidPrice === p);
+      const buyers = matchingPOs.reduce((s, po) => s + (po.quantity - po.quantityFilled), 0);
+      const npcBuyers = matchingPOs.filter(po => po.isBot).reduce((s, po) => s + (po.quantity - po.quantityFilled), 0);
+      ladder.push({ price: p, listed, buyers, npcBuyers });
     }
     return ladder;
   }, [priceInfo, listings, itemPOs, item.id]);
@@ -196,7 +198,13 @@ export function MarketItemDetail({ item }: MarketItemDetailProps) {
                 {row.price.toLocaleString()}
               </span>
               <span style={{ color: row.buyers > 0 ? '#22c55e' : 'var(--color-text-muted)', textAlign: 'right' }}>
-                {row.buyers > 0 ? `${row.buyers}` : '-'}
+                {row.buyers > 0 ? (
+                  row.npcBuyers > 0 && row.npcBuyers === row.buyers
+                    ? <span title="NPC floor buyers">{row.buyers}<span style={{ fontSize: 8, opacity: 0.6 }}> npc</span></span>
+                    : row.npcBuyers > 0
+                      ? <span title={`${row.npcBuyers} NPC`}>{row.buyers}<span style={{ fontSize: 8, opacity: 0.6 }}> +{row.npcBuyers}n</span></span>
+                      : `${row.buyers}`
+                ) : '-'}
               </span>
             </div>
           ))}

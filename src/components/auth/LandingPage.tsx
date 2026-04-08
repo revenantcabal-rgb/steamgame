@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GAME_NAME, GAME_SUBTITLE } from '../../config/branding';
 import { useAuthStore } from '../../store/useAuthStore';
 import { LegalModal } from '../legal/LegalPages';
 import type { LegalPage } from '../legal/LegalPages';
@@ -264,7 +265,7 @@ export function LandingPage() {
     { icon: '\uD83C\uDFD7\uFE0F', title: 'Build Your Encampment', description: '20 buildings providing passive bonuses. Assign workers, upgrade structures, and grow your settlement.' },
     { icon: '\uD83D\uDC80', title: 'Idle Combat', description: 'Deploy heroes to combat zones. Auto-battle enemies, defeat bosses, and collect rare loot drops.' },
     { icon: '\uD83D\uDC65', title: 'Worker Population', description: 'Individual workers with stats, ranks, and specializations. From Recruit to Legend \u2014 each worker is unique.' },
-    { icon: '\uD83C\uDFEA', title: 'Trade & Compete', description: 'Player marketplace, guild system, PVP arenas, and Starlight ascension tree.' },
+    { icon: '\uD83C\uDFEA', title: 'Trade & Progress', description: 'Local marketplace, Starlight ascension tree, and deep progression systems.' },
   ];
 
   const stats = [
@@ -291,23 +292,24 @@ export function LandingPage() {
           <div className="flex-1 lg:flex-[0_0_55%] text-center lg:text-left" style={{ minWidth: 0 }}>
             <h1 style={{
               color: 'var(--color-accent)',
-              fontSize: 'clamp(36px, 5vw, 56px)',
+              fontSize: 'clamp(32px, 5vw, 52px)',
               fontWeight: 900,
-              letterSpacing: '0.15em',
-              textShadow: '0 0 30px rgba(212, 168, 67, 0.4)',
+              letterSpacing: '0.18em',
+              textShadow: '0 0 30px rgba(212, 168, 67, 0.4), 0 2px 4px rgba(0,0,0,0.5)',
               lineHeight: 1.1,
               marginBottom: 12,
             }}>
-              WASTELAND GRIND
+              {GAME_NAME}
             </h1>
             <p style={{
               color: 'var(--color-text-secondary)',
-              fontSize: 'clamp(16px, 2vw, 22px)',
+              fontSize: 'clamp(14px, 2vw, 18px)',
               fontWeight: 600,
-              letterSpacing: '0.06em',
+              letterSpacing: '0.08em',
               marginBottom: 20,
+              textTransform: 'uppercase',
             }}>
-              Post-Apocalyptic Idle RPG
+              {GAME_SUBTITLE}
             </p>
             <p style={{
               color: 'var(--color-text-muted)',
@@ -317,8 +319,8 @@ export function LandingPage() {
               marginBottom: 'clamp(20px, 4vw, 32px)',
               margin: '0 auto 32px',
             }}>
-              Survive the irradiated wasteland. Build your encampment, recruit heroes, train workers,
-              craft gear, and dominate the apocalypse. Solo or with friends.
+              Survive the dead city. Build your encampment, recruit heroes, deploy squads,
+              craft gear, and take back what's left. Your directive starts now.
             </p>
             <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
               <button
@@ -327,7 +329,7 @@ export function LandingPage() {
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(212, 168, 67, 0.4)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
               >
-                Enter the Wasteland
+                Enter the Dead City
               </button>
               <button
                 style={ghostBtn}
@@ -362,7 +364,7 @@ export function LandingPage() {
             textShadow: '0 0 20px rgba(212, 168, 67, 0.3)',
             marginBottom: 48,
           }}>
-            FORGE YOUR DESTINY
+            YOUR DIRECTIVE AWAITS
           </h2>
 
           <div
@@ -429,7 +431,7 @@ export function LandingPage() {
           letterSpacing: '0.08em',
           marginBottom: 12,
         }}>
-          Ready to Survive?
+          Ready for Your Directive?
         </h2>
         <p style={{
           color: 'var(--color-text-muted)',
@@ -437,7 +439,7 @@ export function LandingPage() {
           marginBottom: 28,
           lineHeight: 1.6,
         }}>
-          Join the wasteland and start your journey today.
+          The dead city needs a leader. Start your directive today.
         </p>
         <button
           style={{ ...goldGradientBtn, fontSize: 16, padding: '16px 48px' }}
